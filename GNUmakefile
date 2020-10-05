@@ -1,0 +1,26 @@
+AMREX_HOME ?= ${HOME}/AMReX/amrex
+
+TOP = ..
+
+BL_NO_FORT = FALSE
+
+DEBUG	= FALSE
+
+DIM	= 2
+
+COMP    = gnu
+
+USE_MPI   = TRUE
+USE_OMP   = FALSE
+USE_CUDA  = FALSE
+
+USE_EB = FALSE
+
+ARK_USE_PHASE     = TRUE
+ARK_USE_MOMENTUM  = FALSE
+ARK_USE_ENERGY    = FALSE
+
+EBASE     = DUGKS.
+
+include ../Ark/Make.DUGKSAmr
+

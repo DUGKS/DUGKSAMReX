@@ -1,0 +1,4 @@
+CEXE_sources += DUGKSAmrIO.cpp
+CEXE_sources += DUGKSDiagnose.cpp
+CEXE_sources += DUGKSL2Norm.cpp
+CEXE_headers += DUGKSCore.H

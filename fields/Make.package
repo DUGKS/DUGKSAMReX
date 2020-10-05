@@ -1,0 +1,6 @@
+CEXE_sources += DUGKSGrad2D.cpp
+CEXE_sources += DUGKSGrad3D.cpp
+CEXE_sources += DUGKSFieldOp.cpp
+CEXE_sources += DUGKSAllenCahn.cpp
+
+CEXE_headers += DUGKSField.H

@@ -1,0 +1,13 @@
+CEXE_sources += DUGKS_EB_Annulus.cpp
+CEXE_sources += DUGKS_EB_Bicylinder.cpp
+CEXE_sources += DUGKS_EB_Box.cpp
+CEXE_sources += DUGKS_EB_Cyl_Tuscan.cpp
+CEXE_sources += DUGKS_EB_Cylinder.cpp
+CEXE_sources += DUGKS_EB_Regular.cpp
+CEXE_sources += DUGKS_EB_Sphere.cpp
+CEXE_sources += DUGKS_EB_Spherecube.cpp
+CEXE_sources += DUGKS_EB_Tuscan.cpp
+CEXE_sources += DUGKSMakeEB.cpp
+CEXE_sources += DUGKSWriteEBSurface.cpp
+
+CEXE_headers += DUGKS_EB_IF.H

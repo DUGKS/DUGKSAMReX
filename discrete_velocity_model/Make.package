@@ -1,0 +1,3 @@
+CEXE_headers += DUGKSDmVn.H
+CEXE_sources += DUGKSDmVnImp.cpp
+CEXE_sources += DUGKSD2VnAC.cpp
