@@ -40,7 +40,6 @@ void DUGKSAmr::AllenCahnSource (int const lev)
 		GradFunc::gradient_operator_isotropy(bx, dl, phi, grad_phi);
 
 #ifdef ARK_USE_MOMENTUM
-		Array4<Real> const &grad_rho = GradRhoFab.array(mfi);
 		Array4<Real> const &force    = ForceFab.array(mfi);
 
 		amrex::ParallelFor(bx,
@@ -50,10 +49,10 @@ void DUGKSAmr::AllenCahnSource (int const lev)
 			double mu_phi = ChemicalPotential(phi(i,j,k), laplacian_phi);
 
 			//F = Fs + G
-			force(i,j,k,Ark::dir_x) = mu_phi*grad_phi(i,j,k,Ark::dir_x) + Gravity(Ark::dir_x);
-			force(i,j,k,Ark::dir_y) = mu_phi*grad_phi(i,j,k,Ark::dir_y) + Gravity(Ark::dir_y);
+			force(i,j,k,Ark::X) = mu_phi*grad_phi(i,j,k,Ark::X) + Gravity(Ark::X);
+			force(i,j,k,Ark::Y) = mu_phi*grad_phi(i,j,k,Ark::Y) + Gravity(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
-			force(i,j,k,Ark::dir_z) = mu_phi*grad_phi(i,j,k,Ark::dir_z) + Gravity(Ark::dir_z);
+			force(i,j,k,Ark::Z) = mu_phi*grad_phi(i,j,k,Ark::Z) + Gravity(Ark::Z);
 #endif
 		});
 #endif
@@ -87,7 +86,7 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 		Array4<Real const> const &grad_phi    = msv[Ark::GradPHI].const_array(mfi);
 		Array4<Real      > const &grad_phi_nF = msv_nF[Ark::GradPHI].array(mfi);
 
-#if ARK_USE_MOMENTUM
+#ifdef ARK_USE_MOMENTUM
 		Array4<Real const> const &grad_rho    = msv[Ark::GradRHO].const_array(mfi);
 		Array4<Real const> const &force       = msv[Ark::FORCE].const_array(mfi);
 		Array4<Real      > const &grad_rho_nF = msv_nF[Ark::GradRHO].array(mfi);
@@ -99,7 +98,7 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 		{
 			grad_phi_nF(i,j,k,n) = 0.5*(grad_phi(i,j,k,n) + grad_phi(i-di, j-dj, k-dk, n));
 
-#if ARK_USE_MOMENTUM
+#ifdef ARK_USE_MOMENTUM
 			grad_rho_nF(i,j,k,n) = 0.5*(grad_rho(i,j,k,n) + grad_rho(i-di, j-dj, k-dk, n));
 			force_nF(i,j,k,n)    = 0.5*(force(i,j,k,n)    + force(i-di, j-dj, k-dk, n));
 #endif
@@ -114,8 +113,10 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 		#endif
 	}
 }
-void DUGKSAmr::AllenCahnTemporalPhiU (DUGKSAmr::LevelData &ld, double const RT)
+void DUGKSAmr::AllenCahnTemporalPhiU (DUGKSAmr::LevelData &ld)
 {
+	const Real RT = Ark::DmVnPhase::RT;
+
 	MultiFab const& PhaseFab    = ld.msv[Ark::PHI];
 	MultiFab const& VelocityFab = ld.msv[Ark::VEL];
 //
@@ -141,12 +142,12 @@ void DUGKSAmr::AllenCahnTemporalPhiU (DUGKSAmr::LevelData &ld, double const RT)
     	[=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     	{
     		Real const &phi_value = phi(i,j,k);
-    		Real const &vel_x = vel(i,j,k,Ark::dir_x);
-    		Real const &vel_y = vel(i,j,k,Ark::dir_y);
+    		Real const &vel_x = vel(i,j,k,Ark::X);
+    		Real const &vel_y = vel(i,j,k,Ark::Y);
 
     		Real &phi_prev_value = phi_prev(i,j,k);
-    		Real &vel_prev_x = vel_prev(i,j,k,Ark::dir_x);
-    		Real &vel_prev_y = vel_prev(i,j,k,Ark::dir_y);
+    		Real &vel_prev_x = vel_prev(i,j,k,Ark::X);
+    		Real &vel_prev_y = vel_prev(i,j,k,Ark::Y);
 
     		Real const dPhiU = (phi_value*vel_x - phi_prev_value*vel_prev_x)/(RT*Dt());
     		Real const dPhiV = (phi_value*vel_y - phi_prev_value*vel_prev_y)/(RT*Dt());
@@ -154,23 +155,23 @@ void DUGKSAmr::AllenCahnTemporalPhiU (DUGKSAmr::LevelData &ld, double const RT)
     		vel_prev_x = vel_x;
     		vel_prev_y = vel_y;
 
-    		Real &grad_phi_x = grad_phi(i,j,k,Ark::dir_x);
-    		Real &grad_phi_y = grad_phi(i,j,k,Ark::dir_y); 
+    		Real &grad_phi_x = grad_phi(i,j,k,Ark::X);
+    		Real &grad_phi_y = grad_phi(i,j,k,Ark::Y); 
 
 #if(AMREX_SPACEDIM == 3)
-    		Real &grad_phi_z = grad_phi(i,j,k,Ark::dir_z);
+    		Real &grad_phi_z = grad_phi(i,j,k,Ark::Z);
 
-    		Real const &vel_z = vel(i,j,k,Ark::dir_z);
-    		Real &vel_prev_z = vel_prev(i,j,k,Ark::dir_z);
+    		Real const &vel_z = vel(i,j,k,Ark::Z);
+    		Real &vel_prev_z = vel_prev(i,j,k,Ark::Z);
     		
     		Real const dPhiW = (phi_value*vel_z - phi_prev_value*vel_prev_z)/(RT*Dt());
 
     		vel_prev_z = vel_z;
     		//c++ 17
     		//Real mod_phi = std::hypot(grad_phi_x, grad_phi_y, grad_phi_z);
-    		Real const mod_phi = amrex::Math::sqrt ( Ark::Square (grad_phi_x, 
-    											   				  grad_phi_y,
-    										 	   				  grad_phi_z));
+    		Real const mod_phi = std::sqrt( Ark::Square (grad_phi_x, 
+    											   		 grad_phi_y,
+    										 	   		 grad_phi_z));
 #else
     		Real const mod_phi = std::hypot(grad_phi_x, grad_phi_y);
 #endif		

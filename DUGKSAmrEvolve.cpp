@@ -68,45 +68,45 @@ void DUGKSAmr::Update_DVDF_Barh_UW (int const lev)
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFxF[Ark::BHF], ld.hDVDF,
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFxF[Ark::FLUX], ld.hDVDF,
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFyF[Ark::BHF], ld.hDVDF,
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFyF[Ark::FLUX], ld.hDVDF,
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFzF[Ark::BHF], ld.hDVDF,
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW (ld.hDVDFzF[Ark::FLUX], ld.hDVDF,
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::z);
 #endif
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFxF[Ark::BHF], ld.fDVDF,
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFxF[Ark::FLUX], ld.fDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFyF[Ark::BHF], ld.fDVDF,
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFyF[Ark::FLUX], ld.fDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFzF[Ark::BHF], ld.fDVDF,
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW (ld.fDVDFzF[Ark::FLUX], ld.fDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::z);
 #endif
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFxF[Ark::BHF], ld.gDVDF,
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFxF[Ark::FLUX], ld.gDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFyF[Ark::BHF], ld.gDVDF,
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFyF[Ark::FLUX], ld.gDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFzF[Ark::BHF], ld.gDVDF,
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW (ld.gDVDFzF[Ark::FLUX], ld.gDVDF,
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::z);
 #endif
@@ -119,45 +119,45 @@ void DUGKSAmr::Update_DVDF_Barh_CD (int const lev)
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFxF[Ark::BHF], ld.hDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFxF[Ark::FLUX], ld.hDVDF[Ark::BP],
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFyF[Ark::BHF], ld.hDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFyF[Ark::FLUX], ld.hDVDF[Ark::BP],
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFzF[Ark::BHF], ld.hDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_CD (ld.hDVDFzF[Ark::FLUX], ld.hDVDF[Ark::BP],
 						 				  Geom(lev).CellSize(), hDt(lev),
 						 				  amrex::Direction::z);
 #endif
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFxF[Ark::BHF], ld.fDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFxF[Ark::FLUX], ld.fDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFyF[Ark::BHF], ld.fDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFyF[Ark::FLUX], ld.fDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFzF[Ark::BHF], ld.fDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_CD (ld.fDVDFzF[Ark::FLUX], ld.fDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::z);
 #endif
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFxF[Ark::BHF], ld.gDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFxF[Ark::FLUX], ld.gDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::x);
 
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFyF[Ark::BHF], ld.gDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFyF[Ark::FLUX], ld.gDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::y);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFzF[Ark::BHF], ld.gDVDF[Ark::BP],
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_CD (ld.gDVDFzF[Ark::FLUX], ld.gDVDF[Ark::BP],
 						 				  	 Geom(lev).CellSize(), hDt(lev),
 						 				  	 amrex::Direction::z);
 #endif
@@ -217,6 +217,8 @@ void DUGKSAmr::Advance()
 		Update_DVDF_MesoFlux (lev);
 	}
 
+	CheckForPhysicalBoundary(0);
+
 	AverageDownDVDFFlux();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
@@ -233,10 +235,12 @@ void DUGKSAmr::Evolve()
 {
 	BL_PROFILE("DUGKSAmr::Evolve()");
 
-	amrex::Print() 	<< " case :" << CaseName()
+	Ark::PrintSplitLine();
+	amrex::Print() 	<< " case : " << CaseName() <<"\n"
 					<< " start on " << amrex::ParallelDescriptor::NProcs()
 					<< " processes\n";
-
+	Ark::PrintSplitLine('\n');
+//
 	while(nstep < end_step or steady_state)
 	{
         if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
@@ -254,11 +258,11 @@ void DUGKSAmr::Evolve()
 		cur_time += Dt();
 
 		if(write_conv_interval > 0 and nstep%write_conv_interval == 0) {
-			WriteL2NormFile(MultiLevelL2Norm());
+			// WriteL2NormFile(MultiLevelL2Norm());
+			WriteSumPhaseFile(MultiLevelSum());
 		}
 		if(write_residual_interval > 0 and nstep%write_residual_interval == 0) {
 			const auto &level_residuals = MultiLevelResidual();
-
 
 			if(steady_state) {
 				WriteResidualFile(level_residuals);
@@ -268,6 +272,7 @@ void DUGKSAmr::Evolve()
 			if(write_plot_interval > 0 and nstep%write_plot_interval == 0) {
 				WritePlotFile();
 			}
+			WriteSumPhaseFile(MultiLevelSum());
 		}
 
 		if(write_check_interval > 0 and nstep%write_check_interval == 0) {
@@ -277,13 +282,17 @@ void DUGKSAmr::Evolve()
 	}
 
 	WritePlotFile();
+//
+	Ark::PrintSplitLine();
+	amrex::Print() 	<< " case : " << CaseName() << " complete\n";
 }
 void DUGKSAmr::SteadyStateReached(const Vector<double> & residualv)
 {
 	if (m_verbose > 0) {
         amrex::Print().SetPrecision(8) 	
-        			<< " step : "<<nstep <<"    "<<"time : "<<cur_time<<"\n"
-        			<< "residual : ";            
+        			<< " step = "<<nstep <<"    "
+        			<< " time = "<<cur_time<<"    "
+        			<< " residual : ";            
         
         for(auto d : residualv) {	
         	amrex::Print() << d <<"    ";

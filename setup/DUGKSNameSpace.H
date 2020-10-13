@@ -8,6 +8,7 @@
 #include <AMReX_MultiFab.H>
 
 #include <DUGKSMacro.H>
+#include <DUGKSDmVn.H>
 
 using amrex::Box;
 using amrex::Real;
@@ -18,6 +19,7 @@ using amrex::Vector;
 using amrex::MultiFab;
 
 
+
 namespace Ark
 {
 #if(AMREX_SPACEDIM == 2)
@@ -25,43 +27,47 @@ namespace Ark
 #elif (AMREX_SPACEDIM == 3)
 	enum EnumDVDF {TAU,WAVE,EQ,SO,BP,BPx,BPy,BPz,BPxx,BPyy,BPzz,BPxy,BPyz,BPzx,DVDFNUM};
 #endif
-	enum EnumFaceDVDF {TAUF,BHF,EQF,SOF,FLUX,FACEDVDFNUM};
+	enum EnumFaceDVDF {TAUF,FLUX,EQF,SOF,FACEDVDFNUM};
 
 	enum EnumMSQ {PHI,RHO,VEL,P,T,GradPHI,GradRHO,FORCE,MSVNUM};
 
-	constexpr int DVM_PHASE    = 9;
+	using DmVnPhase    = D2V9; 
 
-	constexpr int DVM_MOMENTUM = 9;
+	using DmVnMomentum = D2V9;
 
-	constexpr int DVM_ENERGY   = 9;
+	using DmVnEnergy   = D2V9;
 
-	constexpr int dir_x = static_cast<int>(amrex::Direction::x);
+	constexpr unsigned DVM_PHASE    = DmVnPhase::Q;
 
-	constexpr int dir_y = static_cast<int>(amrex::Direction::y);
+	constexpr unsigned DVM_MOMENTUM = DmVnMomentum::Q;
+
+	constexpr unsigned DVM_ENERGY   = DmVnEnergy::Q;
+
+	constexpr int X = static_cast<int>(amrex::Direction::x);
+
+	constexpr int Y = static_cast<int>(amrex::Direction::y);
 
 	#if(AMREX_SPACEDIM == 3)
-	constexpr int dir_z = static_cast<int>(amrex::Direction::z);
+	constexpr int Z = static_cast<int>(amrex::Direction::z);
 	#endif
 
 	constexpr double pi = 3.1415926535897932;
+	constexpr double PI = 3.1415926535897932;
 
 	constexpr double tiny = 1E-20;
 
-	constexpr int digitsNum = 8;
+	constexpr unsigned digitsNum = 8;
 
 	inline
-	double Square(double const u,double const v, double const w)
+	double Square(double const u,double const v = 0, double const w = 0)
 	{
 		return u*u + v*v + w*w;
 	}
-	inline
-	double Square(double const u,double const v)
-	{
-		return u*u + v*v;
-	}
 
-	inline
-	int sgn(double v) { return (v > 0) - (v < 0);}
+	template <typename T>
+	int sign (const T &val) { return (val > 0) - (val < 0); }
+
+	void PrintSplitLine(const char c = ' ');
 }
 namespace DVMCore
 {

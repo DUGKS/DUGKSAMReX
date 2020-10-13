@@ -2,16 +2,13 @@
 
 void DUGKSAmr::CaseInitFluid(int const lev)
 {
-	auto& leveldata = Data(lev);
-    const Real *dl = Geom(lev).CellSize();
-
     case_init_macroscopic_variables(lev);
 
     switch(CaseIndex())
     {
         case 0:
         {
-            UniformFlow(leveldata);
+            UniformFlow(lev);
             break;
         }
         case 1:
@@ -20,12 +17,37 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         }
         case 10:
         {
-            QuiescentDrop(leveldata, dl);
+            QuiescentDrop(lev);
+            break;
+        }
+        case 11:
+        {
+            TransDrop(lev);
+            break;
+        }
+        case 12:
+        {
+            ZalesakDisk(lev);
+            break;
+        }
+        case 13:
+        {
+            InterfaceElongation(lev);
+            break;
+        }
+        case 14:
+        {
+            SmoothDeformation(lev);
+            break;
+        }
+        case 15:
+        {
+            LayeredPoiseuille(lev);
             break;
         }
         case -666:
         {
-            BasicCase(leveldata, dl);
+            BasicCase(lev);
             break;
         }
     	default :
@@ -53,6 +75,12 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
         mf.setVal(0.0);
     }
 
+    ld.msv[Ark::PHI].setVal(Rho0());
+    ld.msv[Ark::RHO].setVal(Rho0()); 
+    ld.msv[Ark::VEL].setVal(U0());
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0()); 
+
     for(auto &mf : ld.msv_xF) {
         mf.setVal(0.0);
     }
@@ -65,16 +93,6 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
         mf.setVal(0.0);
     }
 #endif
-
-    for(auto &mf : ld.hDVDF) {
-        mf.setVal(0.0);
-    }
-    for(auto &mf : ld.hDVDFxF) {
-        mf.setVal(0.0);
-    }
-    for(auto &mf : ld.hDVDFyF) {
-        mf.setVal(0.0);
-    }
 
 #ifdef ARK_USE_PHASE
     ld.hDVDF[Ark::TAU ].setVal(TauPhase());
@@ -124,6 +142,9 @@ void DUGKSAmr::post_case_init(int const lev)
 {
     auto& ld = *m_leveldata[lev];
 
-    MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
-    MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
+    ld.phase_prev.setVal(0);
+    ld.velocity_prev.setVal(0);
+    //The following would result in a slight increase in L-2 norm error;
+    // MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
+    // MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
 }

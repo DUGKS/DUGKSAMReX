@@ -7,6 +7,10 @@ using std::ofstream;
 
 namespace { const std::string level_prefix{"Level_"}; }
 
+void Ark::PrintSplitLine(const char c) 
+{ 
+    amrex::Print()<<"----------------------------------"<<c<<std::endl;
+}
 void GotoNextLine(std::istream& is)
 {
     constexpr std::streamsize bl_ignore_max{100000};
@@ -237,6 +241,19 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
         jobInfoFile << " DUGKSAmr Job Information\n";
         jobInfoFile << PrettyLine;
 
+#ifdef ARK_USE_PHASE
+        jobInfoFile << "USE_PHASE---->";
+        jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_PHASE<<"\n";
+#endif
+#ifdef ARK_USE_MOMENTUM
+        jobInfoFile << "USE_MOMENTUM---->";
+        jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_MOMENTUM<<"\n";
+#endif
+#ifdef ARK_USE_ENERGY
+        jobInfoFile << "USE_ENERGY---->";
+        jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_ENERGY<<"\n";
+#endif
+
         jobInfoFile << "number of MPI processes: " << ParallelDescriptor::NProcs() << "\n";
 #ifdef _OPENMP
         jobInfoFile << "number of threads:       " << omp_get_max_threads() << "\n";
@@ -262,6 +279,17 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
         jobInfoFile << "FCOMP version: " << buildInfoGetFcompVersion() << "\n";
 
         jobInfoFile << "\n";
+
+        const char* githash1 = buildInfoGetGitHash(1);
+        const char* githash2 = buildInfoGetGitHash(2);
+        if(std::strlen(githash1) > 0)
+        {
+            jobInfoFile << "DUGKSAmr git hash: " << githash1 << "\n";
+        }
+        if(std::strlen(githash2) > 0)
+        {
+            jobInfoFile << "AMReX git hash: " << githash2 << "\n";
+        }
 
         jobInfoFile << "\n\n";
 
@@ -597,3 +625,68 @@ void DUGKSAmr::WriteResidualFile(const Vector<double> &cur_residual)
         ResidualFile.close();
     }
 }
+void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double const vel_norm)
+{
+    if(ParallelDescriptor::IOProcessor()) 
+    {
+        std::ofstream L2NormVelocity;
+        std::ostringstream oss_velocity;
+        oss_velocity <<"Level"<<lev<<"_"
+                     <<"L2norm_velocity"
+                     << "_Pe"<<Pe()
+                     << "_Cn"<<Cn()
+                     << "_NL"<<ChNum()<<"_"
+                     << CaseName()<<".dat";
+        L2NormVelocity.open(oss_velocity.str().c_str(), std::ios::app);
+        L2NormVelocity  << std::setiosflags(std::ios::scientific) 
+                        << std::setprecision(Ark::digitsNum);
+        L2NormVelocity  << cur_time <<"    "<<vel_diff<<"    "<<vel_norm<<"\n";
+        L2NormVelocity.close();
+    }
+}
+void DUGKSAmr::WriteSumPhaseFile(const Vector<double> &cur_sum)
+{
+    if(ParallelDescriptor::IOProcessor()) 
+    {
+        std::ofstream SumFile;
+        std::ostringstream oss_sum;  
+        oss_sum <<"SumPhase_Pe"<<Pe()
+                <<"_Cn"<<Cn()
+                <<"_NL"<<ChNum()<<"_"
+                <<CaseName()<<".dat";
+        SumFile.open(oss_sum.str().c_str(), std::ios::app);
+        SumFile << std::setiosflags(std::ios::scientific) 
+                     << std::setprecision(Ark::digitsNum);
+        SumFile << cur_time <<"    ";
+        for(auto d : cur_sum) 
+        {
+            SumFile << d <<"    ";
+        }
+        SumFile<<'\n';
+
+        SumFile.close();
+    }
+}
+// void DUGKSAmr::WritePressureFile(int i = 0, j = 0)
+// {
+//     if(ParallelDescriptor::IOProcessor()) 
+//     {
+//         std::ofstream PresFile;
+//         std::ostringstream oss_pres;  
+//         oss_pres <<"Pressure_Pe"<<Pe()
+//                 <<"_Cn"<<Cn()
+//                 <<"_NL"<<ChNum()<<"_"
+//                 <<CaseName()<<".dat";
+//         PresFile.open(oss_pres.str().c_str(), std::ios::app);
+//         PresFile << std::setiosflags(std::ios::scientific) 
+//                      << std::setprecision(Ark::digitsNum);
+//         PresFile << cur_time <<"    "<<Data(lev);
+//         for(auto d : cur_sum) 
+//         {
+//             PresFile << d <<"    ";
+//         }
+//         PresFile<<'\n';
+
+//         PresFile.close();
+//     }
+// }

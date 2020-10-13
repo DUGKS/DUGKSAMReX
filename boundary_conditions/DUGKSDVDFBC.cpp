@@ -20,7 +20,9 @@ AMREX_ASSERT(xEqFabPtr.size() == AMREX_SPACEDIM);
 MultiFab &xFluxFabnF = *xFluxFabPtr[dir];
 MultiFab const &xEqFabnF = *xEqFabPtr[dir];
 
-if(dir == Ark::dir_x)
+Real const hTime = 0.5*dTime;
+
+if(dir == Ark::X)
 {
 
 #ifdef _OPENMP
@@ -50,10 +52,10 @@ if(dir == Ark::dir_x)
 			LoopVS(DVM::Q)
 			LoopPS_YZ(lo,hi)
 			{
-				Real const xneq = xtau(ixC,j,k)/(xtau(ixC,j,k) + 0.5*dTime);
+				Real const xneq = xtau(ixC,j,k)/(xtau(ixC,j,k) + 0.5*hTime);
 
 				xFlux_xF(lo_min,j,k,n) = xEq_xF(lo_min,j,k,n)
-								    + xneq*(xWave(ixC,j,k,n)-xEq(ixC,j,k,n)-xSo(ixC,j,k,n));
+				+ xneq*(xWave(ixC,j,k,n) - xEq(ixC,j,k,n) + hTime*xSo(ixC,j,k,n));
 			}
 		}
 		if(hi.x == hi_max)
@@ -63,15 +65,15 @@ if(dir == Ark::dir_x)
 			LoopVS(DVM::Q)
 			LoopPS_YZ(lo,hi)
 			{
-				Real const xneq = xtau(ixC,j,k)/(xtau(ixC,j,k) + 0.5*dTime);
+				Real const xneq = xtau(ixC,j,k)/(xtau(ixC,j,k) + hTime);
 
 				xFlux_xF(hi_max,j,k,n) = xEq_xF(hi_max,j,k,n)
-								    + xneq*(xWave(ixC,j,k,n)-xEq(ixC,j,k,n)-xSo(ixC,j,k,n));
+				+ xneq*(xWave(ixC,j,k,n) - xEq(ixC,j,k,n) + hTime*xSo(ixC,j,k,n));
 			}
 		}
 	}
 }
-else if(dir == Ark::dir_y)
+else if(dir == Ark::Y)
 {
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -100,10 +102,11 @@ else if(dir == Ark::dir_y)
 			LoopVS(DVM::Q)
 			LoopPS_XZ(lo,hi)
 			{
-				Real const xneq = xtau(i,jyC,k)/(xtau(i,jyC,k) + 0.5*dTime);
+				Real const xneq = xtau(i,jyC,k)/(xtau(i,jyC,k) + hTime);
 
 				xFlux_yF(i,lo_min,k,n) = xEq_yF(i,lo_min,k,n)
-								    + xneq*(xWave(i,jyC,k,n)-xEq(i,jyC,k,n)-xSo(i,jyC,k,n));
+				+ xneq*(xWave(i,jyC,k,n) - xEq(i,jyC,k,n) + hTime*xSo(i,jyC,k,n));
+				;
 			}
 		}
 		if(hi.y == hi_max)
@@ -113,16 +116,17 @@ else if(dir == Ark::dir_y)
 			LoopVS(DVM::Q)
 			LoopPS_XZ(lo,hi)
 			{
-				Real const xneq = xtau(i,jyC,k)/(xtau(i,jyC,k) + 0.5*dTime);
+				Real const xneq = xtau(i,jyC,k)/(xtau(i,jyC,k) + hTime);
 
 				xFlux_yF(i,hi_max,k,n) = xEq_yF(i,hi_max,k,n)
-								    + xneq*(xWave(i,jyC,k,n)-xEq(i,jyC,k,n)-xSo(i,jyC,k,n));
+				+ xneq*(xWave(i,jyC,k,n) - xEq(i,jyC,k,n) + hTime*xSo(i,jyC,k,n));
+				;
 			}
 		}
 	}	
 }
 #if(AMREX_SPACEDIM == 3)
-else if(dir == Ark::dir_z)
+else if(dir == Ark::Z)
 {
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -151,10 +155,10 @@ else if(dir == Ark::dir_z)
 			LoopVS(DVM::Q)
 			LoopPS_XY(lo,hi)
 			{
-				Real const xneq = xtau(i,j,kzC)/(xtau(i,j,kzC) + 0.5*dTime);
+				Real const xneq = xtau(i,j,kzC)/(xtau(i,j,kzC) + hTime);
 
 				xFlux_zF(i,j,lo_min,n) = xEq_zF(i,j,lo_min,n)
-								    + xneq*(xWave(i,j,kzC,n)-xEq(i,j,kzC,n)-xSo(i,j,kzC,n));
+				+ xneq*(xWave(i,j,kzC,n) - xEq(i,j,kzC,n) + hTime*xSo(i,j,kzC,n));
 			}
 		}
 		if(hi.z == hi_max)
@@ -164,10 +168,10 @@ else if(dir == Ark::dir_z)
 			LoopVS(DVM::Q)
 			LoopPS_XY(lo,hi)
 			{
-				Real const xneq = xtau(i,j,kzC)/(xtau(i,j,kzC) + 0.5*dTime);
+				Real const xneq = xtau(i,j,kzC)/(xtau(i,j,kzC) + hTime);
 
 				xFlux_zF(i,j,hi_max,n) = xEq_zF(i,j,hi_max,n)
-								    + xneq*(xWave(i,j,kzC,n)-xEq(i,j,kzC,n)-xSo(i,j,kzC,n));
+				+ xneq*(xWave(i,j,kzC,n) - xEq(i,j,kzC,n) + hTime*xSo(i,j,kzC,n));
 			}
 		}
 	}	
@@ -189,12 +193,17 @@ void DUGKSBoundary<DVM>::BounceBack (Array4<Real> const &xFlux,
 	xFlux(i,j,k,n) = xFlux(i,j,k,DVM::BB[n]) 
 			   		+ 2.0*var(i,j,k)*DVM::omega[n]
 			   		*(
-				   		DVM::xi_u[n]*vel(i,j,k,Ark::dir_x)
-				   	 +	DVM::xi_v[n]*vel(i,j,k,Ark::dir_y)	
+				   		DVM::xi_u[n]*vel(i,j,k,Ark::X)
+				   	 +	DVM::xi_v[n]*vel(i,j,k,Ark::Y)	
 				   	 #if(AMREX_SPACEDIM == 3)
-				   	 +	DVM::xi_w[n]*vel(i,j,k,Ark::dir_z)
+				   	 +	DVM::xi_w[n]*vel(i,j,k,Ark::Z)
 				   	 #endif	
 				   	 )/DVM::RT;
+#ifdef AMREX_DEBUG
+	if(vel(i,j,k,Ark::X) != 0 or vel(i,j,k,Ark::Y) != 0)
+	amrex::Print()  << vel(i,j,k,Ark::X) <<"    "
+					<< vel(i,j,k,Ark::Y) <<"\n";
+#endif
 }
 //
 template <typename DVM>
@@ -222,7 +231,7 @@ AMREX_ASSERT(xFluxFab.DistributionMap() == xVarFab.DistributionMap());
 AMREX_ASSERT(xFluxFab.DistributionMap() == VelFab.DistributionMap());
 
 
-if(dir == Ark::dir_x)
+if(dir == Ark::X)
 {
 
 #ifdef _OPENMP
@@ -270,7 +279,7 @@ if(dir == Ark::dir_x)
 		}
 	}
 }
-else if(dir == Ark::dir_y)
+else if(dir == Ark::Y)
 {
 
 #ifdef _OPENMP
@@ -319,7 +328,7 @@ else if(dir == Ark::dir_y)
 	}
 }
 #if(AMREX_SPACEDIM == 3)
-else if(dir == Ark::dir_z)
+else if(dir == Ark::Z)
 {
 
 #ifdef _OPENMP
@@ -386,7 +395,7 @@ void DUGKSAmr::FillPhysicalBoundaryDVDF(int const lev)
 }
 void DUGKSAmr::FillPhysicalBoundaryDVDF(int const lev, int const bcid, int const dir)
 {
-  	auto &ld = *m_leveldata[lev];
+  	auto &ld = Data(lev);
   	
 	int const lo_min_face = Geom(lev).Domain().smallEnd(dir);
 	int const hi_max_face = Geom(lev).Domain().bigEnd(dir) + 1;
@@ -452,7 +461,7 @@ DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_BB (ld.get_fDVDFnF_fl
 #ifdef ARK_USE_ENERGY
 DUGKSBoundary<Ark::DmVnEnergy>::FillPhysicalBoundaryFlux_NEE (ld.get_gDVDFnF_flux(),
 													   	 	  ld.get_gDVDFnF_eq_const(),
-													   		  ld.fDVDF, 
+													   		  ld.gDVDF, 
 													   		  lo_min_face, hi_max_face,
 													   		  Dt(), dir);
 

@@ -28,9 +28,8 @@ int main(int argc, char* argv[])
 	Real end_time = amrex::ParallelDescriptor::second() - start_time;
 
 	// Print timing results
-	// amrex::AllPrint() << "Time spent in InitData():    " << start_time << std::endl;
-	amrex::Print() << "Time spent in Evolve():      " << end_time << std::endl;
-
+	amrex::Print() << " Time spent in Evolve():      " << end_time << " " <<"seconds\n";
+	Ark::PrintSplitLine();
 	}
 	amrex::Finalize();
 }

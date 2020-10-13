@@ -98,11 +98,6 @@ void DUGKSCore<DVM>::Update_Barh_UW (MultiFab &xBarhFabnF,
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-		// const Dim3 lo = lbound(bx);
-  //       const Dim3 hi = ubound(bx);
-
-        // const int nDVM = xDVDFnF[Ark::BHF].nComp();
-
 		Array4<Real> const &xBh = xBarhFabnF.array(mfi);
 
 		Array4<Real const> const &xBP   = xDVDF[Ark::BP].const_array(mfi);
@@ -121,11 +116,11 @@ void DUGKSCore<DVM>::Update_Barh_UW (MultiFab &xBarhFabnF,
 
 		if(FaceID == amrex::Direction::x){
 
-		const Real delta = dx[Ark::dir_x];
+		const Real delta = dx[Ark::X];
 
 		LoopVS(DVM::Q)
 		{
-			int const token = Ark::sgn(DVM::xi_u[n]);
+			int const token = Ark::sign(DVM::xi_u[n]);
 			int const multiplier = token < 0 ? -1 : 1;
 			int const di = token < 0 ? 0 : -1;
 			//
@@ -199,11 +194,11 @@ void DUGKSCore<DVM>::Update_Barh_UW (MultiFab &xBarhFabnF,
 		}
 		else if(FaceID == amrex::Direction::y){
 
-		const Real delta = dx[Ark::dir_y];
+		const Real delta = dx[Ark::Y];
 
 		LoopVS(DVM::Q)
 		{
-			int const token = Ark::sgn(DVM::xi_v[n]);
+			int const token = Ark::sign(DVM::xi_v[n]);
 			int const multiplier = token < 0 ? -1 : 1;
 			int const dj = token < 0 ? 0 : -1;
 			//
@@ -277,11 +272,11 @@ void DUGKSCore<DVM>::Update_Barh_UW (MultiFab &xBarhFabnF,
 #if(AMREX_SPACEDIM == 3)
 		else if(FaceID == amrex::Direction::z){
 
-		const Real delta = dx[Ark::dir_z];
+		const Real delta = dx[Ark::Z];
 
 		LoopVS(DVM::Q)
 		{
-			int const token = Ark::sgn(DVM::xi_w[n]);
+			int const token = Ark::sign(DVM::xi_w[n]);
 			int const multiplier = token < 0 ? -1 : 1;
 			int const dk = token < 0 ? 0 : -1;
 			//
@@ -351,10 +346,10 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFab, const MultiFab &xBarPlu
 	#endif
 	for(amrex::MFIter mfi(xBarhFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 	{
-		const Real dlx = dx[Ark::dir_x];
-		const Real dly = dx[Ark::dir_y];
+		const Real dlx = dx[Ark::X];
+		const Real dly = dx[Ark::Y];
 #if(AMREX_SPACEDIM == 3)
-		const Real dlz = dx[Ark::dir_z];
+		const Real dlz = dx[Ark::Z];
 #endif
 		const amrex::Box& bx = mfi.tilebox();
 
@@ -452,7 +447,7 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
 		const amrex::Box& bx = mfi.tilebox();
 
 		Array4<Real const> const &xtauh = xDVDFnF[Ark::TAUF].const_array(mfi);
-        Array4<Real const> const &xBh   = xDVDFnF[Ark::BHF].const_array(mfi);
+        // Array4<Real const> const &xBh   = xDVDFnF[Ark::BHF].const_array(mfi);
         Array4<Real const> const &xEqh  = xDVDFnF[Ark::EQF].const_array(mfi);
         Array4<Real const> const &xSoh  = xDVDFnF[Ark::SOF].const_array(mfi);
 
@@ -465,7 +460,7 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
         	const Real ah = 1.0 - bh;
         	const Real ch = bh*xtauh(i,j,k);
        	//
-        	xFlux(i,j,k,n) = ah*xBh(i,j,k,n) + bh*xEqh(i,j,k,n) + ch*xSoh(i,j,k,n);
+        	xFlux(i,j,k,n) = ah*xFlux(i,j,k,n) + bh*xEqh(i,j,k,n) + ch*xSoh(i,j,k,n);
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
 
@@ -490,11 +485,11 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 							 	  const Vector<MultiFab const*> &xFluxFabnF,
 							 	  const Real *dx, const Real dTime)
 {
-	const Real dlx = dx[Ark::dir_x];
-	const Real dly = dx[Ark::dir_y];
+	const Real dlx = dx[Ark::X];
+	const Real dly = dx[Ark::Y];
 
 #if(AMREX_SPACEDIM == 3)
-	const Real dlz = dx[Ark::dir_z];
+	const Real dlz = dx[Ark::Z];
 	const Real dSz = dlx*dly;
 #else
 	const Real dlz = 1.0;
@@ -505,11 +500,11 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 
 	const Real volume = dlx*dly*dlz;
 
-	const MultiFab& xFluxFabxF = *xFluxFabnF[Ark::dir_x];
-	const MultiFab& xFluxFabyF = *xFluxFabnF[Ark::dir_y];
+	const MultiFab& xFluxFabxF = *xFluxFabnF[Ark::X];
+	const MultiFab& xFluxFabyF = *xFluxFabnF[Ark::Y];
 
 #if(AMREX_SPACEDIM == 3)
-	const MultiFab& xFluxFabzF = *xFluxFabnF[Ark::dir_z];
+	const MultiFab& xFluxFabzF = *xFluxFabnF[Ark::Z];
 #endif
 
 	#ifdef _OPENMP

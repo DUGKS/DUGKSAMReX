@@ -57,12 +57,12 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVars(int const lev, int const bcid, int 
 }
 void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const dir)
 {
-	auto &ld = *m_leveldata[lev];
+	auto &ld = Data(lev);
 
 	int const lo_min = Geom(lev).Domain().smallEnd(dir);
 	int const hi_max = Geom(lev).Domain().bigEnd(dir) + 1;
 
-  if(dir == Ark::dir_x) 
+  if(dir == Ark::X) 
   {
 
 	#ifdef _OPENMP
@@ -89,9 +89,13 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_x (phi_xF,  phi,  lo, hi, lo_min);
 			average_scalar_x (rho_xF,  rho,  lo, hi, lo_min);
 			average_scalar_x (pres_xF, pres, lo, hi, lo_min);
+			// set_dirichlet_pressure_xF (pres_xF, lo, hi, lo_min,
+									  // Orientation(dir, Orientation::Side::low));
 
-			set_dirichlet_velocity_x (vel_xF, lo, hi, lo_min, 
+			set_dirichlet_velocity_xF (vel_xF, lo, hi, lo_min, 
 									  Orientation(dir, Orientation::Side::low));
+			amrex::Print()<<"NiJiuShiGeDaShaBi"<<std::endl;
+
 		}
 
 		if(hi.x == hi_max) 
@@ -100,12 +104,16 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_x (rho_xF,  rho,  lo, hi, hi_max);
 			average_scalar_x (pres_xF, pres, lo, hi, hi_max);
 
-			set_dirichlet_velocity_x (vel_xF, lo, hi, hi_max, 
+			// set_dirichlet_pressure_xF (pres_xF, lo, hi, hi_max,
+									  // Orientation(dir, Orientation::Side::high));
+
+			set_dirichlet_velocity_xF (vel_xF, lo, hi, hi_max, 
 									  Orientation(dir, Orientation::Side::high));
+			amrex::Print()<<"NiJiuShiGeDaShaBi"<<std::endl;
 		}
 	}
   }
-  else if(dir == Ark::dir_y)
+  else if(dir == Ark::Y)
   {
   	#ifdef _OPENMP
 	#pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -132,7 +140,10 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_y(rho_yF,  rho,  lo, hi, lo_min);
 			average_scalar_y(pres_yF, pres, lo, hi, lo_min);
 
-			set_dirichlet_velocity_y (vel_yF, lo, hi, lo_min, 
+			// set_dirichlet_pressure_yF (pres_yF, lo, hi, lo_min,
+									  // Orientation(dir, Orientation::Side::low));
+
+			set_dirichlet_velocity_yF (vel_yF, lo, hi, lo_min, 
 									  Orientation(dir, Orientation::Side::low));
 		}
 		if(hi.y == hi_max)
@@ -141,13 +152,16 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_y(rho_yF,  rho,  lo, hi, hi_max);
 			average_scalar_y(pres_yF, pres, lo, hi, hi_max);
 
-			set_dirichlet_velocity_y (vel_yF, lo, hi, hi_max, 
+			// set_dirichlet_pressure_yF (pres_yF, lo, hi, hi_max, 
+									  // Orientation(dir, Orientation::Side::high));
+
+			set_dirichlet_velocity_yF (vel_yF, lo, hi, hi_max, 
 									  Orientation(dir, Orientation::Side::high));
 		}
 	}
   }
 #if(AMREX_SPACEDIM == 3)
-  else if(dir == Ark::dir_z)
+  else if(dir == Ark::Z)
   {
   	#ifdef _OPENMP
 	#pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -174,7 +188,10 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_z(rho_zF,  rho,  lo, hi, lo_min);
 			average_scalar_z(pres_zF, pres, lo, hi, lo_min);
 
-			set_dirichlet_velocity_z (vel_zF, lo, hi, lo_min, 
+			set_dirichlet_pressure_zF (pres_zF, lo, hi, lo_min, 
+									  Orientation(dir, Orientation::Side::low));
+
+			set_dirichlet_velocity_zF (vel_zF, lo, hi, lo_min, 
 									  Orientation(dir, Orientation::Side::low));
 		}
 		if(hi.z == hi_max)
@@ -183,7 +200,10 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_z( rho_zF, rho,  lo, hi, hi_max);
 			average_scalar_z(pres_zF, pres, lo, hi, hi_max);
 
-			set_dirichlet_velocity_z (vel_zF, lo, hi, hi_max, 
+			set_dirichlet_pressure_zF (pres_zF, lo, hi, hi_max, 
+									  Orientation(dir, Orientation::Side::high));
+
+			set_dirichlet_velocity_zF (vel_zF, lo, hi, hi_max, 
 									  Orientation(dir, Orientation::Side::high));
 		}
 	}

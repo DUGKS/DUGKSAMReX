@@ -62,6 +62,10 @@ void Ark::FlowParm::InitFlowParmPhaseFiled()
 	ppPF.get("phiV",phiV);
 	ppPF.get("rhoL",rhoL);
 	ppPF.get("rhoV",rhoV);
+	ppPF.get("nuL",nuL);
+	ppPF.get("nuV",nuV);
+	ppPF.get("muL",muL);
+	ppPF.get("muV",muV);
 	ppPF.get("radiusPF",radiusPF);
 	ppPF.get("uc",uc);
 	ppPF.getarr("centerPF",centerPF);
@@ -70,29 +74,31 @@ void Ark::FlowParm::InitFlowParmPhaseFiled()
 	//Phase Field Calculations
 	beta  = 12.0*sigma/widthI,
 	kappa = 3.0*sigma*widthI/2;
-	muL = Nu0()*rhoL; 
-	muV = Nu0()*rhoV;
-	nuL = Nu0();	
-	nuV = Nu0();
+	// muL = Nu0()*rhoL; 
+	// muV = Nu0()*rhoV;
+	// nuL = Nu0();	
+	// nuV = Nu0();
 	aPhi = (rhoL - rhoV)/(phiL - phiV);
 	bPhi = rhoV - aPhi*phiV;
 
-	centerPF[Ark::dir_x] *= ch_length;
-	centerPF[Ark::dir_y] *= ch_length;
-	// center[Ark::dir_z] *= ch_length;
+	centerPF[Ark::X] *= ch_length;
+	centerPF[Ark::Y] *= ch_length;
+#if(AMREX_SPACEDIM == 3)
+	centerPF[Ark::Z] *= ch_length;
+#endif
 
 	radiusPF    *= ch_length;
 
 	_Cahn   = widthI/ch_length;
 	_Peclet = _U0*ch_length/mobility_phi;
 	_Atwood = (rhoL - rhoV)/(rhoL + rhoV);
-	_Morton = fabs(gravity[1])*(rhoL - rhoV)*pow(muL,4.0)/(rhoL*rhoL*pow(sigma,3));
-	_Bond   = fabs(gravity[1])*(rhoL - rhoV)*4.0*radiusPF*radiusPF/sigma;
+	_Morton = fabs(gravity[Ark::Y])*(rhoL - rhoV)*pow(muL,4.0)/(rhoL*rhoL*pow(sigma,3));
+	_Bond   = fabs(gravity[Ark::Y])*(rhoL - rhoV)*4.0*radiusPF*radiusPF/sigma;
 
 	//rising bubble
 	// _ReynoldsPF = sqrt(gravity[Ark::y]*rhoL*(rhoL - rhoV)*2*radius)*2*radius/muL,
 
 	//Rayleigh-Taylor
-	_ReynoldsPF = rhoL*ch_length*sqrt(fabs(gravity[Ark::dir_y]*ch_length))/muL;
+	_ReynoldsPF = rhoL*ch_length*sqrt(fabs(gravity[Ark::Y]*ch_length))/muL;
 	_Laplace = 0;	//_Sigma*_radius/_NuV/_NuV,
 }

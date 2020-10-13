@@ -174,17 +174,17 @@ void DUGKSAmr::FillPatchNew(int const lev, Real const time, DUGKSAmr::LevelData 
     FillPatchPressure   (lev, time, newld.msv[Ark::P]);
     FillPatchTemperature(lev, time, newld.msv[Ark::T]);
 
-#if ARK_USE_PHASE
+#ifdef ARK_USE_PHASE
     FillPatchDVDFWave(lev, time, newld.hDVDF[Ark::WAVE], &LevelData::hDVDF);
     // FillPatchDVDFBarPlus(lev, time, newld.hDVDF[Ark::BP], &LevelData::hDVDF);
 #endif
 
-#if ARK_USE_MOMENTUM
+#ifdef ARK_USE_MOMENTUM
     FillPatchDVDFWave(lev, time, newld.fDVDF[Ark::WAVE], &LevelData::fDVDF);
     // FillPatchDVDFBarPlus(lev, time, newld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
-#if ARK_USE_ENERGY
+#ifdef ARK_USE_ENERGY
     FillPatchDVDFWave(lev, time, newld.gDVDF[Ark::WAVE], &LevelData::gDVDF);
     // FillPatchDVDFBarPlus(lev, time, newld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif

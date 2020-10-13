@@ -56,7 +56,7 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.rules
 TESTDIR = $(shell pwd)
 
 print:
-	@echo "print..."
+	$(info $(ARK_USE_MOMENTUM))
 
 DUGKSFILE_LOCATIONS = tmp_build_dir
 
@@ -65,7 +65,7 @@ cleanDUGKSBuild:
 	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec mv -f {} ~/.trash/ \;
 	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec mv -f {} ~/.trash/ \;
 
-cleanoutput:
+cleanOF:
 	@echo "Cleaning old plot files..."
 	rm -rf ~/.trash/*;
 	mv -f AMReX_buildInfo.cpp ~/.trash>/dev/null; true 
@@ -75,21 +75,19 @@ cleanoutput:
 	find ${TESTDIR} -name "Backtrace*" -type f -prune -exec mv -f {} ~/.trash/ \;
 #
 #   find ${OUTFILE_LOCATIONS} -name "tecplot-derived" -type d -exec mv -f {} ~/.trash/ \;
-realclean::cleanoutput
+realclean::cleanOF
 #
 #
 # 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #    add the following to Make.local    #
 #.......................................#
-#ifeq ($(ARK_USE_PHASE),TRUE)
+#ifeq ($(strip $(ARK_USE_PHASE)),TRUE)
 #	CXXFLAGS += -DARK_USE_PHASE
 #endif
-#
-#ifeq ($(ARK_USE_MOMENTUM),TRUE)
+#ifeq ($(strip $(ARK_USE_MOMENTUM)),TRUE)
 #	CXXFLAGS += -DARK_USE_MOMENTUM
 #endif
-#
-#ifeq ($(ARK_USE_ENERGY),TRUE)
+#ifeq ($(strip $(ARK_USE_ENERGY)),TRUE)
 #	CXXFLAGS += -DARK_USE_ENERGY
 #endif

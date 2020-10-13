@@ -329,3 +329,112 @@ void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const
     }
 }
 #endif
+
+void DUGKSAmr::ReverseVelocityField (MultiFab &VelFab, const Real *dx, 
+                                     const RealBox &rb, int const token)
+{
+    double di = 0;
+    double dj = 0;
+
+    if(token == -1)
+    {
+        di = 0.5,dj = 0.5;
+    }
+    else if(token == Ark::X)
+    {
+        di = 0,dj = 0.5;
+    }
+    else if(token == Ark::Y)
+    {
+        di = 0.5,dj = 0;
+    }
+    else {
+        amrex::Abort("meaningless face id");
+    }
+
+    const double real_lo_x = rb.lo(Ark::X);
+    const double real_hi_x = rb.hi(Ark::X);
+
+    const double real_lo_y = rb.lo(Ark::Y);
+    const double real_hi_y = rb.hi(Ark::Y);
+
+    for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+
+        const Real dlx = dx[0];
+        const Real dly = dx[1];
+        //
+        Array4<Real> const &vel = VelFab.array(mfi);
+
+        amrex::For(bx,[=](int i,int j,int k)
+        {
+            const double x = (i + di)*dlx;
+            const double y = (j + dj)*dly;
+            
+            vel(i,j,k,Ark::X) = 
+            -U0()*Ark::pi*sin(Ark::pi*x/ChLength())*cos(Ark::pi*y/ChLength());
+            vel(i,j,k,Ark::Y) =  
+            U0()*Ark::PI*cos(Ark::PI*x/ChLength())*sin(Ark::PI*y/ChLength());
+    
+            if(token == Ark::X){
+            if(x == real_lo_x or x == real_hi_x)
+            {
+                vel(i,j,k,Ark::X) = 0;
+                vel(i,j,k,Ark::Y) = 0; 
+            }}
+            //
+            if(token == Ark::Y){
+            if(y == real_lo_y or y == real_hi_y)
+            {
+                vel(i,j,k,Ark::X) = 0;
+                vel(i,j,k,Ark::Y) = 0; 
+            }}
+        });
+    }
+}
+void DUGKSAmr::SmoothedVelocityField (MultiFab &VelFab, const Real *dx, 
+                                      const Real Time, int const token)
+{
+    const Real dlx = dx[0];
+    const Real dly = dx[1];
+
+    Real di = 0,dj = 0;
+
+    if(token == -1)
+    {
+        di = 0.5,dj = 0.5;
+    }
+    else if(token == Ark::X)
+    {
+        di = 0,dj = 0.5;
+    }
+    else if(token == Ark::Y)
+    {
+        di = 0.5,dj = 0;
+    }
+    else {
+        amrex::Abort("meaningless token");
+    }
+
+    for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &vel = VelFab.array(mfi);
+
+        amrex::For(bx,[=] (int i,int j,int k)
+        {
+            const double x = (i + di)*dlx;
+            const double y = (j + dj)*dly;
+            
+            vel(i,j,k,Ark::X) = 
+            -U0()*sin(4.0*Ark::PI*x/ChLength())*sin(4.0*Ark::PI*y/ChLength())
+            *cos(Ark::PI*Time*U0()/ChLength());
+
+            vel(i,j,k,Ark::Y) = 
+            -U0()*cos(4.0*Ark::PI*x/ChLength())*cos(4.0*Ark::PI*y/ChLength())
+            *cos(Ark::PI*Time*U0()/ChLength());
+        });
+    }
+}

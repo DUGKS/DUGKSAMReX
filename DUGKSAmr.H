@@ -1,7 +1,6 @@
 #ifndef _ARK_DUGKSAMR_H
 #define _ARK_DUGKSAMR_H
 
-#include <DUGKSDmVn.H>
 #include <DUGKSCore.H>
 #include <DUGKSFlowBase.H>
 #include <AMReX_Math.H>
@@ -26,6 +25,7 @@ using amrex::MFIter;
 using amrex::MFInfo;
 using amrex::Vector;
 using amrex::IntVect;
+using amrex::RealBox;
 using amrex::BoxArray;
 using amrex::Geometry;
 using amrex::FArrayBox;
@@ -213,6 +213,10 @@ private:
         Vector<MultiFab*> get_fDVDFnF_flux() noexcept;
         Vector<MultiFab*> get_gDVDFnF_flux() noexcept;
 
+        Vector<MultiFab const*> get_hDVDFnF_flux_const() const noexcept;
+        Vector<MultiFab const*> get_fDVDFnF_flux_const() const noexcept;
+        Vector<MultiFab const*> get_gDVDFnF_flux_const() const noexcept;
+
         Vector<MultiFab const*> get_hDVDFnF_eq_const() const noexcept;
         Vector<MultiFab const*> get_fDVDFnF_eq_const() const noexcept;
         Vector<MultiFab const*> get_gDVDFnF_eq_const() const noexcept;
@@ -223,9 +227,6 @@ private:
         Vector<MultiFab const*> get_face_pressure_const() const noexcept;
         Vector<MultiFab const*> get_face_temperature_const() const noexcept;
 
-        Vector<MultiFab const*> get_hDVDFnF_flux_const() const noexcept;
-        Vector<MultiFab const*> get_fDVDFnF_flux_const() const noexcept;
-        Vector<MultiFab const*> get_gDVDFnF_flux_const() const noexcept;
         // macroscopic multifabs : cell-centered 
        
         // MultiFab pressure;
@@ -485,14 +486,23 @@ private:
     void average_scalar_z (Array4<Real> const &dst, Array4<Real const> const &src, 
                            const Dim3 &lo, const Dim3 &hi, int const /*fixed index*/);
 
-    void set_dirichlet_velocity_x (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
-                                   int const /*fixed index*/, Orientation face);
+    void set_dirichlet_velocity_xF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_velocity_y (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
-                                   int const /*fixed index*/, Orientation face);
+    void set_dirichlet_velocity_yF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_velocity_z (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
-                                   int const /*fixed index*/, Orientation face);
+    void set_dirichlet_velocity_zF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_pressure_xF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_pressure_yF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_pressure_zF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -507,11 +517,21 @@ private:
 
     void post_case_init(int const lev);
 
-    void BasicCase(LevelData&, const Real*);
+    void BasicCase(int const lev);
 
-    void UniformFlow(LevelData&);
+    void UniformFlow(int const lev);
 
-    void QuiescentDrop(LevelData &ld, const Real *dl); 
+    void QuiescentDrop(int const lev);
+
+    void TransDrop(int const lev);
+
+    void ZalesakDisk(int const lev);
+
+    void InterfaceElongation (int const lev);
+
+    void SmoothDeformation (int const lev);
+
+    void LayeredPoiseuille (int const lev);
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -525,8 +545,9 @@ private:
     void Update_MacroVars(int const lev);
     void Update_MacroVars_hDt(int const lev);
 
-    void Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv,
-                                const Real interval, const Real RT);
+    void Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv, const Real interval);
+
+    void Update_Tau_Momentum(MultiFab &tauFab, MultiFab const &PhiFab, MultiFab const &RhoFab);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -585,7 +606,7 @@ private:
                               Array<MultiFab, Ark::MSVNUM> const &msv,
                               const IntVect &faceIndex);
     void AllenCahnSource (int const lev);
-    void AllenCahnTemporalPhiU(LevelData &ld, double const RT);
+    void AllenCahnTemporalPhiU(LevelData &ld);
 
     void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
                            amrex::MultiFab const& vel);
@@ -598,6 +619,12 @@ private:
                                    amrex::MultiFab* vel,
                                    amrex::Geometry& lev_geom,
                                    amrex::Real time, int nghost);
+
+    void ReverseVelocityField (MultiFab &VelFab, const Real *dx, 
+                               const RealBox &rb, int const token);
+
+    void SmoothedVelocityField (MultiFab &VelFab, const Real *dx, 
+                                const Real Time, int const token);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -627,22 +654,24 @@ private:
 
     Vector<double> MultiLevelResidual();
     Vector<double> MultiLevelL2Norm();
+    Vector<double> MultiLevelSum();
 
     void WriteL2NormFile(const Vector<double> &);
     void WriteResidualFile(const Vector<double> &);
+    void WriteSumPhaseFile(const Vector<double> &);
+    void WriteL2NormVelocity(int const lev, double const vel_diff, double const vel_norm);
     //diagnose
     void PrintMaxValues (amrex::Real time);
     void PrintMaxVel (int lev);
     void PrintMaxGp (int lev);
     void CheckForNans (int lev);
     void PublicFillPatchNew(int const lev);
-    void SetUnit(int const lev);
-    void Verify(int const lev);
 
     double L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, int const comp = 0);
     double L2NormVelocity(int lev);
     double L2NormPhase(int lev);
     double L2NormDensity(int lev);
+    double SumPhase(int lev);
 
     void FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl);
     void FillLevelPhaseAnalytical(MultiFab &phase, const Real *dl, LV token);
@@ -650,9 +679,15 @@ private:
                                             const Real *dl,const Real time);
 
     void CheckDUGKSAmr();
-
+//
 public:
+    void CheckForPhysicalBoundary (int const lev);
+#ifdef AMREX_DEBUG
+    void Verify(int const lev);
+    void SetUnit(int const lev);
     void Test();
+#endif
+
 };
 
 #endif

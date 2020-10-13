@@ -81,21 +81,225 @@ void DUGKSAmr::CheckForNans(int lev)
 	amrex::Print() << "WARNING: p contains NaNs!!!";
 #endif
 }
+void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
+{
+    auto &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    {
+
+    const Real real_lo_x = Geom(lev).ProbDomain().lo(Ark::X);
+    const Real real_hi_x = Geom(lev).ProbDomain().hi(Ark::X);
+    const auto &msvFaceX = ld.msv_xF;
+    for(amrex::MFIter mfi(msvFaceX[Ark::VEL], true);mfi.isValid();++mfi)
+    {
+        const Box &bx = mfi.tilebox();
+
+        const Array4<const Real> &vel = msvFaceX[Ark::VEL].const_array(mfi);
+
+        amrex::ParallelFor(bx, [=] (int i,int j,int k)
+        {
+            const double x = real_lo_x + i*dx[Ark::X];
+
+            if(x == real_lo_x or x == real_hi_x)
+            {
+                // if(vel(i,j,k,Ark::X) != 0)
+                // {
+                //     amrex::AllPrint()   << "x : "<<x<<"    "
+                //                         << "i : "<<i<<"    "
+                //                         << "j : "<<j<<"    "
+                //                         << "vel_x : "<<vel(i,j,k,Ark::X)<<std::endl;
+                // }
+
+                // if(vel(i,j,k,Ark::Y) != 0)
+                // {
+                //     amrex::AllPrint()   << "x : "<<x<<"    "
+                //                         << "i : "<<i<<"    "
+                //                         << "j : "<<j<<"    "
+                //                         << "vel_y : "<<vel(i,j,k,Ark::Y)<<std::endl;
+                // }
+            }
+        });
+    }
+    }
+    //
+    {
+        const auto &msvFaceY = ld.msv_yF;
+        const Real real_lo_y = Geom(lev).ProbDomain().lo(Ark::Y);
+        const Real real_hi_y = Geom(lev).ProbDomain().hi(Ark::Y);
+        if(real_hi_y != 100 or real_lo_y != -100) 
+            amrex::Abort("if(real_hi_y != 100 or real_lo_y != -100) amrex::Abort();");
+        for(amrex::MFIter mfi(msvFaceY[Ark::VEL], true);mfi.isValid();++mfi)
+        {
+            const Box &bx = mfi.tilebox();
+
+            const Array4<const Real> &vel = msvFaceY[Ark::VEL].const_array(mfi);
+
+            amrex::ParallelFor(bx, [=] (int i,int j,int k)
+            {
+                const double y = real_lo_y + j*dx[Ark::Y];
+
+                if(y == real_lo_y or y == real_hi_y)
+                {
+                    if(vel(i,j,k,Ark::X) != 0)
+                    {
+                        amrex::AllPrint()   << "y : "<<y<<"    "
+                                            << "i : "<<i<<"    "
+                                            << "j : "<<j<<"    "
+                                            << "vel_x : "<<vel(i,j,k,Ark::X)<<std::endl;
+                    }
+
+                    if(vel(i,j,k,Ark::Y) != 0)
+                    {
+                        amrex::AllPrint()   << "y : "<<y<<"    "
+                                            << "i : "<<i<<"    "
+                                            << "j : "<<j<<"    "
+                                            << "vel_y : "<<vel(i,j,k,Ark::Y)<<std::endl;
+                    }
+                }
+            });
+        }
+    }
+    //
+    // {
+    //     amrex::Print()<<"--------------"<<nstep<<"--------------\n";
+    //     const auto &VelFab = ld.msv[Ark::VEL];
+
+    //     const int lo_min = Geom(lev).Domain().smallEnd(Ark::Y);
+    //     const int hi_max = Geom(lev).Domain().bigEnd(Ark::Y);
+    //     amrex::Print()<<lo_min<<"  "<<hi_max<<std::endl;
+    //     for(amrex::MFIter mfi(VelFab, true);mfi.isValid();++mfi)
+    //     {
+    //         const Box &bx = mfi.tilebox();
+
+    //         auto const lo = lbound(bx);
+    //         auto const hi = ubound(bx);
+
+    //         const Array4<const Real> &vel = VelFab.const_array(mfi);
+
+    //         amrex::ParallelFor(bx, [=] (int i,int j,int k)
+    //         {
+    //             if(j == lo_min) 
+    //             {
+    //                 amrex::Print().SetPrecision(18)
+    //                 <<"i "<<i<<"  "
+    //                 <<"j "<<j<<"  " 
+    //                 <<"lo_min "<<lo_min<<"  "
+    //                 <<"vel_y : "<< vel(i,j,k,Ark::Y) <<std::endl;
+    //             }
+    //             if(j == hi_max)
+    //             {
+    //                 amrex::Print().SetPrecision(18)
+    //                 <<"i "<<i<<"  "
+    //                 <<"j "<<j<<"  " 
+    //                 <<"hi_max "<<hi_max<<"  "
+    //                 <<"vel_y : "<< vel(i,j,k,Ark::Y) <<std::endl;
+    //             }
+    //         });
+    //     }
+    // }
+    {
+        const auto &msvFaceY = ld.msv_yF;
+        const MultiFab& fFluxFabyF = ld.fDVDFyF[Ark::FLUX];
+        const MultiFab& PhiFab  = ld.msv[Ark::PHI];
+        const MultiFab& PresFab = ld.msv[Ark::P];
+
+        const Real real_lo_y = Geom(lev).ProbDomain().lo(Ark::Y);
+        const Real real_hi_y = Geom(lev).ProbDomain().hi(Ark::Y);
+        if(real_hi_y != 100 or real_lo_y != -100) amrex::Abort(__func__);
+
+        for(amrex::MFIter mfi(msvFaceY[Ark::P], true);mfi.isValid();++mfi)
+        {
+            const Box &bx = mfi.tilebox();
+
+            const Array4<const Real> &phi  = PhiFab.const_array(mfi);
+            const Array4<const Real> &phi_yF  = msvFaceY[Ark::PHI].const_array(mfi);
+            const Array4<const Real> &pres = PresFab.const_array(mfi);
+            const Array4<const Real> &pres_yF = msvFaceY[Ark::P].const_array(mfi);
+            const Array4<const Real> &fFlux_yF = fFluxFabyF.const_array(mfi);
+
+            amrex::ParallelFor(bx, [=] (int i,int j,int k)
+            {
+                const double y = real_lo_y + j*dx[Ark::Y];
+                // amrex::Print()  << get_dirichlet_pressure()[0]<<"    "
+                //                 << get_dirichlet_pressure()[1]<<"    "
+                //                 << get_dirichlet_pressure()[2]<<"    "
+                //                 << get_dirichlet_pressure()[3]<<"    \n";
+                if(y == real_lo_y)
+                {
+                    if(pres(i,j,k) != pres_yF(i,j,k) or pres(i,j-1,k) != pres_yF(i,j,k))
+                    // if(pres_yF(i,j,k) != 1)
+                    {
+                        amrex::Print().SetPrecision(18)
+                        <<"i "<<i<<"  "
+                        <<"j "<<j<<"  "
+                        <<"cell : "<<pres(i,j,k)<<"  "
+                        <<"face : "<<pres_yF(i,j,k)<<std::endl;
+                    }
+                    if(phi_yF(i,j,k) != phi(i,j,k) or phi_yF(i,j,k) != phi(i,j-1,k) )
+                    {
+                        amrex::Print().SetPrecision(18)
+                        <<"i "<<i<<"  "
+                        <<"j "<<j<<"  "
+                        <<"cellphi : "<<phi(i,j,k)<<"  "
+                        <<"facephi : "<<phi_yF(i,j,k)<<std::endl;
+                    }
+                    // for(int n = 0;n < 9;++n){
+                    // if(
+                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0)) 
+                    //     > 1E-16
+                    //   )
+                    // {
+                    //     amrex::Print().SetPrecision(18)
+                    //     <<"i "<<i<<"  "
+                    //     <<"j "<<j<<"  "
+                    //     <<"n "<<n<<"  "
+                    //     <<"flux : "<<fFlux_yF(i,j,k,n)<<"  "
+                    //     <<"true : "<<Ark::DmVnMomentum::omega[n]*3.0<<std::endl;
+                    // }}                 
+                }
+
+                if(y == real_hi_y)
+                {
+                    if(pres(i,j-1,k) != pres_yF(i,j,k) or pres(i,j,k) != pres_yF(i,j,k) )
+                    // if(pres_yF(i,j,k) != 1)
+                    {
+                        amrex::Print().SetPrecision(18)
+                        <<"i "<<i<<"  "
+                        <<"j "<<j<<"  "
+                        <<"cell : "<<pres(i,j,k)<<"  "
+                        <<"face : "<<pres_yF(i,j,k)<<std::endl;
+                    }
+                    if(phi_yF(i,j,k) != phi(i,j,k) or phi_yF(i,j,k) != phi(i,j-1,k) )
+                    {
+                        amrex::Print().SetPrecision(18)
+                        <<"i "<<i<<"  "
+                        <<"j "<<j<<"  "
+                        <<"cellphi : "<<phi(i,j,k)<<"  "
+                        <<"facephi : "<<phi_yF(i,j,k)<<std::endl;
+                    }
+                    // for(int n = 0;n < 9;++n){
+                    // if(
+                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0)) 
+                    //     > 1E-16
+                    //   )
+                    // {
+                    //     amrex::Print().SetPrecision(18)
+                    //     <<"i "<<i<<"  "
+                    //     <<"j "<<j<<"  "
+                    //     <<"n "<<n<<"  "
+                    //     <<"flux : "<<fFlux_yF(i,j,k,n)<<"  "
+                    //     <<"true : "<<Ark::DmVnMomentum::omega[n]*3.0<<std::endl;
+                    // }}
+                }
+            });
+        }
+    }
+}
 void DUGKSAmr::CheckDUGKSAmr()
 {
 	amrex::Print()<<"Checking variables in DUGKSAmr ..."<<std::endl;
 
 //
-    if(Ark::DVM_MOMENTUM < Ark::DVM_PHASE or Ark::DVM_MOMENTUM < Ark::DVM_ENERGY)
-    {
-        std::ostringstream ss;   
-        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "DVM_MOMENTUM is expected to be the maximum," 
-            << " otherwise the boundary conditions for DVDF would be ill-posed"
-            << '\n';
-        amrex::Abort(ss.str());
-    }
-
     if(steady_state && end_step > 0) 
     {
         std::ostringstream ss;   
@@ -122,8 +326,26 @@ void DUGKSAmr::CheckDUGKSAmr()
             << '\n';
         amrex::Abort(ss.str());
     }
+
+#ifdef ARK_USE_PHASE
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_PHASE == Ark::DmVnPhase::Q,
+        "Fatal Error : mismatch between DVM_PHASE and DmVnPhase");
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_MOMENTUM == Ark::DmVnMomentum::Q,
+        "Fatal Error : mismatch between DVM_MOMENTUM and DmVnMomentum");
+#endif
+
+#ifdef ARK_USE_ENERGY
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_ENERGY == Ark::DmVnEnergy::Q,
+        "Fatal Error : mismatch between DVM_ENERGY and DmVnEnergy");
+#endif
+
 	amrex::Print()<<"Checking Done."<<std::endl;
 }
+//
+#ifdef AMREX_DEBUG
 void DUGKSAmr::Verify(int const lev)
 {
 	auto &ld = *m_leveldata[lev];
@@ -160,8 +382,8 @@ void DUGKSAmr::Verify(int const lev)
 
         ParallelFor(bx,Num,[=](int i,int j,int k,int n) noexcept
         {
-            const double x = dx[Ark::dir_x]*(i+0.5);
-            const double y = dx[Ark::dir_y]*(j+0.5);
+            const double x = dx[Ark::X]*(i+0.5);
+            const double y = dx[Ark::Y]*(j+0.5);
 
             Real value_real = 2*x + x*y;
             Real value_average = rho(i,j,k);
@@ -190,8 +412,8 @@ void DUGKSAmr::Verify(int const lev)
     //     amrex::ParallelFor(tbx, 1,
     //     [=](int i,int j,int k,int n) noexcept
     //     {
-    //         const Real x = dx[Ark::dir_x]*(i+0.5);
-    //         const Real y = dx[Ark::dir_y]*(j);
+    //         const Real x = dx[Ark::X]*(i+0.5);
+    //         const Real y = dx[Ark::Y]*(j);
 
     //         Real value_real = 2*x + 3*y;
     //         // Real value_real = (2.0 * x + 4.0*y);
@@ -258,6 +480,7 @@ void DUGKSAmr::Test()
     // Verify(lev);
     WritePlotFile();
 }
+#endif
 // Real DUGKSAmr::L2NormDiff(const MultiFab& xFabA, const MultiFab& xFabB, int const comp)
 // {
 //     std::unique_ptr<MultiFab> diff_xFab;

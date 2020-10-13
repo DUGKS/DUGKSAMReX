@@ -27,13 +27,10 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo,
 		[=] AMREX_GPU_DEVICE (int i,int j,int k,int n) noexcept
 		{
 			const Real phi  = phi_array(i,j,k);
-			const Real u    = vel_array(i,j,k, Ark::dir_x);
-			const Real v    = vel_array(i,j,k, Ark::dir_y);
-			const Real phix = gradphi_array(i,j,k, Ark::dir_x);
-			const Real phiy = gradphi_array(i,j,k, Ark::dir_y);
-
-			double const tmp = 0;
-			// double const phitmp = 1E-3;
+			const Real u    = vel_array(i,j,k, Ark::X);
+			const Real v    = vel_array(i,j,k, Ark::Y);
+			const Real phix = gradphi_array(i,j,k, Ark::X);
+			const Real phiy = gradphi_array(i,j,k, Ark::Y);
 
 			hEq(i,j,k,n) = DVM::omega[n]*phi*(1.0 + (DVM::xi_u[n]*u + DVM::xi_v[n]*v)/DVM::RT);
 			hSo(i,j,k,n) = DVM::omega[n]*(DVM::xi_u[n]*phix + DVM::xi_v[n]*phiy);
@@ -65,19 +62,19 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,
 		ParallelFor(tbx, DVM::Q,
 		[=] AMREX_GPU_DEVICE (int i,int j,int k,int n) noexcept
 		{
-       		const double &rho  = Den(i,j,k);
-       		const double &p    = Pres(i,j,k);
-			const double &u    = Vel(i,j,k,Ark::dir_x);
-     		const double &v    = Vel(i,j,k,Ark::dir_y);
-       		const double &rhox = GradDen(i,j,k,Ark::dir_x);
-       		const double &rhoy = GradDen(i,j,k,Ark::dir_y);
-       		const double &fx   = Force(i,j,k,Ark::dir_x);
-       		const double &fy   = Force(i,j,k,Ark::dir_y);
+       		const double rho  = Den(i,j,k);
+       		const double p    = Pres(i,j,k);
+			const double u    = Vel(i,j,k,Ark::X);
+     		const double v    = Vel(i,j,k,Ark::Y);
+       		const double rhox = GradDen(i,j,k,Ark::X);
+       		const double rhoy = GradDen(i,j,k,Ark::Y);
+       		const double fx   = Force(i,j,k,Ark::X);
+       		const double fy   = Force(i,j,k,Ark::Y);
 
-			double uu = Ark::Square(u,v);
+			const double uu = Ark::Square(u,v);
 
-			double u1 = (DVM::xi_u[n]*u + DVM::xi_v[n]*v)/DVM::RT;
-			double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
+			const double u1 = (DVM::xi_u[n]*u + DVM::xi_v[n]*v)/DVM::RT;
+			const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
 
 			fEq(i,j,k,n) = DVM::omega[n]*(p/DVM::RT + rho*Gamma);
 
@@ -145,15 +142,15 @@ void DUGKSCore<DVM>::Update_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> 
 		[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 		{
 			pres(i,j,k) 		  += fdvdf(i,j,k,n);
-			vel(i,j,k,Ark::dir_x) += fdvdf(i,j,k,n)*DVM::xi_u[n];
-			vel(i,j,k,Ark::dir_y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
+			vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
+			vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
 		});
 	}
 }
-void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv, 
-									  const Real hTime, const Real RT)
+void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, 
+									   const Real hTime)
 {
-#if ARK_USE_MOMENTUM
+#ifdef ARK_USE_MOMENTUM
 	const MultiFab &PhiFab     = msv[Ark::PHI];
 	const MultiFab &ForceFab   = msv[Ark::FORCE];
 	const MultiFab &GradRhoFab = msv[Ark::GradRHO];
@@ -161,7 +158,9 @@ void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv,
 	//density
 	MultiFab &RhoFab  = msv[Ark::RHO];
 	MultiFab &PresFab = msv[Ark::P];
-	MultiFab::Saxpy(RhoFab, APhi(), PhiFab,0,0,1,0);
+	
+	MultiFab::Copy(RhoFab, PhiFab, 0, 0, 1, zero_ghost());
+	RhoFab.mult(APhi(), 0);
 	RhoFab.plus(BPhi(), 0);
 
 	MultiFab &VelFab = msv[Ark::VEL];
@@ -185,8 +184,8 @@ void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv,
 		{
 			pres(i,j,k) +=  0.5*hTime*
 						   	(
-								vel(i,j,k,Ark::dir_x)*grad_rho(i,j,k,Ark::dir_x)
-							+	vel(i,j,k,Ark::dir_y)*grad_rho(i,j,k,Ark::dir_y)
+								vel(i,j,k,Ark::X)*grad_rho(i,j,k,Ark::X)
+							+	vel(i,j,k,Ark::Y)*grad_rho(i,j,k,Ark::Y)
 							);
 			#ifdef _ARK_M_LSGC_FLIP
 			msq(i,j,k,Ark::P) -= 2.0/9.0*msq(i,j,k,Ark::RHO)*msq(i,j,k,Ark::SQUV);
@@ -195,8 +194,20 @@ void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv,
 		});
 	}
 
-	PresFab.mult(RT, 0);
+	PresFab.mult(Ark::DmVnMomentum::RT, 0);
 #endif
+}
+void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, MultiFab const &PhiFab, 
+													  MultiFab const &RhoFab)
+{
+	const Real AMu = (MuL() - MuV())/(PhiL() - PhiV());
+	const Real BMu = MuV() - AMu*PhiV();
+
+	MultiFab::Copy(tauFab, PhiFab, 0, 0, 1, zero_ghost());
+	tauFab.mult(AMu, 0);
+	tauFab.plus(BMu, 0);
+	tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
+	MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
 }
 void DUGKSAmr::Update_DVDF_Eq(int const lev)
 {	
@@ -241,34 +252,69 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 #ifdef ARK_USE_MOMENTUM
 	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv, ld.fDVDF[Ark::WAVE]);
 #endif
+
+	//----------Interface Elongation-------------------
+	// if(nstep == end_step/2)
+	// {
+	// 	ReverseVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  Geom(lev).ProbDomain(), -1);
+	// }
+
+	// ----------Interface Smooth Deformation-----------
+	// SmoothedVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   cur_time+Dt(), -1);
 	
 	FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
 	AllenCahnSource(lev);
 
-	Update_MacroSourceVars(ld.msv, hDt(lev), Ark::DmVnMomentum::RT);
+	Update_MacroSourceVars(ld.msv, hDt(lev));
 
-	AllenCahnTemporalPhiU(ld, Ark::DmVnPhase::RT);
+#ifdef ARK_USE_MOMENTUM
+	Update_Tau_Momentum(ld.fDVDF[Ark::TAU], ld.msv[Ark::PHI], ld.msv[Ark::RHO]);
+#endif
+
+	AllenCahnTemporalPhiU(ld);
 }
 void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 {
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_MacroBaseVars_Phase(ld.msv_xF, ld.hDVDFxF[Ark::BHF]);
-	DUGKSCore<Ark::DmVnPhase>::Update_MacroBaseVars_Phase(ld.msv_yF, ld.hDVDFyF[Ark::BHF]);
+	DUGKSCore<Ark::DmVnPhase>::Update_MacroBaseVars_Phase(ld.msv_xF, ld.hDVDFxF[Ark::FLUX]);
+	DUGKSCore<Ark::DmVnPhase>::Update_MacroBaseVars_Phase(ld.msv_yF, ld.hDVDFyF[Ark::FLUX]);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_xF, ld.fDVDFxF[Ark::BHF]);
-	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_yF, ld.fDVDFyF[Ark::BHF]);
+	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
+	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
 #endif
 
-	AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::dir_x));
-	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::dir_y));
+	//----------Interface Elongation-------------------
+	// if(nstep == end_step/2)
+	// {
+	// 	ReverseVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  Geom(lev).ProbDomain(), Ark::X);
+	// 	ReverseVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  Geom(lev).ProbDomain(), Ark::Y);
+	// }
+	//-------------------------------------------------
+	// ----------Interface Smooth Deformation-----------
+	// SmoothedVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   cur_time+hDt(lev), Ark::X);
+	// SmoothedVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   cur_time+hDt(lev), Ark::Y);
+	//--------------------------------------------------
+	AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
+	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 
-	Update_MacroSourceVars(ld.msv_xF, hDt(lev), Ark::DmVnMomentum::RT);
-	Update_MacroSourceVars(ld.msv_yF, hDt(lev), Ark::DmVnMomentum::RT);
+	Update_MacroSourceVars(ld.msv_xF, hDt(lev));
+	Update_MacroSourceVars(ld.msv_yF, hDt(lev));
+
+#ifdef ARK_USE_MOMENTUM
+	Update_Tau_Momentum(ld.fDVDFxF[Ark::TAUF], ld.msv_xF[Ark::PHI], ld.msv_xF[Ark::RHO]);
+	Update_Tau_Momentum(ld.fDVDFyF[Ark::TAUF], ld.msv_yF[Ark::PHI], ld.msv_yF[Ark::RHO]);
+#endif
 
 	FillPhysicalBoundaryMacroVars(lev);
 }
