@@ -328,17 +328,17 @@ void DUGKSAmr::CheckDUGKSAmr()
     }
 
 #ifdef ARK_USE_PHASE
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_PHASE == Ark::DmVnPhase::Q,
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnPhase::D,
         "Fatal Error : mismatch between DVM_PHASE and DmVnPhase");
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_MOMENTUM == Ark::DmVnMomentum::Q,
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnMomentum::D,
         "Fatal Error : mismatch between DVM_MOMENTUM and DmVnMomentum");
 #endif
 
 #ifdef ARK_USE_ENERGY
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::DVM_ENERGY == Ark::DmVnEnergy::Q,
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnEnergy::D,
         "Fatal Error : mismatch between DVM_ENERGY and DmVnEnergy");
 #endif
 

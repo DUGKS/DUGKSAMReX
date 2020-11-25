@@ -24,9 +24,9 @@ void DUGKSAmr::AverageDownLevelMacroVars(int const crse_lev)
 	AverageDownLevelVelocity(crse_lev);
 	AverageDownLevelPressure(crse_lev);
 	AverageDownLevelTemperature(crse_lev);
-	AverageDownLevelGradPhase(crse_lev);
-	AverageDownLevelGradDensity(crse_lev);
-	AverageDownLevelForce(crse_lev);
+	// AverageDownLevelGradPhase(crse_lev);
+	// AverageDownLevelGradDensity(crse_lev);
+	// AverageDownLevelForce(crse_lev);
 }
 void DUGKSAmr::AverageDownLevelPhase(int const crse_lev)
 {

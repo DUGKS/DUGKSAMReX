@@ -36,13 +36,13 @@ void DUGKSAmr::FillPatchCore(int const lev, Real const time, MultiFab &mf,
         PhysBCFunct<CpuBndryFuncFab> cphysbc(geom[lev-1], bcs, bfunc);
         PhysBCFunct<CpuBndryFuncFab> fphysbc(geom[lev], bcs, bfunc);
 
-        FillPatchTwoLevels(mf, time,
-                           cmf, ctime,
-                           fmf, ftime,
-                           0, 0, mf.nComp(), 
-                           geom[lev-1], geom[lev],
-                           cphysbc, 0, fphysbc, 0,
-                           refRatio(lev-1), mapper, bcs, 0);
+        amrex::FillPatchTwoLevels(mf, time,
+                                  cmf, ctime,
+                                  fmf, ftime,
+                                  0, 0, mf.nComp(), 
+                                  geom[lev-1], geom[lev],
+                                  cphysbc, 0, fphysbc, 0,
+                                  refRatio(lev-1), mapper, bcs, 0);
     }
 }
 void DUGKSAmr::FillPatchPhase(int const lev, Real const time, MultiFab& phase)

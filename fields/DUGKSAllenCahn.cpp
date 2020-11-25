@@ -2,7 +2,7 @@
 
 inline
 double DUGKSAmr::SourcePhi (double const phi)
-{
+{	
 	return -4*(phi - PhiL())*(phi - PhiV())/(WidthI()*(PhiL() - PhiV()));
 }
 inline
@@ -186,6 +186,7 @@ void DUGKSAmr::AllenCahnTemporalPhiU (DUGKSAmr::LevelData &ld)
     		}
     			grad_phi_x += dPhiU;
     			grad_phi_y += dPhiV;
+
 #if(AMREX_SPACEDIM == 3)
     			grad_phi_z += dPhiW;
 #endif

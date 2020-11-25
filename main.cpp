@@ -22,13 +22,25 @@ int main(int argc, char* argv[])
 
 	dugks_amr.InitData();
 
+	// Time spent on initialization
+    Real init_time = amrex::ParallelDescriptor::second() - start_time;
+
+
 	dugks_amr.Evolve();
 
 	// Time spent in total
 	Real end_time = amrex::ParallelDescriptor::second() - start_time;
 
 	// Print timing results
-	amrex::Print() << " Time spent in Evolve():      " << end_time << " " <<"seconds\n";
+	amrex::ParallelDescriptor::ReduceRealMax(init_time, 
+		amrex::ParallelDescriptor::IOProcessorNumber());
+	//
+    amrex::ParallelDescriptor::ReduceRealMax(end_time, 
+    	amrex::ParallelDescriptor::IOProcessorNumber());
+
+    // Print timing results
+    amrex::Print() << "Time spent in InitData():    " << init_time <<" seconds\n";
+    amrex::Print() << "Time spent in Evolve():      " << end_time - init_time <<" seconds\n";
 	Ark::PrintSplitLine();
 	}
 	amrex::Finalize();

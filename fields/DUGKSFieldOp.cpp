@@ -22,7 +22,31 @@ Real DUGKSAmr::ComputeKineticEnergy () const
     //to be done
     return -1;
 }
+//
+void DUGKSAmr::ReinitializePhase (MultiFab &phase)
+{
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = phase.array(mfi);
 
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            if (phi(i,j,k) > PhiL()) 
+            { 
+                phi(i,j,k) = PhiL(); 
+            }
+            else if (phi(i,j,k) < PhiV())
+            {
+                phi(i,j,k) = PhiV();
+            }
+        }); 
+    }  
+}
 //The following codes are directly copied from incflo
 void DUGKSAmr::ComputeStrainrateAtLevel (int lev,
                                          MultiFab* strainrate,
@@ -330,8 +354,8 @@ void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const
 }
 #endif
 
-void DUGKSAmr::ReverseVelocityField (MultiFab &VelFab, const Real *dx, 
-                                     const RealBox &rb, int const token)
+void DUGKSAmr::ElongationVelocityField  (MultiFab &VelFab, const Real *dx, 
+                                         const RealBox &rb, int const token)
 {
     double di = 0;
     double dj = 0;
@@ -367,13 +391,13 @@ void DUGKSAmr::ReverseVelocityField (MultiFab &VelFab, const Real *dx,
         //
         Array4<Real> const &vel = VelFab.array(mfi);
 
-        amrex::For(bx,[=](int i,int j,int k)
+        amrex::ParallelFor(bx,[=](int i,int j,int k)
         {
             const double x = (i + di)*dlx;
             const double y = (j + dj)*dly;
             
             vel(i,j,k,Ark::X) = 
-            -U0()*Ark::pi*sin(Ark::pi*x/ChLength())*cos(Ark::pi*y/ChLength());
+            -U0()*Ark::PI*sin(Ark::pi*x/ChLength())*cos(Ark::PI*y/ChLength());
             vel(i,j,k,Ark::Y) =  
             U0()*Ark::PI*cos(Ark::PI*x/ChLength())*sin(Ark::PI*y/ChLength());
     
@@ -393,13 +417,14 @@ void DUGKSAmr::ReverseVelocityField (MultiFab &VelFab, const Real *dx,
         });
     }
 }
-void DUGKSAmr::SmoothedVelocityField (MultiFab &VelFab, const Real *dx, 
-                                      const Real Time, int const token)
+void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
+                                         const Real time, int const token)
 {
     const Real dlx = dx[0];
     const Real dly = dx[1];
 
-    Real di = 0,dj = 0;
+    double di = 0;
+    double dj = 0;
 
     if(token == -1)
     {
@@ -423,18 +448,18 @@ void DUGKSAmr::SmoothedVelocityField (MultiFab &VelFab, const Real *dx,
         //
         Array4<Real> const &vel = VelFab.array(mfi);
 
-        amrex::For(bx,[=] (int i,int j,int k)
+        amrex::ParallelFor(bx,[=] (int i,int j,int k)
         {
             const double x = (i + di)*dlx;
             const double y = (j + dj)*dly;
             
             vel(i,j,k,Ark::X) = 
             -U0()*sin(4.0*Ark::PI*x/ChLength())*sin(4.0*Ark::PI*y/ChLength())
-            *cos(Ark::PI*Time*U0()/ChLength());
+            *cos(Ark::PI*time*U0()/ChLength());
 
             vel(i,j,k,Ark::Y) = 
             -U0()*cos(4.0*Ark::PI*x/ChLength())*cos(4.0*Ark::PI*y/ChLength())
-            *cos(Ark::PI*Time*U0()/ChLength());
+            *cos(Ark::PI*time*U0()/ChLength());
         });
     }
 }

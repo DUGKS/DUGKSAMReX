@@ -64,7 +64,6 @@ void DUGKSAmr::BasicCase(int const lev)
 
             hFluxX(i,j,k,n) = (2.0 * x + (2 + n)*y);
             fFluxX(i,j,k,n) = ((2.0 +n)*x + n*0.1*y);
-
             });
     }
 #endif
@@ -89,29 +88,14 @@ void DUGKSAmr::QuiescentDrop(int const lev)
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
 
-	FillLevelPhaseAnalytical(ld.msv[Ark::PHI], dl, LV::drop);
+	FillLevelPhaseSphere(ld.msv[Ark::PHI], dl, LV::drop);
 
 	MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
 	ld.msv[Ark::RHO].mult(APhi(), 0);
     ld.msv[Ark::RHO].plus(BPhi(), 0);
-
+    ld.msv[Ark::VEL].setVal(0);
 	ld.msv[Ark::P].setVal(P0());
 	ld.msv[Ark::T].setVal(T0());
-    
-    // ld.msv[Ark::PHI].FillBoundary(Geom(0).periodicity());
-
-    // #ifdef _OPENMP
-    // #pragma omp parallel
-    // #endif
-    // for(amrex::MFIter mfi(ld.msv[Ark::PHI], amrex::TilingIfNotGPU());mfi.isValid();++mfi)
-    // {
-    //     const amrex::Box& bx = mfi.tilebox();
-
-    //     Array4<Real const> const &phi  = ld.msv[Ark::PHI].array(mfi);
-    //     Array4<Real> const &grad_phi   = ld.msv[Ark::GradPHI].array(mfi);
-
-    //     GradFunc::gradient_operator_isotropy(bx, dl, phi, grad_phi);
-    // }
 }
 void DUGKSAmr::TransDrop(int const lev)
 {
@@ -120,7 +104,7 @@ void DUGKSAmr::TransDrop(int const lev)
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
 
-    FillLevelPhaseAnalytical(ld.msv[Ark::PHI], dl, LV::drop);
+    FillLevelPhaseSphere(ld.msv[Ark::PHI], dl, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -208,8 +192,27 @@ void DUGKSAmr::ZalesakDisk(int const lev)
                 vel(i,j,k,Ark::X) = -U0()*pi/ChLength()*(y-CenterPF(Ark::Y));
                 vel(i,j,k,Ark::Y) =  U0()*pi/ChLength()*(x-CenterPF(Ark::X));            
             });
-    }
-    }
+    }}
+#if(AMREX_SPACEDIM == 3)
+    {
+        MultiFab &VelFab_zF = ld.msv_zF[Ark::VEL];
+        for(amrex::MFIter mfi(VelFab_zF);mfi.isValid();++mfi)
+        {
+            const amrex::Box& bx = mfi.validbox();
+        //
+            Array4<Real> const &vel = VelFab_zF.array(mfi);
+        //
+            amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE (int i,int j,int k)
+            {
+                const double x = dx[0]*(i+0.5);
+                const double y = dx[1]*(j+0.5);
+
+                vel(i,j,k,Ark::X) = -U0()*pi/ChLength()*(y-CenterPF(Ark::Y));
+                vel(i,j,k,Ark::Y) =  U0()*pi/ChLength()*(x-CenterPF(Ark::X));         
+            });
+    }}
+#endif
 }
 void DUGKSAmr::InterfaceElongation(int const lev)
 {
@@ -221,7 +224,7 @@ void DUGKSAmr::InterfaceElongation(int const lev)
     const Real *dx = Geom(lev).CellSize();
     const RealBox &rb = Geom(lev).ProbDomain();
 
-    FillLevelPhaseAnalytical(ld.msv[Ark::PHI], dx, LV::drop);
+    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -230,10 +233,8 @@ void DUGKSAmr::InterfaceElongation(int const lev)
     ld.msv[Ark::P].setVal(P0());
     ld.msv[Ark::T].setVal(T0());
 
+    {
     MultiFab &VelFab    = ld.msv[Ark::VEL];
-    MultiFab &VelFab_xF = ld.msv_xF[Ark::VEL];
-    MultiFab &VelFab_yF = ld.msv_yF[Ark::VEL];
-
     for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
     {
         const amrex::Box& bx = mfi.validbox();
@@ -250,10 +251,13 @@ void DUGKSAmr::InterfaceElongation(int const lev)
             vel(i,j,k,Ark::Y) = -U0()*pi*cos(pi*x/ChLength())*sin(pi*y/ChLength());
             
         });
-    }
+    }}
 
+    {
     const double real_lo_x = rb.lo(Ark::X);
     const double real_hi_x = rb.hi(Ark::X);
+
+    MultiFab &VelFab_xF = ld.msv_xF[Ark::VEL];
     for(amrex::MFIter mfi(VelFab_xF);mfi.isValid();++mfi)
     {
         const amrex::Box& bx = mfi.validbox();
@@ -275,10 +279,13 @@ void DUGKSAmr::InterfaceElongation(int const lev)
             }
             
         });
-    }
+    }}
 
+    {
     const double real_lo_y = rb.lo(Ark::Y);
     const double real_hi_y = rb.hi(Ark::Y);
+
+    MultiFab &VelFab_yF = ld.msv_yF[Ark::VEL];
     for(amrex::MFIter mfi(VelFab_yF);mfi.isValid();++mfi)
     {
         const amrex::Box& bx = mfi.validbox();
@@ -300,7 +307,7 @@ void DUGKSAmr::InterfaceElongation(int const lev)
             }
             
         });    
-    }  
+    }}
 }
 void DUGKSAmr::SmoothDeformation(int const lev)
 {
@@ -311,7 +318,7 @@ void DUGKSAmr::SmoothDeformation(int const lev)
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
 
-    FillLevelPhaseAnalytical(ld.msv[Ark::PHI], dx, LV::drop);
+    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -320,8 +327,8 @@ void DUGKSAmr::SmoothDeformation(int const lev)
     ld.msv[Ark::P].setVal(P0());
     ld.msv[Ark::T].setVal(T0());
 
+    {
     MultiFab &VelFab    = ld.msv[Ark::VEL];
-
     for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
     {
         const amrex::Box& bx = mfi.validbox();
@@ -337,10 +344,9 @@ void DUGKSAmr::SmoothDeformation(int const lev)
             vel(i,j,k,Ark::X) = 
             -U0()*sin(4.0*PI*x/ChLength())*sin(4.0*PI*y/ChLength());
             vel(i,j,k,Ark::Y) = 
-            -U0()*cos(4.0*PI*x/ChLength())*cos(4.0*PI*y/ChLength());
-            
+            -U0()*cos(4.0*PI*x/ChLength())*cos(4.0*PI*y/ChLength());            
         });
-    }
+    }}
 }
 void DUGKSAmr::LayeredPoiseuille (int const lev)
 {
@@ -352,9 +358,9 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
     const Real *dx = Geom(lev).CellSize();
     const RealBox &rb = Geom(lev).ProbDomain();
 
-    const double real_lo_y = rb.lo(Ark::Y);
-
     ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
 
     MultiFab &PhiFab = ld.msv[Ark::PHI];
     MultiFab &RhoFab = ld.msv[Ark::RHO];
@@ -369,7 +375,7 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
-            const double y = dx[Ark::Y]*(j+0.5) + real_lo_y;
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 
             phi(i,j,k) = 0.5*(PhiL() + PhiV()) + 0.5*(PhiL() - PhiV())
                          *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());

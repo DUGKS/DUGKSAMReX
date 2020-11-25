@@ -62,22 +62,17 @@ void Ark::FlowParm::InitFlowParmPhaseFiled()
 	ppPF.get("phiV",phiV);
 	ppPF.get("rhoL",rhoL);
 	ppPF.get("rhoV",rhoV);
-	ppPF.get("nuL",nuL);
-	ppPF.get("nuV",nuV);
 	ppPF.get("muL",muL);
 	ppPF.get("muV",muV);
 	ppPF.get("radiusPF",radiusPF);
-	ppPF.get("uc",uc);
 	ppPF.getarr("centerPF",centerPF);
 	ppPF.getarr("gravity",gravity);
 
 	//Phase Field Calculations
 	beta  = 12.0*sigma/widthI,
 	kappa = 3.0*sigma*widthI/2;
-	// muL = Nu0()*rhoL; 
-	// muV = Nu0()*rhoV;
-	// nuL = Nu0();	
-	// nuV = Nu0();
+	nuL = muL/rhoL;	
+	nuV = muV/rhoV;
 	aPhi = (rhoL - rhoV)/(phiL - phiV);
 	bPhi = rhoV - aPhi*phiV;
 

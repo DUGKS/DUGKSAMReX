@@ -94,8 +94,6 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 
 			set_dirichlet_velocity_xF (vel_xF, lo, hi, lo_min, 
 									  Orientation(dir, Orientation::Side::low));
-			amrex::Print()<<"NiJiuShiGeDaShaBi"<<std::endl;
-
 		}
 
 		if(hi.x == hi_max) 
@@ -109,7 +107,6 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 
 			set_dirichlet_velocity_xF (vel_xF, lo, hi, hi_max, 
 									  Orientation(dir, Orientation::Side::high));
-			amrex::Print()<<"NiJiuShiGeDaShaBi"<<std::endl;
 		}
 	}
   }
@@ -188,8 +185,8 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_z(rho_zF,  rho,  lo, hi, lo_min);
 			average_scalar_z(pres_zF, pres, lo, hi, lo_min);
 
-			set_dirichlet_pressure_zF (pres_zF, lo, hi, lo_min, 
-									  Orientation(dir, Orientation::Side::low));
+			// set_dirichlet_pressure_zF (pres_zF, lo, hi, lo_min, 
+			// 						  Orientation(dir, Orientation::Side::low));
 
 			set_dirichlet_velocity_zF (vel_zF, lo, hi, lo_min, 
 									  Orientation(dir, Orientation::Side::low));
@@ -200,8 +197,8 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			average_scalar_z( rho_zF, rho,  lo, hi, hi_max);
 			average_scalar_z(pres_zF, pres, lo, hi, hi_max);
 
-			set_dirichlet_pressure_zF (pres_zF, lo, hi, hi_max, 
-									  Orientation(dir, Orientation::Side::high));
+			// set_dirichlet_pressure_zF (pres_zF, lo, hi, hi_max, 
+			// 						  Orientation(dir, Orientation::Side::high));
 
 			set_dirichlet_velocity_zF (vel_zF, lo, hi, hi_max, 
 									  Orientation(dir, Orientation::Side::high));

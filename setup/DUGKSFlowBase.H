@@ -73,7 +73,6 @@ public:
 	double NuV() const {return nuV;}
 	double APhi() const {return aPhi;}
 	double BPhi() const {return bPhi;}
-	double Uc() const {return uc;}
 	double RadiusPF() const {return radiusPF;}
 	double Gravity(int i) const {return gravity[i];}
 	double CenterPF(int i) const {return centerPF[i];}
@@ -130,7 +129,6 @@ private:
 	double muL  = 0, muV  = 0;
 	double nuL  = 0, nuV  = 0;
 	double aPhi = 0, bPhi = 0;
-	double uc = 0;
 	double radiusPF = 0;
 	amrex::Vector<double> gravity;
 	amrex::Vector<double> centerPF;

@@ -21,14 +21,10 @@ void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF,
         amrex::ParallelFor(bx, DVM::Q, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	// const Real b = 3.0*hTime/(2.0*xtau(i,j,k) + dTime);
-        	// const Real a = 1-b;
-        	// const Real c = b*xtau(i,j,k);
-        	const Real a = (2.*xtau(i,j,k) - hTime)/(2.*xtau(i,j,k) + dTime);
-        	const Real b = 1-a;
+        	const Real b = 3.0*hTime/(2.0*xtau(i,j,k) + dTime);
         	const Real c = b*xtau(i,j,k);
 
-        	xBP(i,j,k,n) = a*xWave(i,j,k,n) + b*xEq(i,j,k,n) + c*xSo(i,j,k,n);
+        	xBP(i,j,k,n) = xWave(i,j,k,n) + b*(xEq(i,j,k,n) - xWave(i,j,k,n)) + c*xSo(i,j,k,n);
         });
 
   //       const auto lo = lbound(bx);
@@ -457,10 +453,10 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real bh = hTime/(2.0*xtauh(i,j,k) + hTime);
-        	const Real ah = 1.0 - bh;
         	const Real ch = bh*xtauh(i,j,k);
        	//
-        	xFlux(i,j,k,n) = ah*xFlux(i,j,k,n) + bh*xEqh(i,j,k,n) + ch*xSoh(i,j,k,n);
+        	xFlux(i,j,k,n) = xFlux(i,j,k,n) + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n))
+        				   + ch*xSoh(i,j,k,n);
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
 
@@ -535,7 +531,6 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 
 			xWave(i,j,k,n) = DUGKSCore::aT*xBP(i,j,k,n) - DUGKSCore::bT*xWave(i,j,k,n)
 						   + xFluxSum*dTime/volume;
-						   ;
         });
 	}
 }

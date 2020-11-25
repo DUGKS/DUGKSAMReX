@@ -1,9 +1,18 @@
+#############################################
+#          if Make.local exist              #
+#############################################
 ifeq (,$(wildcard $(AMREX_HOME)/Tools/GNUMake/Make.local))
 $(error Make.local doesn't exit!!!)
 endif
-#include basic dependence
+
+#############################################
+#          include basic dependence         #
+#############################################
 include $(AMREX_HOME)/Tools/GNUMake/Make.defs
-#These are the directories in DUGKSAmr/Ark
+
+#############################################
+#       directories in DUGKSAmr/Ark         #
+#############################################
 Bdirs := Ark
 Bdirs += Ark/boundary_conditions
 Bdirs += Ark/case
@@ -24,7 +33,9 @@ include $(Bpack)
 INCLUDE_LOCATIONS += $(Blocs)
 VPATH_LOCATIONS   += $(Blocs)
 
-#These are the directories in AMReX
+#############################################
+#           directories in AMReX            #
+#############################################
 Pdirs := Base AmrCore Boundary
 
 ifeq ($(USE_EB), TRUE)
@@ -62,19 +73,19 @@ DUGKSFILE_LOCATIONS = tmp_build_dir
 
 cleanDUGKSBuild:
 	@echo "Cleaning DUGKS Files..."
-	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec mv -f {} ~/.trash/ \;
-	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec mv -f {} ~/.trash/ \;
+	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec rm -f {} \;
+	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec rm -f {} \;
 
 cleanOF:
 	@echo "Cleaning old plot files..."
 	rm -rf ~/.trash/*;
-	mv -f AMReX_buildInfo.cpp ~/.trash>/dev/null; true 
-	find ${TESTDIR} -name "chk*" -type d -prune -exec mv -f {} ~/.trash/ \;
-	find ${TESTDIR} -name "plt*" -type d -prune -exec mv -f {} ~/.trash/ \;
-	find ${TESTDIR} -name "*.dat" -type f -prune -exec mv -f {} ~/.trash/ \;
-	find ${TESTDIR} -name "Backtrace*" -type f -prune -exec mv -f {} ~/.trash/ \;
+	rm -f AMReX_buildInfo.cpp;
+	find ${TESTDIR} -name "chk*" -type d -prune -exec rm -rf {} \;
+	find ${TESTDIR} -name "plt*" -type d -prune -exec rm -rf {} \;
+	find ${TESTDIR} -name "*.dat" -type f -prune -exec rm -f {} \;
+	find ${TESTDIR} -name "Backtrace*" -type f -prune -exec rm -f {} \;
 #
-#   find ${OUTFILE_LOCATIONS} -name "tecplot-derived" -type d -exec mv -f {} ~/.trash/ \;
+#   find ${OUTFILE_LOCATIONS} -name "tecplot-derived" -type d -exec mv -f {} \;
 realclean::cleanOF
 #
 #

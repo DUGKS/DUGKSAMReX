@@ -52,7 +52,7 @@ namespace Ark
 	#endif
 
 	constexpr double pi = 3.1415926535897932;
-	constexpr double PI = 3.1415926535897932;
+	constexpr double PI = pi;
 
 	constexpr double tiny = 1E-20;
 
@@ -69,15 +69,7 @@ namespace Ark
 
 	void PrintSplitLine(const char c = ' ');
 }
-namespace DVMCore
-{
-	// void Update_BarPlus(Vector<MultiFab> &xDVDF,const Real dTime);
-	// void Update_Wave(Vector<MultiFab> &xDVDF,const Real dTime);
-	// void Fill_Wave_Boundary
-	// (
-	// 	Vector<MultiFab> &xDVDF,const Real dTime,const amrex::Direction FaceID
-	// );
-}
+
 namespace GradFunc
 {
 	//first PDs

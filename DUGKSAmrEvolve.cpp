@@ -33,6 +33,7 @@ void DUGKSAmr::Update_DVDF_BarPlus(int const lev)
 #endif
 
 #ifdef ARK_USE_MOMENTUM
+	// Update_Tau_Momentum(ld.fDVDF[Ark::TAU], ld.msv[Ark::PHI], ld.msv[Ark::RHO]);
 	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, Dt(), hDt(lev));
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
@@ -217,7 +218,7 @@ void DUGKSAmr::Advance()
 		Update_DVDF_MesoFlux (lev);
 	}
 
-	CheckForPhysicalBoundary(0);
+	// CheckForPhysicalBoundary(0);
 
 	AverageDownDVDFFlux();
 
@@ -258,7 +259,7 @@ void DUGKSAmr::Evolve()
 		cur_time += Dt();
 
 		if(write_conv_interval > 0 and nstep%write_conv_interval == 0) {
-			// WriteL2NormFile(MultiLevelL2Norm());
+			WriteL2NormFile(MultiLevelL2Norm());
 			WriteSumPhaseFile(MultiLevelSum());
 		}
 		if(write_residual_interval > 0 and nstep%write_residual_interval == 0) {
@@ -268,11 +269,10 @@ void DUGKSAmr::Evolve()
 				WriteResidualFile(level_residuals);
 				SteadyStateReached(level_residuals);
 			}
-
-			if(write_plot_interval > 0 and nstep%write_plot_interval == 0) {
-				WritePlotFile();
-			}
-			WriteSumPhaseFile(MultiLevelSum());
+		}
+		
+		if(write_plot_interval > 0 and nstep%write_plot_interval == 0) {
+			WritePlotFile();
 		}
 
 		if(write_check_interval > 0 and nstep%write_check_interval == 0) {

@@ -484,15 +484,19 @@ DUGKSBoundary<Ark::DmVnEnergy>::FillPhysicalBoundaryFlux_BB (ld.get_gDVDFnF_flux
 void DUGKSAmr::FillInteriorBoundaryGradBarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 											   const Periodicity& period)
 {
-	xDVDF[Ark::BPx].FillBoundary(period);
-	xDVDF[Ark::BPy].FillBoundary(period);
-	xDVDF[Ark::BPxx].FillBoundary(period);
-	xDVDF[Ark::BPyy].FillBoundary(period);
-	xDVDF[Ark::BPxy].FillBoundary(period);
-#if(AMREX_SPACEDIM == 3)
-	xDVDF[Ark::BPz].FillBoundary(period);
-	xDVDF[Ark::BPzz].FillBoundary(period);
-	xDVDF[Ark::BPyz].FillBoundary(period);
-	xDVDF[Ark::BPzx].FillBoundary(period);
-#endif
+	for(int n = Ark::BPx;n < Ark::DVDFNUM;++n)
+	{
+		xDVDF[n].FillBoundary(period);
+	}
+// 	xDVDF[Ark::BPx].FillBoundary(period);
+// 	xDVDF[Ark::BPy].FillBoundary(period);
+// 	xDVDF[Ark::BPxx].FillBoundary(period);
+// 	xDVDF[Ark::BPyy].FillBoundary(period);
+// 	xDVDF[Ark::BPxy].FillBoundary(period);
+// #if(AMREX_SPACEDIM == 3)
+// 	xDVDF[Ark::BPz].FillBoundary(period);
+// 	xDVDF[Ark::BPzz].FillBoundary(period);
+// 	xDVDF[Ark::BPyz].FillBoundary(period);
+// 	xDVDF[Ark::BPzx].FillBoundary(period);
+// #endif
 }

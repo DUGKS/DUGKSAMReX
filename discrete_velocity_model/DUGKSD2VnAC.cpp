@@ -79,7 +79,7 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,
 			fEq(i,j,k,n) = DVM::omega[n]*(p/DVM::RT + rho*Gamma);
 
 			#ifdef _ARK_M_LSGC_FLIP
-			fEq(i,j,k,n) -= static_cast<int>(n == 0)*p;
+			fEq(i,j,k,n) -= static_cast<int>(n == 0)*p/DVM::RT;
 			#endif
 
 			fSo(i,j,k,n) = DVM::omega[n]*
@@ -141,14 +141,13 @@ void DUGKSCore<DVM>::Update_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> 
 		amrex::For(bx, DVM::Q,
 		[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 		{
-			pres(i,j,k) 		  += fdvdf(i,j,k,n);
+			pres(i,j,k) 	  += fdvdf(i,j,k,n);
 			vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
 			vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
 		});
 	}
 }
-void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, 
-									   const Real hTime)
+void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const Real hTime)
 {
 #ifdef ARK_USE_MOMENTUM
 	const MultiFab &PhiFab     = msv[Ark::PHI];
@@ -165,6 +164,7 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv,
 
 	MultiFab &VelFab = msv[Ark::VEL];
 
+	// VelFab.mult(2*Ark::DmVnMomentum::Lambda,0);
 	MultiFab::Saxpy(VelFab, 0.5*hTime, ForceFab, 0, 0, AMREX_SPACEDIM, 0);
 	MultiFab::Divide(VelFab, RhoFab, 0, 0, 1, 0);
 	MultiFab::Divide(VelFab, RhoFab, 0, 1, 1, 0);
@@ -189,7 +189,7 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv,
 							);
 			#ifdef _ARK_M_LSGC_FLIP
 			msq(i,j,k,Ark::P) -= 2.0/9.0*msq(i,j,k,Ark::RHO)*msq(i,j,k,Ark::SQUV);
-			msq(i,j,k,Ark::P) *= 9.0/5.0;
+			msq(i,j,k,Ark::P) *= 3.0/5.0;
 			#endif
 		});
 	}
@@ -200,12 +200,30 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv,
 void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, MultiFab const &PhiFab, 
 													  MultiFab const &RhoFab)
 {
-	const Real AMu = (MuL() - MuV())/(PhiL() - PhiV());
-	const Real BMu = MuV() - AMu*PhiV();
+	// const Real AMu = (MuL() - MuV())/(PhiL() - PhiV());
+	// const Real BMu = MuV() - AMu*PhiV();
 
-	MultiFab::Copy(tauFab, PhiFab, 0, 0, 1, zero_ghost());
-	tauFab.mult(AMu, 0);
-	tauFab.plus(BMu, 0);
+	// MultiFab::Copy(tauFab, PhiFab, 0, 0, 1, zero_ghost());
+	// tauFab.mult(AMu, 0);
+	// tauFab.plus(BMu, 0);
+
+	for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
+
+		Array4<Real const> const &phi = PhiFab.const_array(mfi);
+		// Array4<Real const> const &rho = RhoFab.const_array(mfi);
+
+		Array4<Real> const &tau = tauFab.array(mfi);
+
+		amrex::ParallelFor(bx,
+		[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+		{
+			tau(i,j,k) = MuL()*MuV()/
+			((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
+		});
+	}
+
 	tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
 	MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
 }
@@ -247,28 +265,30 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 
 #ifdef ARK_USE_PHASE
 	DUGKSCore<Ark::DmVnPhase>::Update_MacroBaseVars_Phase(ld.msv, ld.hDVDF[Ark::WAVE]);
+	// ReinitializePhase(ld.msv[Ark::PHI]);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv, ld.fDVDF[Ark::WAVE]);
 #endif
 
-	//----------Interface Elongation-------------------
+	// * * * * * * * * * * * *Interface Elongation * * * * * * * * * * * *
 	// if(nstep == end_step/2)
 	// {
-	// 	ReverseVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
-	// 						  Geom(lev).ProbDomain(), -1);
+	// 	ElongationVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  	 Geom(lev).ProbDomain(), -1);
 	// }
-
-	// ----------Interface Smooth Deformation-----------
-	// SmoothedVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
-	// 					   cur_time+Dt(), -1);
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	// * * * * * * * * * * * *Interface Smooth Deformation * * * * * * * *
+	// DeformationVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   		 cur_time+Dt(), -1);
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	
 	FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
 	AllenCahnSource(lev);
 
-	Update_MacroSourceVars(ld.msv, hDt(lev));
+	Update_MacroSourceVars(ld.msv, Dt());
 
 #ifdef ARK_USE_MOMENTUM
 	Update_Tau_Momentum(ld.fDVDF[Ark::TAU], ld.msv[Ark::PHI], ld.msv[Ark::RHO]);
@@ -290,21 +310,21 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
 #endif
 
-	//----------Interface Elongation-------------------
+	// * * * * * * * * * * * *Interface Elongation * * * * * * * * * * * *
 	// if(nstep == end_step/2)
 	// {
-	// 	ReverseVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
-	// 						  Geom(lev).ProbDomain(), Ark::X);
-	// 	ReverseVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
-	// 						  Geom(lev).ProbDomain(), Ark::Y);
+	// 	ElongationVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  	 Geom(lev).ProbDomain(), Ark::X);
+	// 	ElongationVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
+	// 						  	 Geom(lev).ProbDomain(), Ark::Y);
 	// }
-	//-------------------------------------------------
-	// ----------Interface Smooth Deformation-----------
-	// SmoothedVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
-	// 					   cur_time+hDt(lev), Ark::X);
-	// SmoothedVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
-	// 					   cur_time+hDt(lev), Ark::Y);
-	//--------------------------------------------------
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	// * * * * * * * * * * * *Interface Smooth Deformation * * * * * * * *
+	// DeformationVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   		 cur_time+hDt(lev), Ark::X);
+	// DeformationVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   		 cur_time+hDt(lev), Ark::Y);
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
 	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 

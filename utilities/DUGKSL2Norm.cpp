@@ -17,6 +17,42 @@ double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB,
 
     return diff_xFab->norm2();
 }
+double DUGKSAmr::L2NormSubtractZalesakDisk (const MultiFab& xFabA, const MultiFab& xFabB)
+{
+    AMREX_ASSERT(xFabA.boxArray() == xFabB.boxArray());
+    AMREX_ASSERT(xFabA.DistributionMap() == xFabB.DistributionMap());
+
+    std::unique_ptr<MultiFab> xFabAmend;
+
+    xFabAmend.reset(new MultiFab(xFabA.boxArray(), xFabA.DistributionMap(), 1, 0, MFInfo()));
+
+    MultiFab::Copy(*xFabAmend, xFabB, 0, 0, 1, zero_ghost());
+
+    for(amrex::MFIter mfi(*xFabAmend,true);mfi.isValid();++mfi)
+    {
+        const Box &bx = mfi.tilebox();
+
+        Array4<Real> const &phi = (*xFabAmend).array(mfi);
+
+        amrex::ParallelFor(bx,[=](int i,int j,int k)
+        {
+            phi(i,j,k) = phi(i,j,k) > 0.5*(PhiL() + PhiV()) ? PhiL() : PhiV();
+        });
+    }
+
+    std::unique_ptr<MultiFab> diff_xFab;
+
+    diff_xFab.reset(new MultiFab(xFabA.boxArray(), xFabA.DistributionMap(), 1, 0, MFInfo()));
+
+
+
+    MultiFab::LinComb(*diff_xFab, 
+                      1.0, xFabA, 0, 
+                      -1.0, *xFabAmend, 0, 
+                      0, 1, 0);
+
+    return diff_xFab->norm2();
+}
 
 double DUGKSAmr::L2NormVelocity(int lev)
 {
@@ -39,6 +75,10 @@ double DUGKSAmr::L2NormVelocity(int lev)
 	norm_vel[ Ark::Z] = velFabNew.norm2(Ark::Z);
 
     MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
+
+    WriteL2NormVelocity (lev, 
+        std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
+        std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
 
 	return 	std::sqrt(
 			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z]) 
@@ -97,7 +137,7 @@ double DUGKSAmr::SumPhase(int lev)
 {
     return Data(lev).msv[Ark::PHI].sum();
 }
-void DUGKSAmr::FillLevelPhaseAnalytical(MultiFab &phase, const Real *dl, LV token)
+void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
 {
 	for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
     {
@@ -166,6 +206,23 @@ void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
 		});
 	}
 }
+void DUGKSAmr::reinitialize(MultiFab &phase)
+{
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = phase.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            phi(i,j,k) = phi(i,j,k) > 0.5*(PhiL() + PhiV()) ? PhiL() : PhiV();
+        }); 
+    }   
+}
 //unsteady taylor-green vortex
 void DUGKSAmr::FillLevelVelocityUnsteadyTGV(MultiFab &Velocity, MultiFab &Pressure,
 											const Real *dl,const Real time)
@@ -211,7 +268,7 @@ Vector<double> DUGKSAmr::MultiLevelResidual()
 
     for(int lev = finest_level; lev >=0; --lev)
     {
-        cur_residual.push_back(L2NormVelocity(lev));
+        cur_residual.push_back(L2NormPhase(lev));
     }
     return cur_residual;
 }
@@ -221,15 +278,20 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
 
     for(int lev = finest_level; lev >=0; --lev)
     {
-        FillLevelPhaseAnalytical(Data(lev).density_old, Geom(lev).CellSize(), LV::drop);
+        FillLevelPhaseSphere(Data(lev).density_old, Geom(lev).CellSize(), LV::drop);
     }
+    // for(int lev = finest_level; lev >=0; --lev)
+    // {
+    //     MultiFab::Copy(Data(lev).density_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
+    //     reinitialize(Data(lev).density_old);
+    // }
     for(int lev = finest_level; lev >=0; --lev)
     {
-        Real const norm_diff  = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-        // Real const norm_phase = Data(lev).msv[Ark::PHI].norm2();
+        Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
+        // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
+        
         Real const norm_phase = Data(lev).density_old.norm2();        
         cur_L2_norm.push_back(norm_diff/norm_phase);
-        // cur_L2_norm.push_back(norm_diff);
     }
     return cur_L2_norm;
 }

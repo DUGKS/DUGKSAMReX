@@ -75,11 +75,11 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
         mf.setVal(0.0);
     }
 
-    ld.msv[Ark::PHI].setVal(Rho0());
-    ld.msv[Ark::RHO].setVal(Rho0()); 
-    ld.msv[Ark::VEL].setVal(U0());
-    ld.msv[Ark::P].setVal(P0());
-    ld.msv[Ark::T].setVal(T0()); 
+    // ld.msv[Ark::PHI].setVal(Rho0());
+    // ld.msv[Ark::RHO].setVal(Rho0()); 
+    // ld.msv[Ark::VEL].setVal(U0());
+    // ld.msv[Ark::P].setVal(P0());
+    // ld.msv[Ark::T].setVal(T0()); 
 
     for(auto &mf : ld.msv_xF) {
         mf.setVal(0.0);
@@ -144,7 +144,23 @@ void DUGKSAmr::post_case_init(int const lev)
 
     ld.phase_prev.setVal(0);
     ld.velocity_prev.setVal(0);
+    
     //The following would result in a slight increase in L-2 norm error;
     // MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
     // MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
+
+    FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
+
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(ld.msv[Ark::PHI], amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.tilebox();
+
+        Array4<Real const> const &phi      = ld.msv[Ark::PHI].const_array(mfi);
+        Array4<Real      > const &grad_phi = ld.msv[Ark::GradPHI].array(mfi);
+
+        GradFunc::gradient_operator_isotropy(bx, Geom(lev).CellSize(), phi, grad_phi);
+    }
 }

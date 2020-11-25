@@ -158,8 +158,7 @@ void DUGKSCore<DVM>::Update_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> 
 		});
 	}
 }
-void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv, 
-									  const Real hTime, const Real RT)
+void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv, const Real hTime)
 {
 #ifdef ARK_USE_MOMENTUM
 	const MultiFab &PhiFab     = msv[Ark::PHI];
@@ -207,7 +206,7 @@ void DUGKSAmr::Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv,
 		});
 	}
 
-	PresFab.mult(RT, 0);
+	PresFab.mult(Ark::DmVnMomentum::RT, 0);
 #endif
 }
 void DUGKSAmr::Update_DVDF_Eq(int const lev)
@@ -248,7 +247,29 @@ void DUGKSAmr::Update_DVDF_Eq_hDt(int const lev)
 												     ld.msv_zF);
 	#endif
 }
+void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, MultiFab const &PhiFab, 
+													  MultiFab const &RhoFab)
+{
+	for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
 
+		Array4<Real const> const &phi = PhiFab.const_array(mfi);
+		Array4<Real const> const &rho = RhoFab.const_array(mfi);
+
+		Array4<Real> const &tau = tauFab.array(mfi);
+
+		amrex::ParallelFor(bx,
+		[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+		{
+			tau(i,j,k) = MuL()*MuV()/
+			((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
+		});
+	}
+
+	tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
+	MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
+}
 void DUGKSAmr::Update_MacroVars(int const lev)
 {
 	auto &ld = Data(lev);
@@ -265,9 +286,9 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 
 	AllenCahnSource(lev);
 
-	Update_MacroSourceVars(ld.msv, hDt(lev), Ark::DmVnMomentum::RT);
+	Update_MacroSourceVars(ld.msv, Dt());
 
-	AllenCahnTemporalPhiU(ld, Ark::DmVnPhase::RT);
+	AllenCahnTemporalPhiU(ld);
 }
 void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 {
@@ -289,9 +310,13 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 	AllenCahnSource_hDt(ld.msv_zF, ld.msv, IntVect::TheDimensionVector(Ark::Z));
 
-	Update_MacroSourceVars(ld.msv_xF, hDt(lev), Ark::DmVnMomentum::RT);
-	Update_MacroSourceVars(ld.msv_yF, hDt(lev), Ark::DmVnMomentum::RT);
-	Update_MacroSourceVars(ld.msv_zF, hDt(lev), Ark::DmVnMomentum::RT);
-
+	Update_MacroSourceVars(ld.msv_xF, hDt(lev));
+	Update_MacroSourceVars(ld.msv_yF, hDt(lev));
+	Update_MacroSourceVars(ld.msv_zF, hDt(lev));
+#ifdef ARK_USE_MOMENTUM
+	Update_Tau_Momentum(ld.fDVDFxF[Ark::TAUF], ld.msv_xF[Ark::PHI], ld.msv_xF[Ark::RHO]);
+	Update_Tau_Momentum(ld.fDVDFyF[Ark::TAUF], ld.msv_yF[Ark::PHI], ld.msv_yF[Ark::RHO]);
+	Update_Tau_Momentum(ld.fDVDFzF[Ark::TAUF], ld.msv_zF[Ark::PHI], ld.msv_zF[Ark::RHO]);
+#endif
 	FillPhysicalBoundaryMacroVars(lev);
 }

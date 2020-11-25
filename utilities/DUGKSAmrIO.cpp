@@ -242,7 +242,7 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
         jobInfoFile << PrettyLine;
 
 #ifdef ARK_USE_PHASE
-        jobInfoFile << "USE_PHASE---->";
+        jobInfoFile << "USE_PHASE------->";
         jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_PHASE<<"\n";
 #endif
 #ifdef ARK_USE_MOMENTUM
@@ -250,7 +250,7 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
         jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_MOMENTUM<<"\n";
 #endif
 #ifdef ARK_USE_ENERGY
-        jobInfoFile << "USE_ENERGY---->";
+        jobInfoFile << "USE_ENERGY------>";
         jobInfoFile << "Velocity Model : D"<<AMREX_SPACEDIM<<"V"<<Ark::DVM_ENERGY<<"\n";
 #endif
 
@@ -381,7 +381,7 @@ void DUGKSAmr::WritePlotFile()
 #endif
 
     // Apparent viscosity
-    // if(m_plt_eta) ++ncomp;
+    if(m_plt_tau) ++ncomp;
 
     // Vorticity
     if(m_plt_vort) ++ncomp;
@@ -501,7 +501,13 @@ void DUGKSAmr::WritePlotFile()
         ++icomp;
     }
 #endif
-
+    if (m_plt_tau) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->fDVDF[Ark::TAU], 0, icomp, 1, 0);
+        }
+        pltscaVarsName.push_back("tauMOM");
+        ++icomp;
+    }
     // if (m_plt_p) {
     //     for (int lev = 0; lev <= finest_level; ++lev) {
     //         amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
@@ -583,7 +589,7 @@ void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
         std::ofstream L2NormFile;
         std::ostringstream oss_L2;   
         oss_L2<<"L2_norm_Pe"<<Pe()
-            <<"_Cn"<<Cn()
+            <<"_TauM"<<TauPhase()
             <<"_NL"<<ChNum()<<"_"
             <<CaseName()<<".dat";
         L2NormFile.open(oss_L2.str().c_str(), std::ios::app);

@@ -5,6 +5,7 @@ namespace Ark{
 
 struct D2V5
 {
+static const unsigned D = 2;
 
 static const unsigned Q = 5;
 
@@ -34,6 +35,8 @@ static const unsigned BB[Q];
 struct D2V9
 {
 
+static const unsigned D = 2;
+
 static const unsigned Q = 9;
 
 static const double MaxU;
@@ -47,7 +50,7 @@ static const double Lambda;
 static const double A;
 static const double B;
 static const double C;
-static const double D;
+
 static const double E;
 static const double F;
 
@@ -65,6 +68,8 @@ static const unsigned BB[Q];
 
 struct D3V7
 {
+
+static const unsigned D = 3;
 
 static const unsigned Q = 7;
 
@@ -93,6 +98,7 @@ static const unsigned BB[Q];
 
 struct D3V15
 {
+static const unsigned D = 3;
 
 static const unsigned Q = 15;
 

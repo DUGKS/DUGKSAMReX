@@ -194,6 +194,7 @@ private:
     int m_plt_forcey      = 1;
     int m_plt_forcez      = 1;
 
+    int m_plt_tau         = 0;
     int m_plt_vort        = 0;
     int m_plt_strainrate  = 0;
     int m_plt_divu        = 0;
@@ -620,11 +621,11 @@ private:
                                    amrex::Geometry& lev_geom,
                                    amrex::Real time, int nghost);
 
-    void ReverseVelocityField (MultiFab &VelFab, const Real *dx, 
-                               const RealBox &rb, int const token);
+    void ElongationVelocityField (MultiFab &VelFab, const Real *dx, 
+                                  const RealBox &rb, int const token);
 
-    void SmoothedVelocityField (MultiFab &VelFab, const Real *dx, 
-                                const Real Time, int const token);
+    void DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
+                                   const Real Time, int const token);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -667,14 +668,17 @@ private:
     void CheckForNans (int lev);
     void PublicFillPatchNew(int const lev);
 
-    double L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, int const comp = 0);
+    double L2NormSubtract (const MultiFab& xFabA, const MultiFab& xFabB, int const comp = 0);
+    double L2NormSubtractZalesakDisk (const MultiFab& xFabA, const MultiFab& xFabB);
     double L2NormVelocity(int lev);
     double L2NormPhase(int lev);
     double L2NormDensity(int lev);
     double SumPhase(int lev);
+    void reinitialize(MultiFab &);
+    void ReinitializePhase(MultiFab &phase);
 
     void FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl);
-    void FillLevelPhaseAnalytical(MultiFab &phase, const Real *dl, LV token);
+    void FillLevelPhaseSphere (MultiFab &phase, const Real *dl, LV token);
     void FillLevelVelocityUnsteadyTGV(MultiFab &Velocity, MultiFab &Pressure,
                                             const Real *dl,const Real time);
 
