@@ -1,0 +1,39 @@
+# IDE Lint
+build/
+.build/
+.vscode/
+./*/
+!./Test/
+!./Ark/
+Test/nohup.out
+Test/*.[oa]
+Test/*.ex
+Test/*.ex.dSYM
+Test/*.exe
+Test/*.exe.dSYM
+Test/build/
+Test/tmp_build_dir/
+Test/d/
+Test/f/
+Test/o/
+Test/t/
+Test/*.sh
+Test/*/
+TAGS
+
+# latex
+*.aux
+*.log
+*.bbl
+*.toc
+*.dvi
+*-eps-converted-to.pdf
+
+.DS_Store
+Docs/AMReXUsersGuide/Visualization/*.pdf
+Docs/sphinx/build
+
+.nfs*
+
+# vi
+*.sw[a-z]
