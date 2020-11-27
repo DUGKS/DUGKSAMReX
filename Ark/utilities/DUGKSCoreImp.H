@@ -3,7 +3,7 @@
 
 template<typename DVM>
 void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-							   		Real const dTime, Real const hTime)
+							   		Real const hTime, Real const dTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -12,7 +12,7 @@ void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-		Array4<Real const> const &xtau  = xDVDF[Ark::TAU].const_array(mfi);
+		Array4<Real const> const &xTau  = xDVDF[Ark::TAU].const_array(mfi);
         Array4<Real const> const &xWave = xDVDF[Ark::WAVE].const_array(mfi);
         Array4<Real const> const &xEq   = xDVDF[Ark::EQ].const_array(mfi);
         Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
@@ -21,10 +21,12 @@ void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF,
         amrex::ParallelFor(bx, DVM::Q, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real b = 3.0*hTime/(2.0*xtau(i,j,k) + dTime);
-        	const Real c = b*xtau(i,j,k);
+        	const Real xtau = xTau(i,j,k);
+        	const Real b = (hTime + dTime)/(2.0*xtau + dTime);
+        	// const Real c = b*xTau(i,j,k);
 
-        	xBP(i,j,k,n) = xWave(i,j,k,n) + b*(xEq(i,j,k,n) - xWave(i,j,k,n)) + c*xSo(i,j,k,n);
+        	xBP(i,j,k,n) = xWave(i,j,k,n)
+        				 + b*(xEq(i,j,k,n) - xWave(i,j,k,n) + xtau*xSo(i,j,k,n));
         });
 
   //       const auto lo = lbound(bx);
@@ -442,8 +444,7 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-		Array4<Real const> const &xtauh = xDVDFnF[Ark::TAUF].const_array(mfi);
-        // Array4<Real const> const &xBh   = xDVDFnF[Ark::BHF].const_array(mfi);
+		Array4<Real const> const &xTauh = xDVDFnF[Ark::TAUF].const_array(mfi);
         Array4<Real const> const &xEqh  = xDVDFnF[Ark::EQF].const_array(mfi);
         Array4<Real const> const &xSoh  = xDVDFnF[Ark::SOF].const_array(mfi);
 
@@ -452,11 +453,12 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real bh = hTime/(2.0*xtauh(i,j,k) + hTime);
-        	const Real ch = bh*xtauh(i,j,k);
+        	const Real xtauh = xTauh(i,j,k);
+        	const Real bh = hTime/(2.0*xTauh(i,j,k) + hTime);
+        	// const Real ch = bh*xtauh;
        	//
-        	xFlux(i,j,k,n) = xFlux(i,j,k,n) + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n))
-        				   + ch*xSoh(i,j,k,n);
+        	xFlux(i,j,k,n) = xFlux(i,j,k,n) 
+        				   + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
 
@@ -477,9 +479,9 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
+void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab, 
 							 	  const Vector<MultiFab const*> &xFluxFabnF,
-							 	  const Real *dx, const Real dTime)
+							 	  const Real *dx, const Real hTime, const Real dTime)
 {
 	const Real dlx = dx[Ark::X];
 	const Real dly = dx[Ark::Y];
@@ -521,7 +523,7 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 		amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	Real xFluxSum
+        	Real const xFluxSum
         	= (xFlux_xF(i,j,k,n) - xFlux_xF(i + 1,j,    k,    n))*dSx*DVM::xi_u[n]
 			+ (xFlux_yF(i,j,k,n) - xFlux_yF(i,    j + 1,k,    n))*dSy*DVM::xi_v[n]
 #if(AMREX_SPACEDIM == 3)
@@ -529,8 +531,10 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 #endif			
 			;
 
-			xWave(i,j,k,n) = DUGKSCore::aT*xBP(i,j,k,n) - DUGKSCore::bT*xWave(i,j,k,n)
-						   + xFluxSum*dTime/volume;
+			const Real b = (hTime - dTime)/(hTime + dTime);
+			Real const xWavePlus = xBP(i,j,k,n) + b*(xWave(i,j,k,n) - xBP(i,j,k,n));
+
+			xWave(i,j,k,n) = xWavePlus + xFluxSum*dTime/volume;
         });
 	}
 }

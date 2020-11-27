@@ -2,9 +2,9 @@
 build/
 .build/
 .vscode/
-./*/
-!./Test/
-!./Ark/
+/*/
+!/Test/
+!/Ark/
 Test/nohup.out
 Test/*.[oa]
 Test/*.ex

@@ -14,7 +14,7 @@ public:
 
 	//DUGKSCoreImp.H
 	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-								Real const dTime, Real const hTime);
+								Real const hTime, Real const dTime);
 
 	static void Update_Grad_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
 
@@ -31,7 +31,7 @@ public:
 	
 	static void Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 							 const Vector<MultiFab const *> &xFluxFabnF,
-							 const Real *dx, const Real dTime);
+							 const Real *dx, const Real hTime, const Real dTime);
 
 	//../discrete_velocity_model/DUGKSDmVn***.cpp
 	template<long unsigned NUM>

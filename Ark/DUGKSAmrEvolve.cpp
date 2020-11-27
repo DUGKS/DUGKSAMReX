@@ -5,41 +5,41 @@ void DUGKSAmr::Update_DVDF_Wave (int const lev)
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_Wave(ld.hDVDF[Ark::WAVE], ld.hDVDF[Ark::BP],
-									  ld.get_hDVDFnF_flux_const(),
-									  Geom(lev).CellSize(), Dt());
+	DUGKSCore<Ark::DmVnPhase>::Update_Wave (ld.hDVDF[Ark::WAVE], ld.hDVDF[Ark::BP],
+											ld.get_hDVDFnF_flux_const(),
+									  	    Geom(lev).CellSize(), hDt(lev), Dt());
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Wave(ld.fDVDF[Ark::WAVE], ld.fDVDF[Ark::BP],
-									  	 ld.get_fDVDFnF_flux_const(),
-									  	 Geom(lev).CellSize(), Dt());
+	DUGKSCore<Ark::DmVnMomentum>::Update_Wave (ld.fDVDF[Ark::WAVE], ld.fDVDF[Ark::BP],
+											   ld.get_fDVDFnF_flux_const(),
+									  	       Geom(lev).CellSize(), hDt(lev), Dt());
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_Wave(ld.gDVDF[Ark::WAVE], ld.gDVDF[Ark::BP],
-									   ld.get_gDVDFnF_flux_const(),
-									   Geom(lev).CellSize(), Dt());
+	DUGKSCore<Ark::DmVnEnergy>::Update_Wave (ld.gDVDF[Ark::WAVE], ld.gDVDF[Ark::BP], 
+											 ld.get_gDVDFnF_flux_const(),
+									   		 Geom(lev).CellSize(), hDt(lev), Dt());
 #endif
 }
 
-void DUGKSAmr::Update_DVDF_BarPlus(int const lev)
+void DUGKSAmr::Update_DVDF_BarPlus(int const lev, double const hTime)
 {
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, Dt(), hDt(lev));
+	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.hDVDF[Ark::BP], &LevelData::hDVDF);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	// Update_Tau_Momentum(ld.fDVDF[Ark::TAU], ld.msv[Ark::PHI], ld.msv[Ark::RHO]);
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, Dt(), hDt(lev));
+	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, Dt(), hDt(lev));
+	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif
 }
@@ -213,7 +213,17 @@ void DUGKSAmr::Advance()
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Eq (lev);
-		Update_DVDF_BarPlus (lev);
+	}
+
+	for (int lev = finest_level; lev >= 0; --lev) {
+
+		int const crse_lev = (lev == 0 ? lev : lev-1);
+		
+		Update_DVDF_BarPlus (crse_lev, hDt(lev));
+		Update_DVDF_BarPlus (lev, hDt(lev));
+	}
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Grad_BarPlus (lev);
 		Update_DVDF_MesoFlux (lev);
 	}

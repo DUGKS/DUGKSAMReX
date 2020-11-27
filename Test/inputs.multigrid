@@ -6,9 +6,9 @@ geometry.prob_hi        =  256 256 0     # Hi corner coordinates
 
 geometry.is_periodic    =   1 1 1   # Periodicity x y z (0/1)
 
-geometry.ch_num = 256
+geometry.ch_num = 128
 geometry.ch_length  = 256.0
-geometry.min_length = 1.0
+geometry.min_length = 2.0
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -49,9 +49,10 @@ case.momentum_name	=	""			# momentum model
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-time.fixed_trace        =   true       # Use fix trace time step?
-time.CFL	            =   0.8        # Use this constant CFL
+time.fixed_trace        =   false       # Use fix time step size in tracing?
+time.trace_time_step    =   0.4  
 time.advance_time_step 	=   0.8        # time step size
+time.CFL	            =   0.8        # Use this constant CFL
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #             PHYSICS BASE              #

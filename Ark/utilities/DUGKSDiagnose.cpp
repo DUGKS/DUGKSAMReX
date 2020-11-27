@@ -299,34 +299,6 @@ void DUGKSAmr::CheckDUGKSAmr()
 {
 	amrex::Print()<<"Checking variables in DUGKSAmr ..."<<std::endl;
 
-//
-    if(steady_state && end_step > 0) 
-    {
-        std::ostringstream ss;   
-        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "end_step is expected to be negative if steady_state is used!" 
-            << '\n';
-        amrex::Abort(ss.str());
-    }
-    if(!steady_state && end_step <= 0)
-    {
-        std::ostringstream ss;   
-        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "either steady_state or end_step should be used!" 
-            << '\n';
-        amrex::Abort(ss.str());
-    }
-    if( Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_UW 
-        and 
-        Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_CD)
-    {
-        std::ostringstream ss;   
-        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "Invalid function for Update_DVDF_Barh!!!" 
-            << '\n';
-        amrex::Abort(ss.str());
-    }
-
 #ifdef ARK_USE_PHASE
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnPhase::D,
         "Fatal Error : mismatch between DVM_PHASE and DmVnPhase");
@@ -341,6 +313,47 @@ void DUGKSAmr::CheckDUGKSAmr()
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnEnergy::D,
         "Fatal Error : mismatch between DVM_ENERGY and DmVnEnergy");
 #endif
+
+    //
+    if(steady_state && end_step > 0) 
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "end_step is expected to be negative if steady_state is used!" 
+            << '\n';
+        amrex::Abort(ss.str());
+    }
+
+    if(!steady_state && end_step <= 0)
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "either steady_state or end_step should be used!" 
+            << '\n';
+        amrex::Abort(ss.str());
+    }
+
+    if (Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_UW 
+        and 
+        Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_CD)
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "Invalid function for Update_DVDF_Barh!!!" 
+            << '\n';
+        amrex::Abort(ss.str());
+    }
+
+    {
+        if (CFL()*MinL() < Dt() or CFL()*MinL() < hDt(max_level))
+        {
+           std::ostringstream ss;   
+           ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+           ss  << "The time step exceeds the CFL limit!!!" 
+               << '\n';
+           amrex::Abort(ss.str()); 
+        }
+    }
 
 	amrex::Print()<<"Checking Done."<<std::endl;
 }

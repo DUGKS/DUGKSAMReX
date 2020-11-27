@@ -556,7 +556,7 @@ private:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void Update_DVDF_BarPlus (int const lev);
+    void Update_DVDF_BarPlus (int const lev, double const hTime);
 
     void Update_DVDF_Grad_BarPlus (int const lev);
 

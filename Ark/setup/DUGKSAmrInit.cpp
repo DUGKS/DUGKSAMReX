@@ -38,9 +38,10 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
     ppTime.get("fixed_trace", use_fixed_trace);
     ppTime.get("CFL", Courant_Friedrichs_Lewy);
     ppTime.get("advance_time_step", advance_time_step);
+    ppTime.get("trace_time_step", trace_time_step.back());
 
     if(use_fixed_trace) {
-        for(auto &d : trace_time_step) { d = 0.5*advance_time_step; }
+        for(auto &d : trace_time_step) { d = trace_time_step.back(); }
     }
     else {
         SetMutableTraceTimeStep();
@@ -179,11 +180,10 @@ void DUGKSAmr::InitData()
 }
 void DUGKSAmr::SetMutableTraceTimeStep()
 {
-    trace_time_step[max_level] = 0.5*Dt();
-
     for(int lev = max_level-1;lev >= 0;--lev)
     {
         trace_time_step[lev] = ref_ratio[lev].min()*trace_time_step[lev + 1];
+        amrex::Print() << trace_time_step[lev] << std::endl;
     }
 }
 void DUGKSAmr::SetFluxScheme()
