@@ -38,13 +38,15 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
     ppTime.get("fixed_trace", use_fixed_trace);
     ppTime.get("CFL", Courant_Friedrichs_Lewy);
     ppTime.get("advance_time_step", advance_time_step);
-    ppTime.get("trace_time_step", trace_time_step.back());
+
+    double hTime = 0.5*advance_time_step;
+    ppTime.query("trace_time_step", hTime);
 
     if(use_fixed_trace) {
-        for(auto &d : trace_time_step) { d = trace_time_step.back(); }
+        for(auto &d : trace_time_step) { d = hTime; }
     }
     else {
-        SetMutableTraceTimeStep();
+        SetMutableTraceTimeStep(hTime);
     }
 
     }
@@ -106,19 +108,19 @@ void DUGKSAmr::ReadIOParameters()
     if (plt_ccse_regtest != 0)
     {
         m_plt_phi         =   1;
-        m_plt_rho         =   1;
-        m_plt_velx        =   1;
-        m_plt_vely        =   1;
-        m_plt_velz        =   1;
-        m_plt_pres        =   1;
-        m_plt_temp        =   1;
-        m_plt_gphix       =   1;
-        m_plt_gphiy       =   1;
-        m_plt_gphiz       =   1;
-        m_plt_forcex      =   1;
-        m_plt_forcey      =   1;
-        m_plt_forcez      =   1;
-        m_plt_tau         =   1;
+        m_plt_rho         =   0;
+        m_plt_velx        =   0;
+        m_plt_vely        =   0;
+        m_plt_velz        =   0;
+        m_plt_pres        =   0;
+        m_plt_temp        =   0;
+        m_plt_gphix       =   0;
+        m_plt_gphiy       =   0;
+        m_plt_gphiz       =   0;
+        m_plt_forcex      =   0;
+        m_plt_forcey      =   0;
+        m_plt_forcez      =   0;
+        m_plt_tau         =   0;
         m_plt_vort        =   0;
         m_plt_strainrate  =   0;
         m_plt_divu        =   0;
@@ -178,8 +180,10 @@ void DUGKSAmr::InitData()
         printGridSummary(amrex::OutStream(), 0, finest_level);
     }
 }
-void DUGKSAmr::SetMutableTraceTimeStep()
+void DUGKSAmr::SetMutableTraceTimeStep(const double hTime)
 {
+    trace_time_step[max_level] = hTime;
+
     for(int lev = max_level-1;lev >= 0;--lev)
     {
         trace_time_step[lev] = ref_ratio[lev].min()*trace_time_step[lev + 1];
@@ -188,16 +192,16 @@ void DUGKSAmr::SetMutableTraceTimeStep()
 }
 void DUGKSAmr::SetFluxScheme()
 {
-    if(FluxScheme() == "central")
+    if(FluxScheme() == "CD" or FluxScheme() == "cd")
     {
         Update_DVDF_Barh = &DUGKSAmr::Update_DVDF_Barh_CD;
     }
-    else if(FluxScheme() == "upwind")
+    else if(FluxScheme() == "UW" or FluxScheme() == "uw")
     {
         Update_DVDF_Barh = &DUGKSAmr::Update_DVDF_Barh_UW;
     }
     else
     {
-        amrex::Abort("FulxScheme must be either central or upwind");
+        amrex::Abort("FulxScheme must be either Central Scheme(CD) or Upwind Scheme(UW)");
     }
 }

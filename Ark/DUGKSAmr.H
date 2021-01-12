@@ -181,18 +181,18 @@ private:
     bool write_plot_on_restart = false;
 
     int m_plt_phi         = 1;
-    int m_plt_rho         = 1;
-    int m_plt_velx        = 1;
-    int m_plt_vely        = 1;
-    int m_plt_velz        = 1;
-    int m_plt_pres        = 1;
-    int m_plt_temp        = 1;
-    int m_plt_gphix       = 1;
-    int m_plt_gphiy       = 1;
-    int m_plt_gphiz       = 1;
-    int m_plt_forcex      = 1;
-    int m_plt_forcey      = 1;
-    int m_plt_forcez      = 1;
+    int m_plt_rho         = 0;
+    int m_plt_velx        = 0;
+    int m_plt_vely        = 0;
+    int m_plt_velz        = 0;
+    int m_plt_pres        = 0;
+    int m_plt_temp        = 0;
+    int m_plt_gphix       = 0;
+    int m_plt_gphiy       = 0;
+    int m_plt_gphiz       = 0;
+    int m_plt_forcex      = 0;
+    int m_plt_forcey      = 0;
+    int m_plt_forcez      = 0;
 
     int m_plt_tau         = 0;
     int m_plt_vort        = 0;
@@ -534,6 +534,10 @@ private:
 
     void LayeredPoiseuille (int const lev);
 
+    void SpinodalDecomposition(int const lev);
+
+    void RayleighTaylorInstability(int const lev);
+
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -636,7 +640,7 @@ private:
     void ReadParametersDUGKSAmr ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
-    void SetMutableTraceTimeStep();
+    void SetMutableTraceTimeStep(const double hTime);
     void SetFluxScheme();
 
     ///////////////////////////////////////////////////////////////////////////
@@ -661,6 +665,8 @@ private:
     void WriteResidualFile(const Vector<double> &);
     void WriteSumPhaseFile(const Vector<double> &);
     void WriteL2NormVelocity(int const lev, double const vel_diff, double const vel_norm);
+    void WriteInterfacePosition(const Vector<double> &interfacePosition);
+    void WriteComputingTime(const double interval);
     //diagnose
     void PrintMaxValues (amrex::Real time);
     void PrintMaxVel (int lev);
@@ -674,6 +680,9 @@ private:
     double L2NormPhase(int lev);
     double L2NormDensity(int lev);
     double SumPhase(int lev);
+    double InterfacePosition (const MultiFab& phi, const double rb_lo_y, const Real* dl,
+                              int const I, int const K);
+    Vector<double> InterfacePosition(int lev);
     void reinitialize(MultiFab &);
     void ReinitializePhase(MultiFab &phase);
 

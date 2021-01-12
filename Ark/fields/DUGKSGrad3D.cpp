@@ -260,3 +260,13 @@ void GradFunc::laplacian_operator_isotropy (const Box &bx, Real const *dl,
 	});
 }
 #endif
+
+double GradFunc::central_interpolation (const double upstream1, const double upstream0,
+                            		    const double downstream0, const double downstream1)
+{
+    // return ( (upstream2 + downstream2)*3 
+    //        - (upstream1 + downstream1)*25.0
+    //        + (upstream0 + downstream0)*150.0)/256.0;
+
+    return ( (upstream0 + downstream0)*9.0 - (upstream1 + downstream1))/16.0;
+}

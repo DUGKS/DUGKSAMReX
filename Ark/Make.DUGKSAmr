@@ -83,6 +83,8 @@ cleanOF:
 	find ${TESTDIR} -name "chk*" -type d -prune -exec rm -rf {} \;
 	find ${TESTDIR} -name "plt*" -type d -prune -exec rm -rf {} \;
 	find ${TESTDIR} -name "*.dat" -type f -prune -exec rm -f {} \;
+	find ${TESTDIR} -name "*.out" -type f -prune -exec rm -f {} \;
+	find ${TESTDIR} -name "*.optrpt" -type f -prune -exec rm -f {} \;
 	find ${TESTDIR} -name "Backtrace*" -type f -prune -exec rm -f {} \;
 #
 #   find ${OUTFILE_LOCATIONS} -name "tecplot-derived" -type d -exec mv -f {} \;

@@ -82,12 +82,17 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,
 			fEq(i,j,k,n) -= static_cast<int>(n == 0)*p/DVM::RT;
 			#endif
 
+			// fSo(i,j,k,n) = DVM::omega[n]*
+			// 		   (
+			// 		   (1+Gamma)*((DVM::xi_u[n] - u)*fx   + (DVM::xi_v[n] - v)*fy)/DVM::RT
+			// 		   +
+			// 		   Gamma*((DVM::xi_u[n] - u)*rhox + (DVM::xi_v[n] - v)*rhoy)
+			// 		   );
 			fSo(i,j,k,n) = DVM::omega[n]*
-					   (
-					   (1+Gamma)*((DVM::xi_u[n] - u)*fx   + (DVM::xi_v[n] - v)*fy)/DVM::RT
-					   +
-					   Gamma*((DVM::xi_u[n] - u)*rhox + (DVM::xi_v[n] - v)*rhoy)
-					   );
+			(
+			  ((DVM::xi_u[n] - u)*fx   + (DVM::xi_v[n] - v)*fy)
+			+ (DVM::xi_u[n]*(fx + rhox*DVM::RT) + DVM::xi_v[n]*(fy + rhoy*DVM::RT))*u1
+			)/DVM::RT;
 		});
 	}	
 }
@@ -151,33 +156,41 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
 {
 #ifdef ARK_USE_MOMENTUM
 	const MultiFab &PhiFab     = msv[Ark::PHI];
-	const MultiFab &ForceFab   = msv[Ark::FORCE];
 	const MultiFab &GradRhoFab = msv[Ark::GradRHO];
 
 	//density
 	MultiFab &RhoFab  = msv[Ark::RHO];
+	MultiFab &VelFab  = msv[Ark::VEL];
 	MultiFab &PresFab = msv[Ark::P];
+	MultiFab &ForceFab   = msv[Ark::FORCE];
 	
 	MultiFab::Copy(RhoFab, PhiFab, 0, 0, 1, zero_ghost());
 	RhoFab.mult(APhi(), 0);
 	RhoFab.plus(BPhi(), 0);
 
-	MultiFab &VelFab = msv[Ark::VEL];
-
-	// VelFab.mult(2*Ark::DmVnMomentum::Lambda,0);
-	MultiFab::Saxpy(VelFab, 0.5*hTime, ForceFab, 0, 0, AMREX_SPACEDIM, 0);
-	MultiFab::Divide(VelFab, RhoFab, 0, 0, 1, 0);
-	MultiFab::Divide(VelFab, RhoFab, 0, 1, 1, 0);
+	// MultiFab::Saxpy(VelFab, 0.5*hTime, ForceFab, 0, 0, AMREX_SPACEDIM, 0);
+	// MultiFab::Divide(VelFab, RhoFab, 0, 0, 1, 0);
+	// MultiFab::Divide(VelFab, RhoFab, 0, 1, 1, 0);
 
 
 	for(amrex::MFIter mfi(RhoFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
+		Array4<Real const> const &rho 	   = RhoFab.array(mfi);
 		Array4<Real const> const &grad_rho = GradRhoFab.const_array(mfi);
 
-		Array4<Real const> const &vel  = VelFab.array(mfi);
-		Array4<Real> const &pres = PresFab.array(mfi);
+		Array4<Real> const &vel   = VelFab.array(mfi);
+		Array4<Real> const &pres  = PresFab.array(mfi);
+		Array4<Real> const &force = ForceFab.array(mfi);
+
+		amrex::ParallelFor(bx, AMREX_SPACEDIM,
+		[=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
+		{
+			force(i,j,k,n) += rho(i,j,k)*Gravity(n);
+			vel(i,j,k,n) += 0.5*hTime*(force(i,j,k,n));
+			vel(i,j,k,n) /= rho(i,j,k);
+		});
 
 		amrex::ParallelFor(bx,
 		[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
@@ -193,7 +206,6 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
 			#endif
 		});
 	}
-
 	PresFab.mult(Ark::DmVnMomentum::RT, 0);
 #endif
 }
@@ -207,25 +219,41 @@ void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, MultiFab const &PhiFab,
 	// tauFab.mult(AMu, 0);
 	// tauFab.plus(BMu, 0);
 
-	for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
-	{
-		const amrex::Box& bx = mfi.tilebox();
+	// for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	// {
+	// 	const amrex::Box& bx = mfi.tilebox();
 
-		Array4<Real const> const &phi = PhiFab.const_array(mfi);
-		// Array4<Real const> const &rho = RhoFab.const_array(mfi);
+	// 	Array4<Real const> const &phi = PhiFab.const_array(mfi);
+	// 	// Array4<Real const> const &rho = RhoFab.const_array(mfi);
 
-		Array4<Real> const &tau = tauFab.array(mfi);
+	// 	Array4<Real> const &tau = tauFab.array(mfi);
 
-		amrex::ParallelFor(bx,
-		[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
-		{
-			tau(i,j,k) = MuL()*MuV()/
-			((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
-		});
-	}
+	// 	amrex::ParallelFor(bx,
+	// 	[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+	// 	{
+	// 		tau(i,j,k) = MuL()*MuV()/
+	// 		((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
+	// 	});
+	// }
 
-	tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
-	MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
+	// tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
+	// MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
+
+	// for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	// {
+	// 	const amrex::Box& bx = mfi.tilebox();
+
+	// 	Array4<Real const> const &phi = PhiFab.const_array(mfi);
+	// 	Array4<Real const> const &rho = RhoFab.const_array(mfi);
+
+	// 	Array4<Real> const &tau = tauFab.array(mfi);
+
+	// 	amrex::ParallelFor(bx,
+	// 	[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+	// 	{
+	// 		tau(i,j,k) = Nu0()*Ark::DmVnMomentum::Lambda*2.0;
+	// 	});
+	// }
 }
 void DUGKSAmr::Update_DVDF_Eq(int const lev)
 {	
@@ -335,6 +363,5 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 	Update_Tau_Momentum(ld.fDVDFxF[Ark::TAUF], ld.msv_xF[Ark::PHI], ld.msv_xF[Ark::RHO]);
 	Update_Tau_Momentum(ld.fDVDFyF[Ark::TAUF], ld.msv_yF[Ark::PHI], ld.msv_yF[Ark::RHO]);
 #endif
-
 	FillPhysicalBoundaryMacroVars(lev);
 }

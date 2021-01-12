@@ -19,7 +19,7 @@ void DUGKSAmr::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
                                                                          m_eb_full_grow_cells},
                                                                         m_eb_support_level);
 #else
-    std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
+    std::unique_ptr<FabFactory<FArrayBox>> new_fact(new FArrayBoxFactory());
 #endif
     std::unique_ptr<LevelData> new_leveldata(new LevelData(ba, dm, *new_fact, nghost_state()));
 

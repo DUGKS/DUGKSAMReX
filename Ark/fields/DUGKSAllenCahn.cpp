@@ -48,11 +48,11 @@ void DUGKSAmr::AllenCahnSource (int const lev)
 			double laplacian_phi = GradFunc::laplacian_operator_isotropy(dl,phi,i,j,k);
 			double mu_phi = ChemicalPotential(phi(i,j,k), laplacian_phi);
 
-			//F = Fs + G
-			force(i,j,k,Ark::X) = mu_phi*grad_phi(i,j,k,Ark::X) + Gravity(Ark::X);
-			force(i,j,k,Ark::Y) = mu_phi*grad_phi(i,j,k,Ark::Y) + Gravity(Ark::Y);
+			//F = Fs
+			force(i,j,k,Ark::X) = mu_phi*grad_phi(i,j,k,Ark::X);
+			force(i,j,k,Ark::Y) = mu_phi*grad_phi(i,j,k,Ark::Y);
 #if(AMREX_SPACEDIM == 3)
-			force(i,j,k,Ark::Z) = mu_phi*grad_phi(i,j,k,Ark::Z) + Gravity(Ark::Z);
+			force(i,j,k,Ark::Z) = mu_phi*grad_phi(i,j,k,Ark::Z);
 #endif
 		});
 #endif
@@ -68,12 +68,18 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 							 		Array<MultiFab, Ark::MSVNUM> const &msv,
 							 		const IntVect &faceIndex)
 {
-	int const di = faceIndex[0];
-	int const dj = faceIndex[1];
+	int const di  = faceIndex[0];
+	int const di2 = di  + di;
+
+	int const dj  = faceIndex[1];
+	int const dj2 = dj  + dj;
+
 #if(AMREX_SPACEDIM == 3)
-	int const dk = faceIndex[2];
+	int const dk  = faceIndex[2];
+	int const dk2 = dk  + dk;
 #else
 	int const dk = 0;
+	int const dk2 = 0;      
 #endif
 
 	#ifdef _OPENMP
@@ -96,11 +102,26 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 		amrex::ParallelFor(bx, AMREX_SPACEDIM,
 		[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 		{
-			grad_phi_nF(i,j,k,n) = 0.5*(grad_phi(i,j,k,n) + grad_phi(i-di, j-dj, k-dk, n));
+			grad_phi_nF(i,j,k,n) = 
+			GradFunc::central_interpolation(grad_phi(i-di2,j-dj2,k-dk2,n),
+										    grad_phi(i-di ,j-dj ,k-dk ,n),
+										    grad_phi(i    ,j    ,k    ,n),
+										    grad_phi(i+di ,j+dj ,k+dk ,n));
 
 #ifdef ARK_USE_MOMENTUM
 			grad_rho_nF(i,j,k,n) = 0.5*(grad_rho(i,j,k,n) + grad_rho(i-di, j-dj, k-dk, n));
 			force_nF(i,j,k,n)    = 0.5*(force(i,j,k,n)    + force(i-di, j-dj, k-dk, n));
+			// grad_rho_nF(i,j,k,n) = 
+			// GradFunc::central_interpolation(grad_rho(i-di2,j-dj2,k-dk2,n),
+			// 							    grad_rho(i-di ,j-dj ,k-dk ,n),
+			// 							    grad_rho(i    ,j    ,k    ,n),
+			// 							    grad_rho(i+di ,j+dj ,k+dk ,n));
+
+			// force_nF(i,j,k,n) =
+			// GradFunc::central_interpolation(force(i-di2,j-dj2,k-dk2,n),
+			// 							    force(i-di ,j-dj ,k-dk ,n),
+			// 							    force(i    ,j    ,k    ,n),
+			// 							    force(i+di ,j+dj ,k+dk ,n));
 #endif
 		});
 

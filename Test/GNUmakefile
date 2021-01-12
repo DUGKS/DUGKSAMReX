@@ -1,4 +1,4 @@
-AMREX_HOME ?= ${HOME}/AMReX/amrex
+AMREX_HOME ?= ${HOME}/amrex
 
 TOP = ..
 
@@ -8,7 +8,7 @@ DEBUG	= FALSE
 
 DIM	= 2 
 
-COMP    = gnu
+COMP    = gnu 
 
 USE_MPI   = TRUE
 USE_OMP   = FALSE

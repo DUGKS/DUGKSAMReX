@@ -268,7 +268,7 @@ Vector<double> DUGKSAmr::MultiLevelResidual()
 
     for(int lev = finest_level; lev >=0; --lev)
     {
-        cur_residual.push_back(L2NormPhase(lev));
+        cur_residual.push_back(L2NormVelocity(lev));
     }
     return cur_residual;
 }
@@ -294,4 +294,67 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
         cur_L2_norm.push_back(norm_diff/norm_phase);
     }
     return cur_L2_norm;
+}
+double DUGKSAmr::InterfacePosition (const MultiFab& PhaseFab, const double probDomain_lo_y,
+                                    const Real* dx, int const indexI, int const indexK)
+{
+    const double phiMid = (PhiL() + PhiV())/2;
+    double position = -1;
+    double deltaPhi = PhiL() - PhiV();
+    int min_proc = 0;
+//
+    for(amrex::MFIter mfi(PhaseFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real const> const &phi  = PhaseFab.const_array(mfi);
+
+        amrex::ParallelFor(bx, 
+        [=, &position, &deltaPhi] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            if(i == indexI and k == indexK)
+            {
+                if (std::fabs(phi(i,j,k) - phiMid) < deltaPhi) 
+                {
+                    deltaPhi = std::fabs(phi(i,j,k) - phiMid);
+                    position = ((j + 0.5)*dx[Ark::Y] + probDomain_lo_y)/ChLength();
+                }
+            }
+        }); 
+    }
+    
+    std::vector<double> dphiv = amrex::ParallelDescriptor::Gather(deltaPhi, 
+                                amrex::ParallelDescriptor::IOProcessorNumber());
+    if (amrex::ParallelDescriptor::IOProcessor()) {
+        min_proc = std::min_element(dphiv.begin(), dphiv.end()) - dphiv.begin();
+    }
+//
+    amrex::ParallelDescriptor::Bcast(&min_proc,1,amrex::ParallelDescriptor::IOProcessorNumber());
+    amrex::ParallelDescriptor::Bcast(&position,1,min_proc);
+
+    return position;
+}
+Vector<double> DUGKSAmr::InterfacePosition(int lev)
+{
+    const Real *dx = Geom(lev).CellSize();
+    const Box &domain = Geom(lev).Domain();
+    const RealBox &rb = Geom(lev).ProbDomain();
+    const auto &ld = Data(lev);
+
+    const MultiFab &PhaseFab = ld.msv[Ark::PHI];
+
+#if(AMREX_SPACEDIM == 3)   
+    const double bubble = InterfacePosition(PhaseFab, rb.lo(Ark::Y), dx, 0, 0);
+    const double saddle = InterfacePosition(PhaseFab, rb.lo(Ark::Y), dx, 
+                                            0, domain.length(Ark::Z)/2);
+    const double spike  = InterfacePosition(PhaseFab, rb.lo(Ark::Y), dx, 
+                                            domain.length(Ark::X)/2, domain.length(Ark::Z)/2);
+    return {bubble,saddle,spike};
+#else
+    const double bubble = InterfacePosition(PhaseFab, rb.lo(Ark::Y), dx, 0, 0);
+    const double spike  = InterfacePosition(PhaseFab, rb.lo(Ark::Y), dx,  
+                                            domain.length(Ark::X)/2, 0);
+
+    return {bubble,spike};
+#endif 
 }

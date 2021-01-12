@@ -83,7 +83,7 @@ void DUGKSAmr::UniformFlow(int const lev)
 }
 void DUGKSAmr::QuiescentDrop(int const lev)
 {
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 10 && CaseName() == "QuiescentDrop"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 220 && CaseName() == "QuiescentDrop"));
 
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
@@ -99,7 +99,7 @@ void DUGKSAmr::QuiescentDrop(int const lev)
 }
 void DUGKSAmr::TransDrop(int const lev)
 {
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 11 && CaseName() == "TransDrop"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 221 && CaseName() == "TransDrop"));
 
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
@@ -124,7 +124,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 12 && CaseName() == "ZalesakDisk"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 222 && CaseName() == "ZalesakDisk"));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -218,7 +218,7 @@ void DUGKSAmr::InterfaceElongation(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 13 && CaseName() == "InterfaceElongation"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() ==223 && CaseName() == "InterfaceElongation"));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -313,7 +313,7 @@ void DUGKSAmr::SmoothDeformation(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 14 && CaseName() == "SmoothDeformation"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 224 && CaseName() == "SmoothDeformation"));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -352,7 +352,7 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 15 && CaseName() == "LayeredPoiseuille")); 
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 225 && CaseName() == "LayeredPoiseuille")); 
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -381,6 +381,84 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
                          *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());
             rho(i,j,k) = 0.5*(RhoL() + RhoV()) + 0.5*(RhoL() - RhoV())
                          *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());          
+        });
+    }
+}
+void DUGKSAmr::SpinodalDecomposition(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 226 && CaseName() == __func__)); 
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+
+            phi(i,j,k) = 0.6 + (amrex::Random())*0.01;
+            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();          
+        });
+    }
+}
+void DUGKSAmr::RayleighTaylorInstability(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 227 && CaseName() == "RayleighTaylorInstability")); 
+
+    _Peclet = std::sqrt(std::fabs(Gravity(Ark::Y))*ChLength())*ChLength()/MPhi();
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double x = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double z = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+            const double midY = CenterPF(Ark::Y) 
+            + 0.05*ChLength()*(cos(2.*PI*x/ChLength()) + cos(2.*PI*z/ChLength()));
+#else
+            const double midY = CenterPF(Ark::Y) + 0.05*ChLength()*cos(2.*PI*x/ChLength());
+#endif
+            phi(i,j,k) = 0.5*(PhiL() + PhiV()) + 0.5*(PhiL() - PhiV())
+                         *tanh((y - midY)*2/WidthI());
+            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();          
         });
     }
 }

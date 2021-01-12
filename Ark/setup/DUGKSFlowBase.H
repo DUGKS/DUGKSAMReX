@@ -111,11 +111,6 @@ private:
 	double _Reynolds = 0;
 	double _Knudsen  = 0;
 
-	//control parameters
-	int end_step = 0;
-	double residual_tolerance = 0;
-	double adapt_tolerance = 0;
-
 	//phase field parameters
 	double mobility_phi    = 0; //mobility coefficient
 	double tau_phi    = 0; //relaxation time of index equation
@@ -133,6 +128,7 @@ private:
 	amrex::Vector<double> gravity;
 	amrex::Vector<double> centerPF;
 
+protected:
 	double _Cahn = 0;
 	double _Peclet  = 0;
 	double _Atwood  = 0;
@@ -140,6 +136,11 @@ private:
 	double _Bond    = 0;
 	double _Laplace = 0;
 	double _ReynoldsPF = 0;
+
+	//control parameters
+	int end_step = 0;
+	double residual_tolerance = 0;
+	double adapt_tolerance = 0;
 
 	//other parameters defined by users
 

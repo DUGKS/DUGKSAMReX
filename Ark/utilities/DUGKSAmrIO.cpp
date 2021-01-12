@@ -673,26 +673,42 @@ void DUGKSAmr::WriteSumPhaseFile(const Vector<double> &cur_sum)
         SumFile.close();
     }
 }
-// void DUGKSAmr::WritePressureFile(int i = 0, j = 0)
-// {
-//     if(ParallelDescriptor::IOProcessor()) 
-//     {
-//         std::ofstream PresFile;
-//         std::ostringstream oss_pres;  
-//         oss_pres <<"Pressure_Pe"<<Pe()
-//                 <<"_Cn"<<Cn()
-//                 <<"_NL"<<ChNum()<<"_"
-//                 <<CaseName()<<".dat";
-//         PresFile.open(oss_pres.str().c_str(), std::ios::app);
-//         PresFile << std::setiosflags(std::ios::scientific) 
-//                      << std::setprecision(Ark::digitsNum);
-//         PresFile << cur_time <<"    "<<Data(lev);
-//         for(auto d : cur_sum) 
-//         {
-//             PresFile << d <<"    ";
-//         }
-//         PresFile<<'\n';
-
-//         PresFile.close();
-//     }
-// }
+void DUGKSAmr::WriteInterfacePosition(const Vector<double> &interfacePosition)
+{
+    if(ParallelDescriptor::IOProcessor()) 
+    {
+        std::ofstream position;
+        std::ostringstream oss_position;
+        oss_position <<"interface_position"
+                     << "_Pe"<<Pe()
+                     << "_Cn"<<Cn()
+                     << "_NL"<<ChNum()<<"_"
+                     << CaseName()<<".dat";
+        position.open(oss_position.str().c_str(), std::ios::app);
+        position  << std::setiosflags(std::ios::scientific) 
+                  << std::setprecision(Ark::digitsNum);
+        position  << cur_time <<"    ";
+        for(auto &v : interfacePosition) {
+            position << v <<"    ";
+        }
+        position << "\n";
+        position.close();
+    }
+}
+void DUGKSAmr::WriteComputingTime(const double elapsed_time)
+{
+    if(ParallelDescriptor::IOProcessor()) 
+    {
+        std::ofstream ofsTime;
+        std::ostringstream ossTime;
+        ossTime <<"elapsed_time"
+                << "_Pe"<<Pe()
+                << "_Cn"<<Cn()
+                << "_NL"<<ChNum()<<"_"
+                << CaseName()<<".dat";
+        ofsTime.open(ossTime.str().c_str(), std::ios::app);
+        ofsTime  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
+        ofsTime  << cur_time <<"    " << elapsed_time <<"\n";
+        ofsTime.close();
+    }
+}

@@ -454,7 +454,7 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real xtauh = xTauh(i,j,k);
-        	const Real bh = hTime/(2.0*xTauh(i,j,k) + hTime);
+        	const Real bh = hTime/(2.0*xtauh + hTime);
         	// const Real ch = bh*xtauh;
        	//
         	xFlux(i,j,k,n) = xFlux(i,j,k,n) 

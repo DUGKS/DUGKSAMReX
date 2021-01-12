@@ -15,34 +15,44 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         {
             break;
         }
-        case 10:
+        case 220:
         {
             QuiescentDrop(lev);
             break;
         }
-        case 11:
+        case 221:
         {
             TransDrop(lev);
             break;
         }
-        case 12:
+        case 222:
         {
             ZalesakDisk(lev);
             break;
         }
-        case 13:
+        case 223:
         {
             InterfaceElongation(lev);
             break;
         }
-        case 14:
+        case 224:
         {
             SmoothDeformation(lev);
             break;
         }
-        case 15:
+        case 225:
         {
             LayeredPoiseuille(lev);
+            break;
+        }
+        case 226:
+        {
+            SpinodalDecomposition(lev);
+            break;
+        }
+        case 227:
+        {
+            RayleighTaylorInstability(lev);
             break;
         }
         case -666:

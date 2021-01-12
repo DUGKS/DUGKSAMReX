@@ -31,7 +31,7 @@ namespace Ark
 
 	enum EnumMSQ {PHI,RHO,VEL,P,T,GradPHI,GradRHO,FORCE,MSVNUM};
 
-	using DmVnPhase    = D2V9; 
+	using DmVnPhase    = D2V9;
 
 	using DmVnMomentum = D2V9;
 
@@ -152,6 +152,9 @@ namespace GradFunc
 
 	double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var, 
 					  	   				int const i,int const j,int const k);
+
+	double central_interpolation (const double upstream1, const double upstream0,
+                            	  const double downstream0, const double downstream1);										 
 }
 //
 namespace InitFlow

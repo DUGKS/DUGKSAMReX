@@ -251,7 +251,10 @@ void DUGKSAmr::Evolve()
 					<< " start on " << amrex::ParallelDescriptor::NProcs()
 					<< " processes\n";
 	Ark::PrintSplitLine('\n');
-//
+
+	Real begin = amrex::ParallelDescriptor::second();
+	Real elapsed_time = 0;
+
 	while(nstep < end_step or steady_state)
 	{
         if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
@@ -269,8 +272,14 @@ void DUGKSAmr::Evolve()
 		cur_time += Dt();
 
 		if(write_conv_interval > 0 and nstep%write_conv_interval == 0) {
+
+			elapsed_time = amrex::ParallelDescriptor::second() - begin;
+			begin = amrex::ParallelDescriptor::second();
+
+			WriteComputingTime(elapsed_time);
 			WriteL2NormFile(MultiLevelL2Norm());
-			WriteSumPhaseFile(MultiLevelSum());
+			// WriteSumPhaseFile(MultiLevelSum());
+			// WriteInterfacePosition(InterfacePosition(finest_level));
 		}
 		if(write_residual_interval > 0 and nstep%write_residual_interval == 0) {
 			const auto &level_residuals = MultiLevelResidual();
@@ -291,7 +300,7 @@ void DUGKSAmr::Evolve()
 
 	}
 
-	WritePlotFile();
+	// WritePlotFile();
 //
 	Ark::PrintSplitLine();
 	amrex::Print() 	<< " case : " << CaseName() << " complete\n";
