@@ -37,3 +37,6 @@ Docs/sphinx/build
 
 # vi
 *.sw[a-z]
+
+#
+!JOB.sh

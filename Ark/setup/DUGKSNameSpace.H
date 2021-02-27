@@ -59,13 +59,25 @@ namespace Ark
 	constexpr unsigned digitsNum = 8;
 
 	inline
-	double Square(double const u,double const v = 0, double const w = 0)
+	double Square(double const u, double const v = 0, double const w = 0)
 	{
 		return u*u + v*v + w*w;
 	}
+	
+	template <typename T>
+	bool approximatelyEqual(T A, T B)
+	{
+		return std::fabs(A-B) < std::numeric_limits<T>::epsilon();
+	}
+	
+	template <typename T>
+	bool tinyEqual(const T A, const T B, const T diff = T(tiny))
+	{
+		return std::fabs(A-B) < diff;
+	}
 
 	template <typename T>
-	int sign (const T &val) { return (val > 0) - (val < 0); }
+	int sign (const T val) { return (val > 0) - (val < 0); }
 
 	void PrintSplitLine(const char c = ' ');
 }
@@ -119,28 +131,6 @@ namespace GradFunc
 		const Box &bx, int const ncomp, const Real *dx,
 		Array4<Real const> const &src,Array4<Real> const &dst
 	);
-	//third-order PDs
-	void Update_Grad_xxx
-	(
-		const Box &bx, int const ncomp, const Real *dx,
-		Array4<Real const> const &src,Array4<Real> const &dst
-	);
-	void Update_Grad_yyy
-	(
-		const Box &bx, int const ncomp, const Real *dx,
-		Array4<Real const> const &src,Array4<Real> const &dst
-	);
-	//fourth-order PDs
-	void Update_Grad_xxxx
-	(
-		const Box &bx, int const ncomp, const Real *dx,
-		Array4<Real const> const &src,Array4<Real> const &dst
-	);
-	void Update_Grad_yyyy
-	(
-		const Box &bx, int const ncomp, const Real *dx,
-		Array4<Real const> const &src,Array4<Real> const &dst
-	);
 	//
 	void gradient_operator_isotropy (const Box &bx, Real const* dl, 
 						  			 Array4<Real const> const &src,
@@ -154,38 +144,7 @@ namespace GradFunc
 					  	   				int const i,int const j,int const k);
 
 	double central_interpolation (const double upstream1, const double upstream0,
-                            	  const double downstream0, const double downstream1);										 
+                            	  const double downstream0, const double downstream1,
+								  int const token);										 
 }
-//
-namespace InitFlow
-{
-	void BasicTest
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);
-	void Couette();
-	void AC_InterfaceSmoothDeformation
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);
-	void AC_InterfaceElongation
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);
-	void AC_ZalesakDisk
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);	
-	void AC_TransDrop
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);
-	void AC_Drop
-	(
-		MultiFab &MsQ,MultiFab &MsQhxF,MultiFab &MsQhyF,const Real *dx
-	);
-	void Uniform(MultiFab &MsQ);
-	void Shock(MultiFab &MsQ);
-}
-
 #endif

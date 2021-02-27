@@ -180,12 +180,12 @@ private:
     int write_plot_interval = -1;
     bool write_plot_on_restart = false;
 
-    int m_plt_phi         = 1;
-    int m_plt_rho         = 0;
-    int m_plt_velx        = 0;
-    int m_plt_vely        = 0;
-    int m_plt_velz        = 0;
-    int m_plt_pres        = 0;
+    int m_plt_phi         = 0;
+    int m_plt_rho         = 1;
+    int m_plt_velx        = 1;
+    int m_plt_vely        = 1;
+    int m_plt_velz        = 1;
+    int m_plt_pres        = 1;
     int m_plt_temp        = 0;
     int m_plt_gphix       = 0;
     int m_plt_gphiy       = 0;
@@ -360,14 +360,9 @@ private:
             return 2;
     }
 
-    int zero_ghost () const
-    {
-        return 0;
-    }
-    int unit_ghost () const
-    {
-        return 1;
-    }
+    int zero_ghost () const { return 0;}
+    int unit_ghost () const { return 1;}
+    int double_ghost() const { return 2;}
 
 private:
     ///////////////////////////////////////////////////////////////////////////
@@ -521,6 +516,10 @@ private:
     void BasicCase(int const lev);
 
     void UniformFlow(int const lev);
+
+    void UnsteadyTaylorGreenVortex(int const lev);
+
+    void ForceTaylorGreenVortex(int const lev);
 
     void QuiescentDrop(int const lev);
 
@@ -688,8 +687,9 @@ private:
 
     void FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl);
     void FillLevelPhaseSphere (MultiFab &phase, const Real *dl, LV token);
-    void FillLevelVelocityUnsteadyTGV(MultiFab &Velocity, MultiFab &Pressure,
-                                            const Real *dl,const Real time);
+    void FillLevelUnsteadyTaylorGreenVortex(int const lev, MultiFab &VelFab, MultiFab &PresFab);
+    void FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab, MultiFab &PresFab,
+                                          MultiFab &ForceFab, int const token);
 
     void CheckDUGKSAmr();
 //

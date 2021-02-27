@@ -106,7 +106,8 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 			GradFunc::central_interpolation(grad_phi(i-di2,j-dj2,k-dk2,n),
 										    grad_phi(i-di ,j-dj ,k-dk ,n),
 										    grad_phi(i    ,j    ,k    ,n),
-										    grad_phi(i+di ,j+dj ,k+dk ,n));
+										    grad_phi(i+di ,j+dj ,k+dk ,n),
+											SchemeIndex());
 
 #ifdef ARK_USE_MOMENTUM
 			grad_rho_nF(i,j,k,n) = 0.5*(grad_rho(i,j,k,n) + grad_rho(i-di, j-dj, k-dk, n));

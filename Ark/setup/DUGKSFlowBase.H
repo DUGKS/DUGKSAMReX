@@ -32,6 +32,7 @@ public:
 	const std::string& FluxScheme() const { return flux_scheme; }
 	const std::string& MomentumName() const {return momentum_name;}
 	int CaseIndex() const {return case_index;}
+	int SchemeIndex() const {return scheme_index;}
 	
 	//characteristic length
 	int ChNum() const {return ch_num;}
@@ -46,10 +47,11 @@ public:
 	double R0() const {return _R0;}
 	double Mu0() const {return _Mu0;}
 	double Nu0() const {return _Nu0;}
-	double TauMomentum() const {return _TauF;}  //the relaxation time for fDVDF
 	double Ma() const {return _Mach;}
 	double Re() const {return _Reynolds;}
 	double Kn() const {return _Knudsen;}
+	double TauMomentum() const {return _TauF;}  //the relaxation time for fDVDF
+	double TauEnergy() const {return _TauG;}
 
 	//control parameters
 	int EndStep() const {return end_step;}
@@ -93,6 +95,7 @@ private:
 	std::string flux_scheme;
 	std::string momentum_name;
 	int case_index = 0;
+	int scheme_index = 0;
 
 	int    ch_num = 0;	//characteristic cell number per side
 	double ch_length = 0; //characteristic length
@@ -107,6 +110,7 @@ private:
 	double _Mu0      = 0;
 	double _Nu0      = 0;
 	double _TauF     = 0;
+	double _TauG     = 0;
 	double _Mach     = 0;
 	double _Reynolds = 0;
 	double _Knudsen  = 0;
@@ -149,7 +153,7 @@ private:
 	void InitFlowParmBase();
 
 	//initial phase field parameters
-	void InitFlowParmPhaseFiled();
+	void InitFlowParmPhaseField();
 
 	//other functions for the initialization of parameters provided by users
 };

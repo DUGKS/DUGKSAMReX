@@ -302,6 +302,8 @@ void DUGKSAmr::CheckDUGKSAmr()
 #ifdef ARK_USE_PHASE
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(AMREX_SPACEDIM == Ark::DmVnPhase::D,
         "Fatal Error : mismatch between DVM_PHASE and DmVnPhase");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Ark::approximatelyEqual(MPhi(), TauPhase()*Ark::DmVnPhase::RT),
+    "Fatal Error : mismatch between mobility_phase and tau_phase");
 #endif
 
 #ifdef ARK_USE_MOMENTUM
@@ -315,6 +317,21 @@ void DUGKSAmr::CheckDUGKSAmr()
 #endif
 
     //
+    if (Geom(max_level).Domain().length(Ark::X) != ChNum() 
+        and 
+        Geom(max_level).Domain().length(Ark::Y) != ChNum()
+#if(AMREX_SPACEDIM == 3)
+        and 
+        Geom(max_level).Domain().length(Ark::Z) != ChNum()
+#endif
+        )
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "incosistence between ch_num and ncell!!!" 
+            << '\n';
+        amrex::Abort(ss.str());
+    }    
     if(steady_state && end_step > 0) 
     {
         std::ostringstream ss;   
@@ -345,11 +362,11 @@ void DUGKSAmr::CheckDUGKSAmr()
     }
 
     {
-        if (CFL()*MinL() < Dt() or CFL()*MinL() < hDt(max_level))
+        if (!Ark::tinyEqual(CFL()*MinL(), Dt(), 1E-10))
         {
            std::ostringstream ss;   
            ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-           ss  << "The time step exceeds the CFL limit!!!" 
+           ss  << "incosistence between time step and CFL number!!!" 
                << '\n';
            amrex::Abort(ss.str()); 
         }

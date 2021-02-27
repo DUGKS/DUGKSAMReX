@@ -13,6 +13,12 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         }
         case 1:
         {
+            UnsteadyTaylorGreenVortex(lev);
+            break;
+        }
+        case 5:
+        {
+            ForceTaylorGreenVortex(lev);
             break;
         }
         case 220:
@@ -81,6 +87,9 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
     ld.density_old.setVal(0);
     ld.velocity_old.setVal(0);
 
+    ld.phase_prev.setVal(0);
+    ld.velocity_prev.setVal(0);
+    
     for(auto &mf : ld.msv){
         mf.setVal(0.0);
     }
@@ -111,6 +120,9 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 #if(AMREX_SPACEDIM == 3)
     ld.hDVDFzF[Ark::TAUF].setVal(TauPhase());
 #endif
+    for(int n = Ark::BPx;n < Ark::DVDFNUM;++n) {
+		ld.hDVDF[n].setVal(0);
+	}
 #endif
 
 #ifdef ARK_USE_MOMENTUM
@@ -120,6 +132,9 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 #if(AMREX_SPACEDIM == 3)
     ld.fDVDFzF[Ark::TAUF].setVal(TauMomentum());
 #endif
+    for(int n = Ark::BPx;n < Ark::DVDFNUM;++n) {
+		ld.fDVDF[n].setVal(0);
+	}
 #endif
 
 #ifdef ARK_USE_ENERGY
@@ -129,6 +144,9 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 #if(AMREX_SPACEDIM == 3)
     ld.gDVDFzF[Ark::TAUF].setVal(TauEnergy());
 #endif
+    for(int n = Ark::BPx;n < Ark::DVDFNUM;++n) {
+		ld.gDVDF[n].setVal(0);
+	}
 #endif	
 }
 
@@ -150,15 +168,12 @@ void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
 }
 void DUGKSAmr::post_case_init(int const lev)
 {
-    auto& ld = *m_leveldata[lev];
-
-    ld.phase_prev.setVal(0);
-    ld.velocity_prev.setVal(0);
+    auto& ld = Data(lev);
     
     //The following would result in a slight increase in L-2 norm error;
     // MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
     // MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
-
+#ifdef ARK_USE_PHASE
     FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
     #ifdef _OPENMP
@@ -173,4 +188,57 @@ void DUGKSAmr::post_case_init(int const lev)
 
         GradFunc::gradient_operator_isotropy(bx, Geom(lev).CellSize(), phi, grad_phi);
     }
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+    if(CaseIndex() == 1) 
+    {
+        using Ark::PI;
+        const Real *dl = Geom(lev).CellSize();
+        MultiFab const &VelFab = ld.msv[Ark::VEL];
+
+        for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
+        {
+            const Box &bx = mfi.tilebox();
+            Array4<Real const> const &vel  = VelFab.const_array(mfi);
+
+            Array4<Real> const &fWave  = ld.fDVDF[Ark::WAVE].array(mfi);
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                const double x = dl[Ark::X]*(i+0.5)/ChLength();
+                const double y = dl[Ark::Y]*(j+0.5)/ChLength();
+
+                const double U = vel(i,j,k,Ark::X);
+                const double V = vel(i,j,k,Ark::Y);
+
+                const double grad_ux = U0()*sin(2.0*PI*x)*sin(2.0*PI*y);
+                const double grad_vx = U0()*cos(2.0*PI*x)*cos(2.0*PI*y);
+//
+                const double grad_uy = -grad_vx;
+                const double grad_vy = -grad_ux;
+
+                const double grad_ut = Nu0()*4.0*PI*U0()*cos(2.0*PI*x)*sin(2.0*PI*y);
+                const double grad_vt = -Nu0()*4.0*PI*U0()*sin(2.0*PI*x)*cos(2.0*PI*y);
+
+                LoopVS(Ark::DmVnMomentum::Q)
+                {
+                    const double xiU   = Ark::DmVnMomentum::xi_u[n];
+                    const double xiV   = Ark::DmVnMomentum::xi_v[n];
+                    const double omega = Ark::DmVnMomentum::omega[n];
+                    const double RT    = Ark::DmVnMomentum::RT;
+
+                    const double u1 = xiU*U + xiV*V;
+                    const double A_u = xiU + u1*xiU/RT - U;
+                    const double A_v = xiV + u1*xiV/RT - V;
+                    const double A = omega*1.0/RT; //Rho0 = 1.0
+                    const double fEq_t = A * (A_u*grad_ut + A_v*grad_vt);
+                    const double fEq_x = A * (A_u*grad_ux + A_v*grad_vx)*xiU;
+                    const double fEq_y = A * (A_u*grad_uy + A_v*grad_vy)*xiV;
+                    fWave(i,j,k,n) -= TauMomentum()*(fEq_t + fEq_x + fEq_y);                  
+                }
+            });
+        }
+    }
+#endif
 }

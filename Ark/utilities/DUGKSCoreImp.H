@@ -367,8 +367,7 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFab, const MultiFab &xBarPlu
 
 #if(AMREX_SPACEDIM == 2)
 			xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i-1,j,k,n)) 
-        			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y)
-						;
+        			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y);
 #endif
 #if(AMREX_SPACEDIM == 3)
 			Real xBP_z = (xBP(i,  j,k+1,n) - xBP(i,  j,k-1,n)
@@ -394,8 +393,7 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFab, const MultiFab &xBarPlu
 
 #if(AMREX_SPACEDIM == 2)
         	xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j-1,k,n)) 
-        			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y)
-        			     ;
+        			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y);
 #endif
 #if(AMREX_SPACEDIM == 3)
         	Real xBP_z = (xBP(i,j,  k+1,n) - xBP(i,j,  k-1,n)
@@ -538,5 +536,6 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
         });
 	}
 }
+
 //
 #endif

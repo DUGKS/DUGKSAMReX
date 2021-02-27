@@ -81,6 +81,39 @@ void DUGKSAmr::UniformFlow(int const lev)
 	ld.msv[Ark::P].setVal(P0());
 	ld.msv[Ark::T].setVal(T0());
 }
+void DUGKSAmr::UnsteadyTaylorGreenVortex(int const lev)
+{
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 1 && CaseName() == "UnsteadyTaylorGreenVortex"));
+
+    auto &ld = Data(lev);
+
+    ld.msv[Ark::RHO].setVal(Rho0());
+
+    FillLevelUnsteadyTaylorGreenVortex(lev, ld.msv[Ark::VEL], ld.msv[Ark::P]);
+    
+    amrex::MultiFab::Saxpy(ld.msv[Ark::RHO], 2*Ark::DmVnMomentum::Lambda, ld.msv[Ark::P], 0, 0, 1, 0);
+}
+void DUGKSAmr::ForceTaylorGreenVortex(int const lev)
+{
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 5 && CaseName() == "ForceTaylorGreenVortex"));
+
+    auto &ld = Data(lev);
+
+    ld.msv[Ark::RHO].setVal(Rho0());
+
+    FillLevelForceTaylorGreenVortex(lev, ld.msv[Ark::VEL], ld.msv[Ark::P], ld.msv[Ark::FORCE],-1);
+
+    FillLevelForceTaylorGreenVortex(lev, ld.msv_xF[Ark::VEL], ld.msv_xF[Ark::P], 
+                                    ld.msv_xF[Ark::FORCE], Ark::X);
+                                    
+    FillLevelForceTaylorGreenVortex(lev, ld.msv_yF[Ark::VEL], ld.msv_yF[Ark::P],
+                                    ld.msv_yF[Ark::FORCE], Ark::Y);
+
+    FillLevelForceTaylorGreenVortex(lev, ld.velocity_prev, ld.phase_prev, ld.msv[Ark::FORCE], -1);
+
+    amrex::MultiFab::Saxpy(ld.msv[Ark::RHO], 2*Ark::DmVnMomentum::Lambda, ld.msv[Ark::P], 0, 0, 1, 0);
+}
+//**********************two phase flows*****************************
 void DUGKSAmr::QuiescentDrop(int const lev)
 {
     AMREX_ALWAYS_ASSERT((CaseIndex() == 220 && CaseName() == "QuiescentDrop"));

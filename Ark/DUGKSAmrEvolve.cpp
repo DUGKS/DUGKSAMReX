@@ -276,7 +276,7 @@ void DUGKSAmr::Evolve()
 			elapsed_time = amrex::ParallelDescriptor::second() - begin;
 			begin = amrex::ParallelDescriptor::second();
 
-			WriteComputingTime(elapsed_time);
+			// WriteComputingTime(elapsed_time);
 			WriteL2NormFile(MultiLevelL2Norm());
 			// WriteSumPhaseFile(MultiLevelSum());
 			// WriteInterfacePosition(InterfacePosition(finest_level));

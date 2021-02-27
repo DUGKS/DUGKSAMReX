@@ -104,3 +104,9 @@ realclean::cleanOF
 #ifeq ($(strip $(ARK_USE_ENERGY)),TRUE)
 #	CXXFLAGS += -DARK_USE_ENERGY
 #endif
+# ifeq ($(NO_MPI_CHECKING),TRUE)
+# 	CXX := mpiicpc
+# 	CC  := mpiicc
+# 	FC  := mpiifort
+# 	F90 := mpiifort
+# endif

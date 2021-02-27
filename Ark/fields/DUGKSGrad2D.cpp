@@ -1,91 +1,76 @@
 #include <DUGKSAmr.H>
 
 #if(AMREX_SPACEDIM == 2)
-void GradFunc::Update_Grad_x
-(
-	const Box &bx, int const ncomp, Real const *dx,
-	Array4<Real const> const &src, Array4<Real> const &dst
-)
+void GradFunc::Update_Grad_x (const Box &bx, int const ncomp, Real const *dx,
+							  Array4<Real const> const &src, Array4<Real> const &dst)
 {
 	double const dlx = dx[Ark::X];
 
 	ParallelFor(bx, ncomp,
 	[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 	{
-		dst(i,j,k,n) = 
-		(
-			(src(i+1,j,  k,n) - src(i-1,j,  k,n))*4.0
-		+	(src(i+1,j+1,k,n) - src(i-1,j+1,k,n))
-		+	(src(i+1,j-1,k,n) - src(i-1,j-1,k,n))
-		)/(12.0*dlx);
-	}
-	);
+		dst(i,j,k,n) = (src(i+1,j,k,n) - src(i-1,j,k,n))/(2.0*dlx);
+		// dst(i,j,k,n) = 
+		// (
+		// 	(src(i+1,j,  k,n) - src(i-1,j,  k,n))*4.0
+		// +	(src(i+1,j+1,k,n) - src(i-1,j+1,k,n))
+		// +	(src(i+1,j-1,k,n) - src(i-1,j-1,k,n))
+		// )/(12.0*dlx);
+	});
 }
-void GradFunc::Update_Grad_y
-(
-	const Box &bx, int const ncomp, Real const *dx,
-	Array4<Real const> const &src, Array4<Real> const &dst
-)
+void GradFunc::Update_Grad_y (const Box &bx, int const ncomp, Real const *dx,
+							  Array4<Real const> const &src, Array4<Real> const &dst)
 {
 	double const dly = dx[Ark::Y];
 
 	ParallelFor(bx, ncomp,
 	[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 	{
-		dst(i,j,k,n) = 
-		(
-			(src(i,  j+1,k,n) - src(i,  j-1,k,n))*4.0
-		+	(src(i+1,j+1,k,n) - src(i+1,j-1,k,n))
-		+	(src(i-1,j+1,k,n) - src(i-1,j-1,k,n))
-		)/(12.0*dly);
-	}
-	);
+		dst(i,j,k,n) = (src(i,j+1,k,n) - src(i,j-1,k,n))/(2.0*dly);
+		// dst(i,j,k,n) = 
+		// (
+		// 	(src(i,  j+1,k,n) - src(i,  j-1,k,n))*4.0
+		// +	(src(i+1,j+1,k,n) - src(i+1,j-1,k,n))
+		// +	(src(i-1,j+1,k,n) - src(i-1,j-1,k,n))
+		// )/(12.0*dly);
+	});
 }
-void GradFunc::Update_Grad_xx
-(
-	const Box &bx, int const ncomp, Real const *dx,
-	Array4<Real const> const &src, Array4<Real> const &dst
-)
+void GradFunc::Update_Grad_xx (const Box &bx, int const ncomp, Real const *dx,
+							   Array4<Real const> const &src, Array4<Real> const &dst)
 {
 	double const dlx = dx[Ark::X];
 
 	ParallelFor(bx, ncomp,
 	[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 	{
-		dst(i,j,k,n) = 
-		(
-			(src(i-1,j,  k,n) - 2.0*src(i,j,  k,n) + src(i+1,j,  k,n))*10.0
-		+	(src(i-1,j+1,k,n) - 2.0*src(i,j+1,k,n) + src(i+1,j+1,k,n))
-		+	(src(i-1,j-1,k,n) - 2.0*src(i,j-1,k,n) + src(i+1,j-1,k,n))
-		)/(12.0*dlx*dlx);
-	}
-	);
+		dst(i,j,k,n) = ((src(i-1,j,k,n) - 2.0*src(i,j,k,n) + src(i+1,j,k,n)))/(dlx*dlx);
+		// dst(i,j,k,n) = 
+		// (
+		// 	(src(i-1,j,  k,n) - 2.0*src(i,j,  k,n) + src(i+1,j,  k,n))*10.0
+		// +	(src(i-1,j+1,k,n) - 2.0*src(i,j+1,k,n) + src(i+1,j+1,k,n))
+		// +	(src(i-1,j-1,k,n) - 2.0*src(i,j-1,k,n) + src(i+1,j-1,k,n))
+		// )/(12.0*dlx*dlx);
+	});
 }
-void GradFunc::Update_Grad_yy
-(
-	const Box &bx, int const ncomp,Real const *dx,
-	Array4<Real const> const &src, Array4<Real> const &dst
-)
+void GradFunc::Update_Grad_yy (const Box &bx, int const ncomp,Real const *dx,
+							   Array4<Real const> const &src, Array4<Real> const &dst)
 {
 	double const dly = dx[Ark::Y];
 
 	ParallelFor(bx,ncomp,
 	[=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 	{
-		dst(i,j,k,n) = 
-		(
-			(src(i,  j-1,k,n) - 2.0*src(i,  j,k,n) + src(i,  j+1,k,n))*10.0
-		+	(src(i+1,j-1,k,n) - 2.0*src(i+1,j,k,n) + src(i+1,j+1,k,n))
-		+	(src(i-1,j-1,k,n) - 2.0*src(i-1,j,k,n) + src(i-1,j+1,k,n))
-		)/(12.0*dly*dly);
-	}
-	);
+		dst(i,j,k,n) = ((src(i,j-1,k,n) - 2.0*src(i,j,k,n) + src(i,j+1,k,n)))/(dly*dly);
+		// dst(i,j,k,n) = 
+		// (
+		// 	(src(i,  j-1,k,n) - 2.0*src(i,  j,k,n) + src(i,  j+1,k,n))*10.0
+		// +	(src(i+1,j-1,k,n) - 2.0*src(i+1,j,k,n) + src(i+1,j+1,k,n))
+		// +	(src(i-1,j-1,k,n) - 2.0*src(i-1,j,k,n) + src(i-1,j+1,k,n))
+		// )/(12.0*dly*dly);
+	});
 }
-void GradFunc::Update_Grad_xy
-(
-	const Box &bx, int const ncomp,Real const *dx,
-	Array4<Real const> const &src, Array4<Real> const &dst
-)
+void GradFunc::Update_Grad_xy (const Box &bx, int const ncomp,Real const *dx,
+							   Array4<Real const> const &src, Array4<Real> const &dst)
 {
 	const Real dlx = dx[Ark::X];
 	const Real dly = dx[Ark::Y];
@@ -98,8 +83,7 @@ void GradFunc::Update_Grad_xy
 			src(i+1,j+1,k,n) + src(i-1,j-1,k,n)
 		-	src(i+1,j-1,k,n) - src(i-1,j+1,k,n)
 		)/(4.0*dlx*dly);
-	}
-	);
+	});
 }
 void GradFunc::gradient_operator_isotropy (const Box &bx, Real const* dl, 
 								 		   Array4<Real const> const &src,

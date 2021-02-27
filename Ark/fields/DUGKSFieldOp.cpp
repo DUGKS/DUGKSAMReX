@@ -463,3 +463,163 @@ void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
         });
     }
 }
+void DUGKSAmr::FillLevelUnsteadyTaylorGreenVortex(int const lev, MultiFab &VelFab, MultiFab &PresFab)
+{
+    using Ark::PI;
+    const Real *dl = Geom(lev).CellSize();
+
+    for(amrex::MFIter mfi(VelFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+
+        Array4<Real> const &vel  = VelFab.array(mfi);
+        Array4<Real> const &pres = PresFab.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const double x = dl[Ark::X]*(i+0.5)/ChLength();
+            const double y = dl[Ark::Y]*(j+0.5)/ChLength();
+
+            vel(i,j,k,Ark::X) = 
+            -U0()*cos(2.0*PI*x)*sin(2.0*PI*y)*exp(-8.0*PI*PI*Nu0()*cur_time)/(2.0*PI);
+
+            vel(i,j,k,Ark::Y) = 
+            U0()*sin(2.0*PI*x)*cos(2.0*PI*y)*exp(-8.0*PI*PI*Nu0()*cur_time)/(2.0*PI);
+
+            pres(i,j,k) = -0.25*U0()*U0()*(cos(4.0*PI*x) + cos(4.0*PI*y))
+                        *exp(-16.0*PI*PI*Nu0()*cur_time)/(4.0*PI*PI);
+        });
+    }
+}
+void DUGKSAmr::FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab, MultiFab &PresFab, 
+                                                MultiFab &ForceFab, int const token)
+{
+    using Ark::PI;
+    const Real *dl = Geom(lev).CellSize();
+    const Real multiplier = 8.0*PI*PI*Nu0()*U0()/ChLength()/ChLength();
+
+    double di = 0;
+    double dj = 0;
+
+    if(token == -1) {
+        di = 0.5, dj = 0.5;
+    }
+    else if(token == Ark::X) {
+        di = 0, dj = 0.5;
+    }
+    else if(token == Ark::Y) {
+        di = 0.5, dj = 0;
+    }
+    else {
+        amrex::Abort("meaningless token in function [FillLevelForceTaylorGreenVortex]");
+    }
+
+    for(amrex::MFIter mfi(VelFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+
+        Array4<Real> const &vel  = VelFab.array(mfi);
+        Array4<Real> const &pres = PresFab.array(mfi);
+        Array4<Real> const &force = ForceFab.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const double x = dl[Ark::X]*(i + di)/ChLength();
+            const double y = dl[Ark::Y]*(j + dj)/ChLength();
+
+            vel(i,j,k,Ark::X) = U0()*sin(2.0*PI*x)*sin(2.0*PI*y);
+            vel(i,j,k,Ark::Y) = U0()*cos(2.0*PI*x)*cos(2.0*PI*y);
+
+            force(i,j,k,Ark::X) = multiplier*sin(2.*PI*x)*sin(2.*PI*y);
+            force(i,j,k,Ark::Y) = multiplier*cos(2.*PI*x)*cos(2.*PI*y);
+
+            pres(i,j,k) = 0.25*U0()*U0()*(cos(4.0*PI*x)-cos(4.0*PI*y));            
+        });
+    }
+}
+void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
+{
+    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = phase.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const double x = dl[Ark::X]*(i+0.5);
+            const double y = dl[Ark::Y]*(j+0.5);
+#if(AMREX_SPACEDIM == 3)
+            const double z = dl[Ark::Z]*(k+0.5);
+
+        phi(i,j,k) = 
+        0.5*(PhiL() + PhiV()) + 0.5*static_cast<int>(token)*(PhiL() - PhiV())*
+        tanh((
+            std::sqrt(
+            Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z))
+            ) - RadiusPF())*2.0/WidthI()
+        );
+
+#else
+        phi(i,j,k) = 
+        0.5*(PhiL() + PhiV()) + 0.5*static_cast<int>(token)*(PhiL() - PhiV())*
+        tanh((std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF()
+             )*2.0/WidthI()
+            
+        );           
+#endif
+        });
+    }
+}
+void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
+{
+    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = phase.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const double x = dl[Ark::X]*(i+0.5);
+            const double y = dl[Ark::Y]*(j+0.5);
+
+            Real slot_xL = CenterPF(Ark::X) - 0.1*RadiusPF();
+            Real slot_xR = CenterPF(Ark::X) + 0.1*RadiusPF();
+#if(AMREX_SPACEDIM == 3)
+            const double z = dl[Ark::Z]*(k+0.5);
+            Real distance = std::sqrt(
+            Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z))
+            );
+#else
+            Real distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y));
+#endif
+            if (distance > RadiusPF()) {
+                phi(i,j,k) = PhiV();
+            }
+            else if (x > slot_xL and x < slot_xR and y < CenterPF(Ark::Y)) {
+                phi(i,j,k) = PhiV();
+            }
+            else {
+                phi(i,j,k) = PhiL();
+            }
+        });
+    }
+}
+void DUGKSAmr::reinitialize(MultiFab &phase)
+{
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = phase.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            phi(i,j,k) = phi(i,j,k) > 0.5*(PhiL() + PhiV()) ? PhiL() : PhiV();
+        }); 
+    }   
+}

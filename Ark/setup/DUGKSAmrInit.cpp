@@ -107,12 +107,12 @@ void DUGKSAmr::ReadIOParameters()
     // Which variables to write to plotfile
     if (plt_ccse_regtest != 0)
     {
-        m_plt_phi         =   1;
-        m_plt_rho         =   0;
-        m_plt_velx        =   0;
-        m_plt_vely        =   0;
-        m_plt_velz        =   0;
-        m_plt_pres        =   0;
+        m_plt_phi         =   0;
+        m_plt_rho         =   1;
+        m_plt_velx        =   1;
+        m_plt_vely        =   1;
+        m_plt_velz        =   1;
+        m_plt_pres        =   1;
         m_plt_temp        =   0;
         m_plt_gphix       =   0;
         m_plt_gphiy       =   0;

@@ -587,11 +587,23 @@ void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
     if(ParallelDescriptor::IOProcessor()) 
     {
         std::ofstream L2NormFile;
-        std::ostringstream oss_L2;   
-        oss_L2<<"L2_norm_Pe"<<Pe()
-            <<"_TauM"<<TauPhase()
-            <<"_NL"<<ChNum()<<"_"
-            <<CaseName()<<".dat";
+        std::ostringstream oss_L2;
+#ifdef ARK_USE_PHASE   
+        oss_L2<<"L2_norm"
+            <<"_Pe"<<Pe()
+            <<"_M"<<MPhi()
+            <<"_wI"<<WidthI()
+            <<"_NL"<<ChNum()
+            <<"_Flux"<<FluxScheme()
+            <<"_"<<CaseName()<<".dat";
+#else
+        oss_L2<<"L2_norm"
+            <<"_U0"<<U0()
+            <<"_TauF"<<TauMomentum()
+            <<"_NL"<<ChNum()
+            <<"_Flux"<<FluxScheme()
+            <<"_"<<CaseName()<<".dat";
+#endif
         L2NormFile.open(oss_L2.str().c_str(), std::ios::app);
         L2NormFile  << std::setiosflags(std::ios::scientific) 
                     << std::setprecision(Ark::digitsNum);
@@ -613,11 +625,22 @@ void DUGKSAmr::WriteResidualFile(const Vector<double> &cur_residual)
     if(ParallelDescriptor::IOProcessor()) 
     {
         std::ofstream ResidualFile;
-        std::ostringstream oss_res;  
-        oss_res <<"Residual_Pe"<<Pe()
+        std::ostringstream oss_res;
+#ifdef ARK_USE_PHASE  
+        oss_res <<"Residual"
+                <<"_Pe"<<Pe()
                 <<"_Cn"<<Cn()
-                <<"_NL"<<ChNum()<<"_"
-                <<CaseName()<<".dat";
+                <<"_NL"<<ChNum()
+                <<"_Flux"<<FluxScheme()
+                <<"_"<<CaseName()<<".dat";
+#else
+        oss_res <<"Residual"
+                <<"_U0"<<U0()
+                <<"_TauF"<<TauMomentum()
+                <<"_NL"<<ChNum()
+                <<"_Flux"<<FluxScheme()
+                <<"_"<<CaseName()<<".dat";
+#endif
         ResidualFile.open(oss_res.str().c_str(), std::ios::app);
         ResidualFile << std::setiosflags(std::ios::scientific) 
                      << std::setprecision(Ark::digitsNum);
@@ -637,12 +660,20 @@ void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double 
     {
         std::ofstream L2NormVelocity;
         std::ostringstream oss_velocity;
-        oss_velocity <<"Level"<<lev<<"_"
-                     <<"L2norm_velocity"
+#ifdef ARK_USE_PHASE
+        oss_velocity <<"Level"<<lev<<"_velocity_norm"
                      << "_Pe"<<Pe()
                      << "_Cn"<<Cn()
-                     << "_NL"<<ChNum()<<"_"
-                     << CaseName()<<".dat";
+                     << "_NL"<<ChNum()
+                     <<"_"<< CaseName()<<".dat";
+#else
+        oss_velocity <<"Level"<<lev<<"_velocity_norm"
+                     <<"_U0"<<U0()
+                     <<"_TauF"<<TauMomentum()
+                     <<"_NL"<<ChNum()
+                     <<"_Flux"<<FluxScheme()
+                     <<"_"<<CaseName()<<".dat";
+#endif
         L2NormVelocity.open(oss_velocity.str().c_str(), std::ios::app);
         L2NormVelocity  << std::setiosflags(std::ios::scientific) 
                         << std::setprecision(Ark::digitsNum);
