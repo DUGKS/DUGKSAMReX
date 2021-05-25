@@ -269,7 +269,7 @@ double GradFunc::central_interpolation (const double upstream1, const double ups
 	// |up2 | up1 | up0 | down0 | down1 | down2|
 	// -----------------------------------------
 	// Interface value = o*(up0 + down0) + n*(up1 + down1)
-	// o + n == 1/2; o + 9n == -token/48
+	// o + n == 1/2; o + 9n == -token/64
 
 	switch (token)
 	{
@@ -278,7 +278,7 @@ double GradFunc::central_interpolation (const double upstream1, const double ups
             return (0.6*upstream0 + 0.4*downstream0);
             break;
         }
-		case -24:
+		case -32:
         {
             return (upstream0 + downstream0)/2.0;
             break;
@@ -288,160 +288,150 @@ double GradFunc::central_interpolation (const double upstream1, const double ups
             return ( (upstream0 + downstream0)*9.0 - (upstream1 + downstream1)*1)/16.0;
             break;
         }
-		case 12:
+		case 16:
         {
             return ( (upstream0 + downstream0)*19.0 - (upstream1 + downstream1)*3)/32.0;
             break;
         }
-		case 20:
-		{
-			return ( (upstream0 + downstream0)*59.0 - (upstream1 + downstream1)*11)/96.0;
-            break;
-		}
-		case 22:
-		{
-			return ( (upstream0 + downstream0)*119.0 - (upstream1 + downstream1)*23)/192.0;
-            break;
-		}
 		case 24:
-        {
-            return ( (upstream0 + downstream0)*5.0 - (upstream1 + downstream1)*1)/8.0;
-            break;
-        }
-		case 26:
 		{
-			return ( (upstream0 + downstream0)*121.0 - (upstream1 + downstream1)*25)/192.0;
-            break;
-		}
-		case 28:
-		{
-			return ( (upstream0 + downstream0)*61.0 - (upstream1 + downstream1)*13)/96.0;
-            break;
-		}
-		case 30:
-		{
-			return ( (upstream0 + downstream0)*41.0 - (upstream1 + downstream1)*9)/64.0;
+			return ( (upstream0 + downstream0)*39.0 - (upstream1 + downstream1)*7)/64.0;
             break;
 		}
 		case 32:
         {
-            return ( (upstream0 + downstream0)*31.0 - (upstream1 + downstream1)*7)/48.0;
+            return ( (upstream0 + downstream0)*5.0 - (upstream1 + downstream1)*1)/8.0;
             break;
         }
-		case 34:
+        case 40:
         {
-            return ( (upstream0 + downstream0)*125.0 - (upstream1 + downstream1)*29)/192.0;
-            break;
-        }
-		case 35:
-        {
-            return ( (upstream0 + downstream0)*251.0 - (upstream1 + downstream1)*59)/384.0;
-            break;
-        }
-		case 36:
-        {
-            return ( (upstream0 + downstream0)*21.0 - (upstream1 + downstream1)*5)/32.0;
-            break;
-        }
-		case 37:
-        {
-            return ( (upstream0 + downstream0)*253.0 - (upstream1 + downstream1)*61)/384.0;
-            break;
-        }
-		case 38:
-        {
-            return ( (upstream0 + downstream0)*127.0 - (upstream1 + downstream1)*31)/192.0;
-            break;
-        }
-		case 40:
-        {
-            return ( (upstream0 + downstream0)*4.0 - (upstream1 + downstream1)*1)/6.0;
+        	return ( (upstream0 + downstream0)*41.0 - (upstream1 + downstream1)*9)/64.0;
             break;
         }
         case 42:
         {
-            return ( (upstream0 + downstream0)*43.0 - (upstream1 + downstream1)*11)/64.0;
+        	return ( (upstream0 + downstream0)*165.0 - (upstream1 + downstream1)*37)/256.0;
             break;
         }
         case 44:
         {
-            return ( (upstream0 + downstream0)*65.0 - (upstream1 + downstream1)*17)/96.0;
+        	return ( (upstream0 + downstream0)*83.0 - (upstream1 + downstream1)*19)/128.0;
             break;
         }
-        case 46:
+		case 46:
         {
-            return ( (upstream0 + downstream0)*131.0 - (upstream1 + downstream1)*35)/192.0;
+            return ( (upstream0 + downstream0)*167.0 - (upstream1 + downstream1)*39)/256.0;
             break;
         }
 		case 48:
         {
-            return ( (upstream0 + downstream0)*11.0 - (upstream1 + downstream1)*3)/16.0;
+            return ( (upstream0 + downstream0)*21.0 - (upstream1 + downstream1)*5)/32.0;
             break;
         }
-        case 50:
+		case 50:
         {
-            return ( (upstream0 + downstream0)*133.0 - (upstream1 + downstream1)*37)/192.0;
+            return ( (upstream0 + downstream0)*169.0 - (upstream1 + downstream1)*41)/256.0;
             break;
         }
-        case 52:
+		case 52:
         {
-            return ( (upstream0 + downstream0)*67.0 - (upstream1 + downstream1)*19)/96.0;
-            break;
-        }
-        case 54:
-        {
-            return ( (upstream0 + downstream0)*45.0 - (upstream1 + downstream1)*13)/64.0;
+            return ( (upstream0 + downstream0)*85.0 - (upstream1 + downstream1)*21)/128.0;
             break;
         }
         case 56:
         {
-            return ( (upstream0 + downstream0)*17.0 - (upstream1 + downstream1)*5)/24.0;
-            break;
-        }
-        case 58:
-        {
-            return ( (upstream0 + downstream0)*137.0 - (upstream1 + downstream1)*41)/192.0;
+            return ( (upstream0 + downstream0)*43.0 - (upstream1 + downstream1)*11)/64.0;
             break;
         }
         case 60:
         {
-            return ( (upstream0 + downstream0)*23.0 - (upstream1 + downstream1)*7)/32.0;
+            return ( (upstream0 + downstream0)*87.0 - (upstream1 + downstream1)*23)/128.0;
             break;
         }
 		case 64:
-		{
-            return ( (upstream0 + downstream0)*35.0 - (upstream1 + downstream1)*11)/48.0;
+        {
+            return ( (upstream0 + downstream0)*11.0 - (upstream1 + downstream1)*3)/16.0;
             break;
         }
-		case 68:
-		{
-            return ( (upstream0 + downstream0)*71.0 - (upstream1 + downstream1)*23)/96.0;
+        case 68:
+        {
+            return ( (upstream0 + downstream0)*89.0 - (upstream1 + downstream1)*25)/128.0;
             break;
         }
-		case 72:
-		{
-            return ( (upstream0 + downstream0)*6.0 - (upstream1 + downstream1)*2)/8.0;
+        case 72:
+        {
+            return ( (upstream0 + downstream0)*45.0 - (upstream1 + downstream1)*13)/64.0;
             break;
         }
-		case 74:
-		{
-            return ( (upstream0 + downstream0)*145.0 - (upstream1 + downstream1)*49)/192.0;
+        case 76:
+        {
+            return ( (upstream0 + downstream0)*91.0 - (upstream1 + downstream1)*27)/128.0;
             break;
         }
-		case 76:
-		{
-            return ( (upstream0 + downstream0)*73.0 - (upstream1 + downstream1)*25)/96.0;
+        case 80:
+        {
+            return ( (upstream0 + downstream0)*23.0 - (upstream1 + downstream1)*7)/32.0;
             break;
         }
-		case 78:
-		{
-            return ( (upstream0 + downstream0)*49.0 - (upstream1 + downstream1)*17)/64.0;
-            break;
+        case 84:
+        {
+        	return ( (upstream0 + downstream0)*93.0 - (upstream1 + downstream1)*29)/128.0;
+        	break;
         }
-		case 80:
-		{
-            return ( (upstream0 + downstream0)*37.0 - (upstream1 + downstream1)*13)/48.0;
-            break;
+        case 88:
+        {
+        	return ( (upstream0 + downstream0)*47.0 - (upstream1 + downstream1)*15)/64.0;
+        	break;
+        }
+        case 92:
+        {
+        	return ( (upstream0 + downstream0)*95.0 - (upstream1 + downstream1)*31)/128.0;
+        	break;
+        }
+        case 96:
+        {
+        	return ( (upstream0 + downstream0)*3.0 - (upstream1 + downstream1)*1)/4.0;
+        	break;
+        }
+        case 100:
+        {
+        	return ( (upstream0 + downstream0)*97.0 - (upstream1 + downstream1)*33)/128.0;
+        	break;
+        }
+        case 104:
+        {
+        	return ( (upstream0 + downstream0)*49.0 - (upstream1 + downstream1)*17)/64.0;
+        	break;
+        }
+        case 108:
+        {
+        	return ( (upstream0 + downstream0)*99.0 - (upstream1 + downstream1)*35)/128.0;
+        	break;
+        }
+        case 112:
+        {
+        	return ( (upstream0 + downstream0)*25.0 - (upstream1 + downstream1)*9)/32.0;
+        	break;
+        }
+        case 116:
+        {
+        	return ( (upstream0 + downstream0)*101.0 - (upstream1 + downstream1)*37)/128.0;
+        	break;
+        }
+        case 120:
+        {
+        	return ( (upstream0 + downstream0)*51.0 - (upstream1 + downstream1)*19)/64.0;
+        	break;
+        }
+        case 124:
+        {
+        	return ( (upstream0 + downstream0)*103.0 - (upstream1 + downstream1)*39)/128.0;
+        	break;
+        }
+        case 128:
+        {
+        	return ( (upstream0 + downstream0)*13.0 - (upstream1 + downstream1)*5)/16.0;
+        	break;
         }
 		default :
 		{

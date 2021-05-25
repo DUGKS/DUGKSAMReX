@@ -23,7 +23,7 @@ Real DUGKSAmr::ComputeKineticEnergy () const
     return -1;
 }
 //
-void DUGKSAmr::ReinitializePhase (MultiFab &phase)
+void DUGKSAmr::BoundPhase (MultiFab &phase)
 {
     #ifdef _OPENMP
     #pragma omp parallel
@@ -450,16 +450,57 @@ void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
 
         amrex::ParallelFor(bx,[=] (int i,int j,int k)
         {
-            const double x = (i + di)*dlx;
-            const double y = (j + dj)*dly;
+            const double x = (i + di)*dlx/ChLength();
+            const double y = (j + dj)*dly/ChLength();
             
             vel(i,j,k,Ark::X) = 
-            -U0()*sin(4.0*Ark::PI*x/ChLength())*sin(4.0*Ark::PI*y/ChLength())
-            *cos(Ark::PI*time*U0()/ChLength());
+            -U0()*sin(4.0*Ark::PI*x)*sin(4.0*Ark::PI*y)*cos(Ark::PI*time*U0()/ChLength());
 
             vel(i,j,k,Ark::Y) = 
-            -U0()*cos(4.0*Ark::PI*x/ChLength())*cos(4.0*Ark::PI*y/ChLength())
-            *cos(Ark::PI*time*U0()/ChLength());
+            -U0()*cos(4.0*Ark::PI*x)*cos(4.0*Ark::PI*y)*cos(Ark::PI*time*U0()/ChLength());
+        });
+    }
+}
+void DUGKSAmr::ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx, 
+                                            const Real time, int const token)
+{
+    using Ark::PI;
+
+    const Real dlx = dx[0];
+    const Real dly = dx[1];
+
+    double di = 0;
+    double dj = 0;
+
+    if(token == -1) {
+        di = 0.5, dj = 0.5;
+    }
+    else if(token == Ark::X) {
+        di = 0, dj = 0.5;
+    }
+    else if(token == Ark::Y) {
+        di = 0.5, dj = 0;
+    }
+    else {
+        amrex::Abort("meaningless token");
+    }
+
+    for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &vel = VelFab.array(mfi);
+
+        amrex::ParallelFor(bx,[=] (int i,int j,int k)
+        {
+            const double x = (i + di)*dlx/ChLength();
+            const double y = (j + dj)*dly/ChLength();
+            
+            vel(i,j,k,Ark::X) = 
+            U0()*sin(PI*x)*sin(PI*x)*sin(2.0*PI*y)*cos(PI*time*U0()/ChLength()/4.0);
+
+            vel(i,j,k,Ark::Y) = 
+            -U0()*sin(PI*y)*sin(PI*y)*sin(2.0*PI*x)*cos(PI*time*U0()/ChLength()/4.0);
         });
     }
 }

@@ -108,6 +108,14 @@ void DUGKSAmr::FillPatchTemperature(int const lev, Real const time, MultiFab& te
                   {&(m_leveldata[lev]->msv[Ark::T])}, {m_t_new[lev]},
                   get_temperature_bcrec(), FillExternalTemperature);
 }
+void DUGKSAmr::FillPatchChemiP(int const lev, Real const time, MultiFab& chemiP)
+{
+    int const crse_lev = (lev == 0 ? lev : lev-1);
+    FillPatchCore(lev, time, chemiP,
+                  {&(m_leveldata[crse_lev]->chemiP)}, {m_t_new[crse_lev]},
+                  {&(m_leveldata[lev]->chemiP)}, {m_t_new[lev]},
+                  get_force_bcrec(), FillExternalForce);
+}
 void DUGKSAmr::FillPatchGradPhase(int const lev, Real const time, MultiFab& grad_phi)
 {
     int const crse_lev = (lev == 0 ? lev : lev-1);

@@ -107,7 +107,7 @@ void DUGKSAmr::ReadIOParameters()
     // Which variables to write to plotfile
     if (plt_ccse_regtest != 0)
     {
-        m_plt_phi         =   0;
+        m_plt_phi         =   1;
         m_plt_rho         =   1;
         m_plt_velx        =   1;
         m_plt_vely        =   1;
@@ -117,9 +117,10 @@ void DUGKSAmr::ReadIOParameters()
         m_plt_gphix       =   0;
         m_plt_gphiy       =   0;
         m_plt_gphiz       =   0;
-        m_plt_forcex      =   0;
-        m_plt_forcey      =   0;
-        m_plt_forcez      =   0;
+        m_plt_forcex      =   1;
+        m_plt_forcey      =   1;
+        m_plt_forcez      =   1;
+        m_plt_chemip      =   0;
         m_plt_tau         =   0;
         m_plt_vort        =   0;
         m_plt_strainrate  =   0;

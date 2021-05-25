@@ -180,12 +180,12 @@ private:
     int write_plot_interval = -1;
     bool write_plot_on_restart = false;
 
-    int m_plt_phi         = 0;
-    int m_plt_rho         = 1;
-    int m_plt_velx        = 1;
-    int m_plt_vely        = 1;
-    int m_plt_velz        = 1;
-    int m_plt_pres        = 1;
+    int m_plt_phi         = 1;
+    int m_plt_rho         = 0;
+    int m_plt_velx        = 0;
+    int m_plt_vely        = 0;
+    int m_plt_velz        = 0;
+    int m_plt_pres        = 0;
     int m_plt_temp        = 0;
     int m_plt_gphix       = 0;
     int m_plt_gphiy       = 0;
@@ -194,6 +194,7 @@ private:
     int m_plt_forcey      = 0;
     int m_plt_forcez      = 0;
 
+    int m_plt_chemip      = 0;
     int m_plt_tau         = 0;
     int m_plt_vort        = 0;
     int m_plt_strainrate  = 0;
@@ -249,6 +250,8 @@ private:
         MultiFab phase_old;
         MultiFab density_old;
         MultiFab velocity_old;
+
+        MultiFab chemiP; //chemical potential
 
 
         //mesoscopic multifabs for MASS
@@ -437,6 +440,7 @@ private:
     void FillPatchVelocity    (int const lev, Real const time, MultiFab& velocity);
     void FillPatchPressure    (int const lev, Real const time, MultiFab& pres);
     void FillPatchTemperature (int const lev, Real const time, MultiFab& temp);
+    void FillPatchChemiP      (int const lev, Real const time, MultiFab& force);
     void FillPatchGradPhase   (int const lev, Real const time, MultiFab& grad_phi);
     void FillPatchGradDensity (int const lev, Real const time, MultiFab& grad_rho);
     void FillPatchForce       (int const lev, Real const time, MultiFab& force);
@@ -531,11 +535,17 @@ private:
 
     void SmoothDeformation (int const lev);
 
+    void ReversedSingleVortex(int const lev);
+
     void LayeredPoiseuille (int const lev);
 
     void SpinodalDecomposition(int const lev);
 
     void RayleighTaylorInstability(int const lev);
+
+    void FlatInterface(int const lev);
+
+    void case_droplet_impact(int const lev);
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -630,6 +640,9 @@ private:
     void DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
                                    const Real Time, int const token);
 
+    void ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx, 
+                                      const Real time, int const token);
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // setup
@@ -683,7 +696,7 @@ private:
                               int const I, int const K);
     Vector<double> InterfacePosition(int lev);
     void reinitialize(MultiFab &);
-    void ReinitializePhase(MultiFab &phase);
+    void BoundPhase (MultiFab &phase);
 
     void FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl);
     void FillLevelPhaseSphere (MultiFab &phase, const Real *dl, LV token);

@@ -90,7 +90,7 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,
 			// 		   );
 			fSo(i,j,k,n) = DVM::omega[n]*
 			(
-			  ((DVM::xi_u[n] - u)*fx   + (DVM::xi_v[n] - v)*fy)
+			  ((DVM::xi_u[n] - u)*fx + (DVM::xi_v[n] - v)*fy)
 			+ (DVM::xi_u[n]*(fx + rhox*DVM::RT) + DVM::xi_v[n]*(fy + rhoy*DVM::RT))*u1
 			)/DVM::RT;
 		});
@@ -212,48 +212,33 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
 void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, MultiFab const &PhiFab, 
 													  MultiFab const &RhoFab)
 {
-	// const Real AMu = (MuL() - MuV())/(PhiL() - PhiV());
-	// const Real BMu = MuV() - AMu*PhiV();
+	const Real AMu = (MuL() - MuV())/(PhiL() - PhiV());
+	const Real BMu = MuV() - AMu*PhiV();
 
-	// MultiFab::Copy(tauFab, PhiFab, 0, 0, 1, zero_ghost());
-	// tauFab.mult(AMu, 0);
-	// tauFab.plus(BMu, 0);
+	for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
 
-	// for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
-	// {
-	// 	const amrex::Box& bx = mfi.tilebox();
+		Array4<Real const> const &phi = PhiFab.const_array(mfi);
+		// Array4<Real const> const &rho = RhoFab.const_array(mfi);
 
-	// 	Array4<Real const> const &phi = PhiFab.const_array(mfi);
-	// 	// Array4<Real const> const &rho = RhoFab.const_array(mfi);
+		Array4<Real> const &tau = tauFab.array(mfi);
 
-	// 	Array4<Real> const &tau = tauFab.array(mfi);
+		amrex::ParallelFor(bx,
+		[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+		{
+			//linear
+			tau(i,j,k) = AMu*phi(i,j,k) + BMu;
 
-	// 	amrex::ParallelFor(bx,
-	// 	[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
-	// 	{
-	// 		tau(i,j,k) = MuL()*MuV()/
-	// 		((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
-	// 	});
-	// }
+			//reciprocal linear
+			// tau(i,j,k) = MuL()*MuV()*(PhiL() - PhiV())
+			// /((phi(i,j,k)-PhiV())*MuV() - (phi(i,j,k)-PhiL())*MuL());
+			
+		});
+	}
 
-	// tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
-	// MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
-
-	// for(amrex::MFIter mfi(tauFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
-	// {
-	// 	const amrex::Box& bx = mfi.tilebox();
-
-	// 	Array4<Real const> const &phi = PhiFab.const_array(mfi);
-	// 	Array4<Real const> const &rho = RhoFab.const_array(mfi);
-
-	// 	Array4<Real> const &tau = tauFab.array(mfi);
-
-	// 	amrex::ParallelFor(bx,
-	// 	[=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
-	// 	{
-	// 		tau(i,j,k) = Nu0()*Ark::DmVnMomentum::Lambda*2.0;
-	// 	});
-	// }
+	tauFab.mult(2*Ark::DmVnMomentum::Lambda,0);
+	MultiFab::Divide(tauFab, RhoFab, 0, 0, 1, 0);
 }
 void DUGKSAmr::Update_DVDF_Eq(int const lev)
 {	
@@ -306,11 +291,12 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 	// 	ElongationVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
 	// 						  	 Geom(lev).ProbDomain(), -1);
 	// }
-	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
 	// * * * * * * * * * * * *Interface Smooth Deformation * * * * * * * *
-	// DeformationVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), 
-	// 					   		 cur_time+Dt(), -1);
-	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	// DeformationVelocityField (ld.msv[Ark::VEL], Geom(lev).CellSize(), cur_time+Dt(), -1);
+
+	// * * * * * * * * * * * *Reversed Single Vortex * * * * * * * *
+	// ReversedVortexVelocityField(ld.msv[Ark::VEL], Geom(lev).CellSize(), cur_time+Dt(), -1);
 	
 	FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
@@ -347,12 +333,21 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 	// 						  	 Geom(lev).ProbDomain(), Ark::Y);
 	// }
 	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	//
 	// * * * * * * * * * * * *Interface Smooth Deformation * * * * * * * *
 	// DeformationVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
 	// 					   		 cur_time+hDt(lev), Ark::X);
 	// DeformationVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
 	// 					   		 cur_time+hDt(lev), Ark::Y);
 	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	//
+	// * * * * * * * * * * * *Interface Smooth Deformation * * * * * * * *
+	// ReversedVortexVelocityField (ld.msv_xF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   		 cur_time+hDt(lev), Ark::X);
+	// ReversedVortexVelocityField (ld.msv_yF[Ark::VEL], Geom(lev).CellSize(), 
+	// 					   		 cur_time+hDt(lev), Ark::Y);
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
 	AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
 	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 

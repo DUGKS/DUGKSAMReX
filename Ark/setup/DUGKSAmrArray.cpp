@@ -46,16 +46,17 @@ DUGKSAmr::LevelData::LevelData (amrex::BoxArray const& ba,
       velocity_prev(ba, dm, AMREX_SPACEDIM, 1,  MFInfo(), fact),
       phase_old    (ba, dm, 1             , 1,  MFInfo(), fact),
       density_old  (ba, dm, 1             , 1,  MFInfo(), fact),
-      velocity_old (ba, dm, AMREX_SPACEDIM, 1,  MFInfo(), fact)
+      velocity_old (ba, dm, AMREX_SPACEDIM, 1,  MFInfo(), fact),
+      chemiP       (ba, dm, 1             , ng, MFInfo(), fact)
 {
     msv[Ark::PHI].define    (ba, dm, 1             , ng, MFInfo(), fact);
     msv[Ark::RHO].define    (ba, dm, 1             , ng, MFInfo(), fact);
     msv[Ark::VEL].define    (ba, dm, AMREX_SPACEDIM, 1,  MFInfo(), fact);
     msv[Ark::P].define      (ba, dm, 1             , ng, MFInfo(), fact);
     msv[Ark::T].define      (ba, dm, 1             , ng, MFInfo(), fact);
-    msv[Ark::GradPHI].define(ba, dm, AMREX_SPACEDIM, ng,  MFInfo(), fact);
-    msv[Ark::GradRHO].define(ba, dm, AMREX_SPACEDIM, ng,  MFInfo(), fact);
-    msv[Ark::FORCE].define  (ba, dm, AMREX_SPACEDIM, ng,  MFInfo(), fact);
+    msv[Ark::GradPHI].define(ba, dm, AMREX_SPACEDIM, ng, MFInfo(), fact);
+    msv[Ark::GradRHO].define(ba, dm, AMREX_SPACEDIM, ng, MFInfo(), fact);
+    msv[Ark::FORCE].define  (ba, dm, AMREX_SPACEDIM, ng, MFInfo(), fact);
 
     BoxArray ba_xF = amrex::convert(ba, IntVect::TheDimensionVector(Ark::X));
 

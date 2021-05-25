@@ -21,6 +21,11 @@ void DUGKSAmr::CaseInitFluid(int const lev)
             ForceTaylorGreenVortex(lev);
             break;
         }
+        case 219:
+        {
+            ReversedSingleVortex(lev);
+            break;
+        }
         case 220:
         {
             QuiescentDrop(lev);
@@ -61,6 +66,16 @@ void DUGKSAmr::CaseInitFluid(int const lev)
             RayleighTaylorInstability(lev);
             break;
         }
+        case 228:
+        {
+            FlatInterface(lev);
+            break;
+        }
+        case 229:
+        {
+            case_droplet_impact(lev);
+            break;
+        }
         case -666:
         {
             BasicCase(lev);
@@ -89,6 +104,8 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 
     ld.phase_prev.setVal(0);
     ld.velocity_prev.setVal(0);
+
+    ld.chemiP.setVal(0);
     
     for(auto &mf : ld.msv){
         mf.setVal(0.0);

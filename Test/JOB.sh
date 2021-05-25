@@ -15,16 +15,19 @@ ModifyLineSingleAppend() {
 } 
 ModifyBenchmark() {
     local TauM=$(awk "BEGIN {print ${M}*3}")
+    local MinL=$(awk "BEGIN {printf \"%.16f\",${ChL}/${ChNum}}")
     local U0=$(awk "BEGIN {printf \"%.16f\",${Pe}*${M}/${ChL}}")
-    local EndStep=$(awk "BEGIN {print ${ChL}*${ChL}/${Pe}/${M}/${CFL}}")
+    local Dt=$(awk "BEGIN {printf \"%.16f\",${CFL}*${ChL}/${ChNum}}")
+    local EndStep=$(awk "BEGIN {print ${Period}*${ChL}*${ChNum}/${Pe}/${M}/${CFL}}")
 #modify time
     ModifyLineSingleAppend 'time.CFL' ${CFL}
-    ModifyLineSingleAppend 'time.advance_time_step' ${CFL}	
+    ModifyLineSingleAppend 'time.advance_time_step' ${Dt}   
 #modify geometry
-    ModifyLineTripleAppend 'amr.n_cell' ${ChL}
+    ModifyLineTripleAppend 'amr.n_cell' ${ChNum}
     ModifyLineTripleAppend 'geometry.prob_hi' ${ChL}
-    ModifyLineSingleAppend 'geometry.ch_num' ${ChL}
+    ModifyLineSingleAppend 'geometry.ch_num' ${ChNum}
     ModifyLineSingleAppend 'geometry.ch_length' ${ChL}
+    ModifyLineSingleAppend 'geometry.min_length' ${MinL}
 #modify base
     ModifyLineSingleAppend 'base.U0' ${U0}
 #modify phase field model
@@ -36,50 +39,59 @@ ModifyBenchmark() {
     ModifyLineSingleAppend 'control.conv_interval' ${EndStep}
 }
 #set parameters
-Pe=256
+Period=4
+Pe=512
 M=0.02
-Cn=0.015625
-ChL=256
-CFL=0.5
+Cn=0.0078125
+ChL=512
+ChNum=512
+CFL=0.8
 FluxScheme="UW"
-CaseName="TransDrop"
-BenchmarkFile="benchmark.transDrop"
+CaseName="ReversedSingleVortex"
+BenchmarkFile="benchmark.ReversedSingleVortex"
 #loop over Peclet number or Mobility coefficients
-for Pe in 256 512 640 819.2 1024 1280
+for Pe in 512 1024 1280 1638.4 2048 2560
+# for Pe in 256 512 640 819.2 1024 1280
 # for M in 0.01 0.02 0.04 0.05 0.064 0.08 0.1
-# for ChL in 128 192 256 384 512
+# for ChNum in 128 192 256 384 512
 do
     echo "Peclet : $Pe    Mobility : $M"
+    ChL=${ChNum}
     wI=$(awk "BEGIN {print ${ChL}*${Cn}}")
     ModifyBenchmark
-    L2File=L2_norm_Pe${Pe}_M${M}_wI${wI}_NL${ChL}_${CaseName}.dat
-    TargetFile=L2_Error_Pe${Pe}_M${M}_NL${ChL}_wI${wI}_CFL${CFL}\
-_FluxScheme${FluxScheme}_${CaseName}_FreeParameterEffects
+    L2File=L2_norm_Pe${Pe}_M${M}_wI${wI}_NL${ChNum}_Flux${FluxScheme}_${CaseName}.dat
+    TimeFile=elapsed_time_Pe${Pe}_M${M}_wI${wI}_NL${ChNum}_Flux${FluxScheme}_${CaseName}.dat
+    echo "L2-File : $L2File"
+    TargetFile=L2_Error_Pe${Pe}_M${M}_NL${ChNum}_wI${wI}_CFL${CFL}_Flux${FluxScheme}.${CaseName}
     touch ${TargetFile}
     echo "#####################BENCHMARK BEGIN##############################" >> ${TargetFile}
     cat ${BenchmarkFile} >> ${TargetFile}
     echo "#####################BENCHMARK END################################" >> ${TargetFile}
 #loop over coefficients
-    for var in -24 24 32 34 35 36 37 38 40 48
+    for var in -32 0 16 24 32 40 42 44 46 48 50 52 56 60 64
     #for var in 64 68 72 74 76 78 80
     do
         ModifyLineSingleAppend 'case.scheme_index' ${var}
         make cleanOF > /dev/null
         sh run.sh
         # until [ -f "$L2File" ]
-        for iii in {1..50}  
+        for iii in {1..100}  
         do
             echo "The $iii-th sleep in $var"
             sleep 30
-            [ $iii -eq 50 ] && exit
+            [ $iii -eq 100 ] && exit
             [ -f "$L2File" ] || continue
-            LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File) 
-            [ $TIME_STAMP -eq $LAST_MODIFY_TIMESTAMP ] && break
-            TIME_STAMP=$LAST_MODIFY_TIMESTAMP
+            EndLine=$(awk '{print NR}' $L2File)
+            [ $EndLine -eq 1 ] && break
+            # LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File) 
+            # [ $TIME_STAMP -eq $LAST_MODIFY_TIMESTAMP ] && break
+            # TIME_STAMP=$LAST_MODIFY_TIMESTAMP
         done
-        echo -n "-$var/48    " >> ${TargetFile}
-        awk 'END{print}' $L2File >> ${TargetFile}
-        echo "write result at -$var/48"
+        echo -n "-$var/64    " >> ${TargetFile}
+        awk 'END{print}' $L2File | tr -d '\n' >> ${TargetFile}
+        echo -n -e "\t" >> ${TargetFile}
+        awk 'END {print $NF}' $TimeFile >> ${TargetFile}
+        echo "write result at -$var/64"
     done
 # mv ${TargetFile} ${TargetFile}.dat
 done

@@ -4,6 +4,10 @@
 #error "AMREX_SPACEDIM is expected to be 2!!!"
 #endif
 
+#if ARK_USE_PHASE
+#error "wrong velocity model!!!"
+#endif
+
 template <typename DVM>
 template <long unsigned NUM>
 void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo,
@@ -147,6 +151,9 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev)
 	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
 	DUGKSCore<Ark::DmVnMomentum>::Update_MacroBaseVars_Momentum(ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
 #endif
+
+	// AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
+	// AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 
 	Update_MacroSourceVars(ld.msv_xF, hDt(lev));
 	Update_MacroSourceVars(ld.msv_yF, hDt(lev));

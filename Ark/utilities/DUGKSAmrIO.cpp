@@ -380,6 +380,9 @@ void DUGKSAmr::WritePlotFile()
     if (m_plt_forcez) ++ncomp;
 #endif
 
+    //chemical potential
+    if(m_plt_chemip) ++ncomp;
+
     // Apparent viscosity
     if(m_plt_tau) ++ncomp;
 
@@ -501,6 +504,13 @@ void DUGKSAmr::WritePlotFile()
         ++icomp;
     }
 #endif
+    if (m_plt_chemip) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->chemiP, 0, icomp, 1, 0);
+        }
+        pltscaVarsName.push_back("chemiPotential");
+        ++icomp;
+    }
     if (m_plt_tau) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->fDVDF[Ark::TAU], 0, icomp, 1, 0);
@@ -733,10 +743,12 @@ void DUGKSAmr::WriteComputingTime(const double elapsed_time)
         std::ofstream ofsTime;
         std::ostringstream ossTime;
         ossTime <<"elapsed_time"
-                << "_Pe"<<Pe()
-                << "_Cn"<<Cn()
-                << "_NL"<<ChNum()<<"_"
-                << CaseName()<<".dat";
+                <<"_Pe" << Pe()
+                <<"_M"<<MPhi()
+                <<"_wI"<<WidthI()
+                <<"_NL"<<ChNum()
+                <<"_Flux"<<FluxScheme()
+                <<"_"<<CaseName()<<".dat";
         ofsTime.open(ossTime.str().c_str(), std::ios::app);
         ofsTime  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         ofsTime  << cur_time <<"    " << elapsed_time <<"\n";

@@ -14,6 +14,7 @@ double DUGKSAmr::ChemicalPotential (const double phi,const double lpPhi)
 		-Kappa()*lpPhi
 	);
 }
+
 void DUGKSAmr::AllenCahnSource (int const lev)
 {
 	auto &ld = Data(lev);
@@ -21,11 +22,9 @@ void DUGKSAmr::AllenCahnSource (int const lev)
 	const Real *dl = Geom(lev).CellSize();
 
 	MultiFab const &PhiFab = ld.msv[Ark::PHI];
+	MultiFab &ChemiPFab    = ld.chemiP;
 	MultiFab &GradPhiFab   = ld.msv[Ark::GradPHI];
-#ifdef ARK_USE_MOMENTUM
-	MultiFab &GradRhoFab   = ld.msv[Ark::GradRHO];
 	MultiFab &ForceFab     = ld.msv[Ark::FORCE];
-#endif
 
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -34,36 +33,109 @@ void DUGKSAmr::AllenCahnSource (int const lev)
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-		Array4<Real const> const &phi  = PhiFab.array(mfi);
-		Array4<Real> const &grad_phi   = GradPhiFab.array(mfi);
+		Array4<Real const> const &phi = PhiFab.array(mfi);
+		Array4<Real> const &grad_phi  = GradPhiFab.array(mfi);
+		Array4<Real> const &chemi_p   = ChemiPFab.array(mfi);
+		Array4<Real> const &force     = ForceFab.array(mfi);
 
 		GradFunc::gradient_operator_isotropy(bx, dl, phi, grad_phi);
 
-#ifdef ARK_USE_MOMENTUM
-		Array4<Real> const &force    = ForceFab.array(mfi);
+		GradFunc::laplacian_operator_isotropy(bx, dl, phi, chemi_p);
+		// GradFunc::laplacian_normal_operator_isotropy(bx, dl, phi, grad_phi, chemi_p);
 
-		amrex::ParallelFor(bx,
-		[=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
-			double laplacian_phi = GradFunc::laplacian_operator_isotropy(dl,phi,i,j,k);
-			double mu_phi = ChemicalPotential(phi(i,j,k), laplacian_phi);
+			const Real order = phi(i,j,k);
 
+			const Real mu_phi = 
+			2*Beta()*(order - PhiL())*(order - PhiV())*(2*order - PhiL() - PhiV())
+			- Kappa()*chemi_p(i,j,k);
+
+			// const Real mu_phi = Kappa()*chemi_p(i,j,k);
+
+			chemi_p(i,j,k) = mu_phi;
 			//F = Fs
+#ifdef ARK_USE_MOMENTUM
 			force(i,j,k,Ark::X) = mu_phi*grad_phi(i,j,k,Ark::X);
 			force(i,j,k,Ark::Y) = mu_phi*grad_phi(i,j,k,Ark::Y);
 #if(AMREX_SPACEDIM == 3)
 			force(i,j,k,Ark::Z) = mu_phi*grad_phi(i,j,k,Ark::Z);
 #endif
-		});
 #endif
+		});
 	}
 #ifdef ARK_USE_MOMENTUM
+	MultiFab &GradRhoFab   = ld.msv[Ark::GradRHO];
 	MultiFab::Copy(GradRhoFab, GradPhiFab, 0, 0, AMREX_SPACEDIM, 0);
 	GradRhoFab.mult(APhi(), 0);
 #endif
-
 }
 
+// void DUGKSAmr::AllenCahnSource (int const lev)
+// {
+// 	auto &ld = Data(lev);
+
+// 	const Real *dl = Geom(lev).CellSize();
+
+// 	MultiFab const &PhiFab = ld.msv[Ark::PHI];
+// 	MultiFab &GradPhiFab   = ld.msv[Ark::GradPHI];
+// 	MultiFab &ChemiPFab    = ld.chemiP;
+
+// 	#ifdef _OPENMP
+// 	#pragma omp parallel
+// 	#endif
+// 	for(amrex::MFIter mfi(PhiFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+// 	{
+// 		const amrex::Box& bx = mfi.tilebox();
+
+// 		Array4<Real const> const &phi  = PhiFab.array(mfi);
+
+// 		Array4<Real> const &grad_phi   = GradPhiFab.array(mfi);
+// 		Array4<Real> const &chemi_p    = ChemiPFab.array(mfi);
+
+// 		GradFunc::gradient_operator_isotropy(bx, dl, phi, grad_phi);
+		// GradFunc::laplacian_operator_isotropy(bx, dl, phi, chemi_p);
+// 		GradFunc::laplacian_normal_operator_isotropy(bx, dl, phi, grad_phi, chemi_p);
+
+// 		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+// 		{
+// 			const Real order = phi(i,j,k);
+
+// 			chemi_p(i,j,k) = 2*Beta()*(order - PhiL())*(order - PhiV())*(2*order - PhiL() - PhiV())
+// 						   - Kappa()*chemi_p(i,j,k);
+// 		});
+// 	}
+
+// #ifdef ARK_USE_MOMENTUM
+// 	FillPatchChemiP(lev, cur_time, ChemiPFab);
+// 	MultiFab &ForceFab = ld.msv[Ark::FORCE];
+
+// 	#ifdef _OPENMP
+// 	#pragma omp parallel
+// 	#endif
+// 	for(amrex::MFIter mfi(PhiFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+// 	{
+// 		const amrex::Box& bx = mfi.tilebox();
+
+// 		Array4<Real const> const &phi  = PhiFab.array(mfi);
+
+// 		Array4<Real> const &chemi_p = ChemiPFab.array(mfi);
+// 		Array4<Real> const &force   = ForceFab.array(mfi);
+
+// 		GradFunc::gradient_operator_isotropy(bx, dl, chemi_p, force);
+
+// 		amrex::ParallelFor(bx, 
+// 		AMREX_SPACEDIM, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+// 		{
+// 			force(i,j,k,n) *= -phi(i,j,k);
+// 		});
+// 	}
+
+// 	MultiFab &GradRhoFab = ld.msv[Ark::GradRHO];
+// 	MultiFab::Copy(GradRhoFab, GradPhiFab, 0, 0, AMREX_SPACEDIM, 0);
+// 	GradRhoFab.mult(APhi(), 0);
+// #endif
+// }
 void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 							 		Array<MultiFab, Ark::MSVNUM> const &msv,
 							 		const IntVect &faceIndex)
@@ -122,7 +194,8 @@ void DUGKSAmr::AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
 			// GradFunc::central_interpolation(force(i-di2,j-dj2,k-dk2,n),
 			// 							    force(i-di ,j-dj ,k-dk ,n),
 			// 							    force(i    ,j    ,k    ,n),
-			// 							    force(i+di ,j+dj ,k+dk ,n));
+			// 							    force(i+di ,j+dj ,k+dk ,n),
+			// 							    SchemeIndex());
 #endif
 		});
 

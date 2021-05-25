@@ -71,7 +71,7 @@ base.TauF = 0.3
 #.......................................#
 PF.mobility_phi  =     0.1
 PF.tau_phi       =     0.3
-PF.widthI        =     12.5
+PF.widthI        =     5
 PF.sigma         =     1E-03
 PF.phiL          =     1
 PF.phiV          =     0

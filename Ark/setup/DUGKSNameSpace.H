@@ -140,6 +140,11 @@ namespace GradFunc
 									  Array4<Real const> const &src, 
 					  	   			  Array4<Real> const &dst);
 
+	void laplacian_normal_operator_isotropy (const Box &bx, Real const* dl,
+											 Array4<Real const> const &src,
+											 Array4<Real const> const &gradsrc,
+								 			 Array4<Real> const &dst);
+
 	double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var, 
 					  	   				int const i,int const j,int const k);
 
