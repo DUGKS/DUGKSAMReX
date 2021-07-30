@@ -1,20 +1,20 @@
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        = 0    0    0     # Lo corner coordinates for the real problem
-geometry.prob_hi        = 256  256  256   # Hi corner coordinates for the real problem
+geometry.prob_lo        =  0   0   0     # Lo corner coordinates
+geometry.prob_hi        =  512 512 512     # Hi corner coordinates
 
-geometry.is_periodic    = 1    1    1     # Periodicity x y z (0/1)
+geometry.is_periodic    =  1  1  1   # Periodicity x y z (0/1)
 
-geometry.ch_num         = 256
-geometry.ch_length      = 256
+geometry.ch_num         = 512
+geometry.ch_length      = 512.0
 geometry.min_length     = 1.0
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              = 256  256  256
+amr.n_cell              = 512  512  512     # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.v                   =	2
 amr.regrid_int          =  -1
@@ -30,7 +30,8 @@ amr.max_grid_size       =  64
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              DUGKSAmr                 #
 #.......................................#
-DUGKSAmr.verbose         =   1
+DUGKSAmr.verbose         =  1              #
+DUGKSAmr.n_ghost		 =  2
 DUGKSAmr.phi_error       =   0 0 0
 DUGKSAmr.grad_phi_error  =   0 0 0
 DUGKSAmr.tag_region      =   0 
@@ -40,26 +41,27 @@ DUGKSAmr.tag_region_hi   =   0 0 0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            CASE & SOLVER              #
 #.......................................#
-case.case_index		=    222          # case index
-case.case_name      =    "ZalesakDisk"  # case name
-case.flux_scheme    =    UW
-case.scheme_index   =    48
-case.solver_name	=    "DUGKSAMReX"			# solver name
-case.momentum_name	=    ""			# momentum model
+case.case_index		=  224          # case index
+case.case_name      =  "SmoothDeformation"  # case name
+case.DmVn_name		= "DmVnAC"
+case.flux_scheme    = UW
+case.scheme_index   = -32
+case.solver_name	=	"DUGKSAMReX"			# solver name
+case.advance_scheme	=	"CN"			# momentum model
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 time.fixed_trace        =   true       # Use fix trace time step?
-time.CFL	            =   0.8
-time.advance_time_step 	=   0.8
+time.CFL	            =   0.8        # Use this constant CFL
+time.advance_time_step 	=   0.8        # time step size
 #time.trace_time_step    =   0.4        # default vaule equals half advance_time_step
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #             PHYSICS BASE              #
 #.......................................#
 base.Rho0 = 1.0
-base.U0   = 0.1000000000000000
+base.U0   = 0.02
 base.T0   = 3.33333333333333333E-01
 base.R0   = 1.0
 base.P0   = 1.0
@@ -70,8 +72,8 @@ base.TauF = 0.3
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #             PHASE FIELD               #
 #.......................................#
-PF.mobility_phi  =     0.1
-PF.tau_phi       =     0.3
+PF.mobility_phi  =     0.02
+PF.tau_phi       =     0.06
 PF.widthI        =     4
 PF.sigma         =     1E-03
 PF.phiL          =     1
@@ -82,7 +84,7 @@ PF.muL           =     0.1
 PF.muV           =     0.1
 PF.gravity       =     0.  0.  0.                 # Gravitational force
 PF.centerPF      =     0.5  0.5  0.0
-PF.radiusPF      =     0.4
+PF.radiusPF      =     0.2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         BOUNDARY CONDITIONS           #
@@ -90,11 +92,11 @@ PF.radiusPF      =     0.4
 bc.physical_lo = 0 0 0
 bc.physical_hi = 0 0 0
 
-bc.phase_lo      = 5 5 5
-bc.phase_hi      = 5 5 5
+bc.phase_lo   = 5 5 5
+bc.phase_hi   = 5 5 5
 
-bc.density_lo    = 5 5 5
-bc.density_hi    = 5 5 5 
+bc.density_lo   = 5 5 5
+bc.density_hi   = 5 5 5 
 
 bc.velocity_lo   = 0 0 0
 bc.velocity_hi   = 0 0 0
@@ -129,15 +131,15 @@ bc.dirichlet_velocity_y_hi = 0 0 0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-control.steady_state            =    false
-control.end_step                =    3200
-control.residual_tolerance      =    1E-8           # 
-control.adapt_tolerance			=    0.0001
-control.plot_file               =    "plt"
-control.check_file              =    "chk"
-control.restart_file            =    ""         # Checkpoint to restart from
-control.conv_interval           =    32
-control.residual_interval       =    0         
-control.plot_interval		    =    0          # Steps between plot files
-control.check_interval    		=    -1         # Steps between checkpoint files
-control.plt_ccse_regtest        =    0          #0 : default plot 
+control.steady_state            = false
+control.end_step                =  32000          # Max number of time steps
+control.residual_tolerance      =  1E-8           # 
+control.adapt_tolerance			=	0.0001
+control.plot_file               = "plt"
+control.check_file              = "chk"
+control.restart_file            = ""        # Checkpoint to restart from
+control.conv_interval	    =	32000 		#norm, sum_density, etc...
+control.residual_interval   = 	0         
+control.plot_interval		=	0          # Steps between plot files
+control.check_interval    		=   -1           # Steps between checkpoint files
+control.plt_ccse_regtest        = 0           #0 : default plot 

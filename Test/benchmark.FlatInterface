@@ -2,9 +2,9 @@
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        = 0    0    0     # Lo corner coordinates for the real problem
-geometry.prob_hi        = 8    200  8   # Hi corner coordinates for the real problem
+geometry.prob_hi        = 16    200  16   # Hi corner coordinates for the real problem
 
-geometry.is_periodic    = 1    0    1     # Periodicity x y z (0/1)
+geometry.is_periodic    = 1    1    1     # Periodicity x y z (0/1)
 
 geometry.ch_num         = 200
 geometry.ch_length      = 200
@@ -14,7 +14,7 @@ geometry.min_length     = 1.0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              = 8  200  8
+amr.n_cell              = 16  200  16
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.v                   =	2
 amr.regrid_int          =  -1
@@ -45,7 +45,7 @@ case.case_name      =    "FlatInterface"  # case name
 case.flux_scheme    =    UW
 case.scheme_index   =    -32
 case.solver_name	=    "DUGKSAMReX"			# solver name
-case.momentum_name	=    ""			# momentum model
+case.momentum_name	=    "D2VnFE"			# momentum model
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
@@ -71,16 +71,16 @@ base.TauF = 0.3
 #.......................................#
 PF.mobility_phi  =     0.1
 PF.tau_phi       =     0.3
-PF.widthI        =     5
-PF.sigma         =     1E-03
+PF.widthI        =     4
+PF.sigma         =     1.365333333333333E-03
 PF.phiL          =     1
 PF.phiV          =     0
-PF.rhoL          =     10
-PF.rhoV          =     1
+PF.rhoL          =     1
+PF.rhoV          =     0.2
 PF.muL           =     0.1
 PF.muV           =     0.1
 PF.gravity       =     0.  0.  0.                 # Gravitational force
-PF.centerPF      =     0.02  0.5  0.0
+PF.centerPF      =     0.04  0.5  0.0
 PF.radiusPF      =     0.2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -128,15 +128,15 @@ bc.dirichlet_velocity_y_hi = 0 0 0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-control.steady_state            =    false
-control.end_step                =    10000
+control.steady_state            =    true
+control.end_step                =    -10000
 control.residual_tolerance      =    1E-8           # 
 control.adapt_tolerance			=    0.0001
 control.plot_file               =    "plt"
 control.check_file              =    "chk"
 control.restart_file            =    ""         # Checkpoint to restart from
-control.conv_interval           =    1000
+control.conv_interval           =    100000
 control.residual_interval       =    1000         
-control.plot_interval		    =    1000          # Steps between plot files
+control.plot_interval		    =    100000          # Steps between plot files
 control.check_interval    		=    -1         # Steps between checkpoint files
-control.plt_ccse_regtest        =    0          #0 : default plot 
+control.plt_ccse_regtest        =    1          #0 : default plot 

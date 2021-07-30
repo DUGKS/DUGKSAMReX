@@ -68,18 +68,18 @@ do
     cat ${BenchmarkFile} >> ${TargetFile}
     echo "#####################BENCHMARK END################################" >> ${TargetFile}
 #loop over coefficients
-    for var in -32 0 16 24 32 40 42 44 46 48 50 52 56 60 64
+    for var in -32 0 16 24 32 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120
     #for var in 64 68 72 74 76 78 80
     do
         ModifyLineSingleAppend 'case.scheme_index' ${var}
         make cleanOF > /dev/null
         sh run.sh
         # until [ -f "$L2File" ]
-        for iii in {1..100}  
+        for iii in {1..400}  
         do
             echo "The $iii-th sleep in $var"
             sleep 30
-            [ $iii -eq 100 ] && exit
+            [ $iii -eq 400 ] && exit
             [ -f "$L2File" ] || continue
             EndLine=$(awk '{print NR}' $L2File)
             [ $EndLine -eq 1 ] && break

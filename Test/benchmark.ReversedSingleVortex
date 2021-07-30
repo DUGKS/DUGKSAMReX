@@ -31,6 +31,7 @@ amr.max_grid_size       =  64
 #              DUGKSAmr                 #
 #.......................................#
 DUGKSAmr.verbose         =  1              #
+DUGKSAmr.n_ghost         =  3
 DUGKSAmr.phi_error       =   0 0 0
 DUGKSAmr.grad_phi_error  =   0 0 0
 DUGKSAmr.tag_region      =   0 
@@ -42,10 +43,11 @@ DUGKSAmr.tag_region_hi   =   0 0 0
 #.......................................#
 case.case_index		=  219          # case index
 case.case_name      =  "ReversedSingleVortex"  # case name
-case.flux_scheme    = UW
-case.scheme_index   = -32
+case.DmVn_name	    =   "DmVnAC"
+case.flux_scheme    = 	UW
+case.advance_scheme	=	CN			# advance model
+case.scheme_index   = 	-32
 case.solver_name	=	"DUGKSAMReX"			# solver name
-case.momentum_name	=	"DoubleGhosts"			# momentum model
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #

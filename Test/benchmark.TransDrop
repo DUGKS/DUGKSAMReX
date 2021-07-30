@@ -31,6 +31,7 @@ amr.max_grid_size       =  64
 #              DUGKSAmr                 #
 #.......................................#
 DUGKSAmr.verbose         =  1              #
+DUGKSAmr.n_ghost		 =  2
 DUGKSAmr.phi_error       =   0 0 0
 DUGKSAmr.grad_phi_error  =   0 0 0
 DUGKSAmr.tag_region      =   0 
@@ -42,10 +43,11 @@ DUGKSAmr.tag_region_hi   =   0 0 0
 #.......................................#
 case.case_index		=    220          # case index
 case.case_name      =    "QuiescentDrop"  # case name
-case.flux_scheme    =    UW
-case.scheme_index   =    -32
-case.solver_name	=    "DUGKSAMReX"			# solver name
-case.momentum_name	=    "DoubleGhosts"			# momentum model
+case.DmVn_name		= "DmVnAC"
+case.flux_scheme    = UW
+case.scheme_index   = -32
+case.solver_name	=	"DVMDUGKSAMReX"			# solver name
+case.advance_scheme	=	"CN"			# momentum model
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
@@ -71,17 +73,17 @@ base.TauF = 0.3
 #             PHASE FIELD               #
 #.......................................#
 PF.mobility_phi  =     0.02
-PF.tau_phi       =     0.06
+PF.tau_phi       =     0.08
 PF.widthI        =     5
 PF.sigma         =     1E-03
 PF.phiL          =     1
 PF.phiV          =     0
 PF.rhoL          =     10
 PF.rhoV          =     1
-PF.muL           =     0.1
+PF.muL           =     1
 PF.muV           =     0.1
 PF.gravity       =     0.  0.  0.                 # Gravitational force
-PF.centerPF      =     0.5  0.5  0.0
+PF.centerPF      =     0.5  0.5  0.5
 PF.radiusPF      =     0.2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -136,8 +138,8 @@ control.adapt_tolerance			=	0.0001
 control.plot_file               = "plt"
 control.check_file              = "chk"
 control.restart_file            = ""        # Checkpoint to restart from
-control.conv_interval	    =	1000 		#norm, sum_density, etc...
+control.conv_interval	    =	100000 		#norm, sum_density, etc...
 control.residual_interval   = 	1000         
-control.plot_interval		=   500000          # Steps between plot files
+control.plot_interval		=   1000          # Steps between plot files
 control.check_interval    		=   -1           # Steps between checkpoint files
-control.plt_ccse_regtest        = 0           #0 : default plot 
+control.plt_ccse_regtest        = 1           #0 : default plot 
