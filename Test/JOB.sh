@@ -39,18 +39,19 @@ ModifyBenchmark() {
     ModifyLineSingleAppend 'control.conv_interval' ${EndStep}
 }
 #set parameters
-Period=4
+Period=1
 Pe=512
 M=0.02
 Cn=0.0078125
 ChL=512
 ChNum=512
 CFL=0.8
-FluxScheme="UW"
-CaseName="ReversedSingleVortex"
-BenchmarkFile="benchmark.ReversedSingleVortex"
+FluxScheme="DVM"
+CaseName="SmoothedDeformation"
+BenchmarkFile="./Benchmark/benchmark.${CaseName}"
 #loop over Peclet number or Mobility coefficients
-for Pe in 512 1024 1280 1638.4 2048 2560
+for Pe in 2048
+#for Pe in 512 1024 1280 1638.4 2048 2560
 # for Pe in 256 512 640 819.2 1024 1280
 # for M in 0.01 0.02 0.04 0.05 0.064 0.08 0.1
 # for ChNum in 128 192 256 384 512
@@ -68,8 +69,8 @@ do
     cat ${BenchmarkFile} >> ${TargetFile}
     echo "#####################BENCHMARK END################################" >> ${TargetFile}
 #loop over coefficients
-    for var in -32 0 16 24 32 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120
-    #for var in 64 68 72 74 76 78 80
+    # for var in 0 16 24 32 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120
+    for var in 0
     do
         ModifyLineSingleAppend 'case.scheme_index' ${var}
         make cleanOF > /dev/null

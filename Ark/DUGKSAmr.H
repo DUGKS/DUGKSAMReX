@@ -43,6 +43,9 @@ class DUGKSAmr final: public Ark::FlowParm, public amrex::AmrCore
 {
 
 public:
+    static const std::string DmVnModel;
+
+public:
 	DUGKSAmr();
 
 	DUGKSAmr (DUGKSAmr&& rhs) = default;
@@ -85,7 +88,28 @@ public:
 	// Delete level data
 	virtual void ClearLevel (int lev) override;
 
-    void Advance();
+    void (DUGKSAmr::*Advance)() = nullptr;
+
+    //trapezium rule
+    void Advance_CN();
+
+    //NonEquilibrium rule
+    void Advance_NEQ();
+
+    //Implicit Euler
+    void Advance_BackwardEuler();
+
+    //Mixed
+    void Advance_IMEX();
+
+    //Strang-Splitting 
+    void Advance_SS();
+
+    // Finite difference scheme
+    void Advance_FD(); 
+
+    //DVM
+    void Advance_DVM();
 
     void Evolve();
 
@@ -135,6 +159,9 @@ private:
     // Be verbose?
     int m_verbose = 0;
 
+    //ghost layer
+    int n_ghost = 0;
+
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
 
@@ -156,7 +183,7 @@ private:
     amrex::Vector<amrex::Real> grad_phi_error;
 
     //tag a specified region
-    bool tag_region = false;
+    amrex::Vector<int> tag_region;
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
 
@@ -200,6 +227,10 @@ private:
     int m_plt_strainrate  = 0;
     int m_plt_divu        = 0;
     int m_plt_volfrac     = 0; //volume fraction for cut cells
+
+    int m_plt_hDVDF       = 0;
+    int m_plt_fDVDF       = 0;
+    int m_plt_gDVDF       = 0;
 
     struct LevelData {
         LevelData () = default;
@@ -281,6 +312,24 @@ private:
 #if(AMREX_SPACEDIM == 3)
         Array<MultiFab, Ark::FACEDVDFNUM> gDVDFzF;
 #endif
+    private:
+        void ConstructMSVMultiFabAtFace (Array<MultiFab, Ark::MSVNUM>& msv_nF,
+                                        amrex::BoxArray const& ba_nF,
+                                        amrex::DistributionMapping const& dm,
+                                        amrex::FabFactory<FArrayBox> const& fact);
+
+        void ConstructDVDFMultiFabAtCell (Array<MultiFab, Ark::DVDFNUM>& xDVDF,
+                                        amrex::BoxArray const& ba,
+                                        amrex::DistributionMapping const& dm,
+                                        amrex::FabFactory<FArrayBox> const& fact,
+                                        int const Q, int const ng);
+
+        void ConstructDVDFMultiFabAtFace (Array<MultiFab, Ark::FACEDVDFNUM>& xDVDFnF,
+                                        amrex::BoxArray const& ba_nF,
+                                        amrex::DistributionMapping const& dm,
+                                        amrex::FabFactory<FArrayBox> const& fact,
+                                        int const Q, int const ng);
+      
     };
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
@@ -318,6 +367,8 @@ private:
 
     using BCValue = amrex::Array<amrex::Real, 2*AMREX_SPACEDIM>;
 
+    BCValue m_dirichlet_phase;
+    BCValue m_dirichlet_density;
     BCValue m_dirichlet_velocity_x;
     BCValue m_dirichlet_velocity_y;
     BCValue m_dirichlet_velocity_z;
@@ -334,6 +385,14 @@ private:
     Vector<BCRec> const& get_DVDF_wave_bcrec () const noexcept { return m_bcrec_DVDF_wave;}
     Vector<BCRec> const& get_DVDF_barplus_bcrec () const noexcept { return m_bcrec_DVDF_barplus;}
 
+    BCValue const& get_dirichlet_phase() const noexcept 
+    {
+        return m_dirichlet_phase; 
+    }
+    BCValue const& get_dirichlet_density() const noexcept 
+    {
+        return m_dirichlet_density; 
+    }
     BCValue const& get_dirichlet_velocity_x() const noexcept 
     {
         return m_dirichlet_velocity_x; 
@@ -358,16 +417,33 @@ private:
     int nghost_state () const 
     {
     #ifdef AMREX_USE_EB
-            return 3;
+            return n_ghost + 1;
     #endif
-            return 2;
+            return n_ghost;
     }
 
     int zero_ghost () const { return 0;}
     int unit_ghost () const { return 1;}
     int double_ghost() const { return 2;}
+    int triple_ghost() const { return 3;}
 
 private:
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // tag region
+    //
+    ///////////////////////////////////////////////////////////////////////////
+
+    //DUGKSAmrTag.cpp
+
+    void TagDesignatedRegion(TagBoxArray& Tab, const Real *prob_lo, const Real *dx);
+
+    void TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab,
+                        const Real *dx, const Real &tagError);
+
+    void TagScalarField (TagBoxArray& Tab, const MultiFab &ScalarFab, 
+                         const Real *dx, const Real &tagError);
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // boundary_conditions
@@ -392,14 +468,13 @@ private:
     //DUGKSPhysBC.cpp
     void FillPhysicalBoundaryMacroVars(int const lev);
     void FillPhysicalBoundaryMacroVars(int const lev, int const bcid, int const dir);
-    void FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const dir);
+    void FillPhysicalBoundaryMacroVarsNoSlipWall (int const lev, int const dir);
+    void FillPhysicalBoundaryMacroVarsOutFlow (int const lev, int const dir);
     void FillInteriorBoundary (MultiFab &xFab, const Periodicity& period);
 
     //DUGKSDVDFBC.cpp
     void FillPhysicalBoundaryDVDF(int const lev);
     void FillPhysicalBoundaryDVDF(int const lev, int const bcid, int const dir);
-    void FillInteriorBoundaryGradBarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF,
-                                               const Periodicity& period);
 
     
     //family of average down
@@ -433,11 +508,14 @@ private:
     //family of fill patch
     void FillPatchNew (int const lev, Real const time, DUGKSAmr::LevelData &newld);
     void FillPatchMacroVars ();
+    void PostFillPatchNew (int const lev, DUGKSAmr::LevelData &newld);
     
     
     void FillPatchPhase       (int const lev, Real const time, MultiFab& phase);
+    void FillPatchPhasePrev   (int const lev, Real const time, MultiFab& phasePrev);
     void FillPatchDensity     (int const lev, Real const time, MultiFab& density);
     void FillPatchVelocity    (int const lev, Real const time, MultiFab& velocity);
+    void FillPatchVelocityPrev(int const lev, Real const time, MultiFab& velocityPrev);
     void FillPatchPressure    (int const lev, Real const time, MultiFab& pres);
     void FillPatchTemperature (int const lev, Real const time, MultiFab& temp);
     void FillPatchChemiP      (int const lev, Real const time, MultiFab& force);
@@ -450,11 +528,11 @@ private:
 
     void FillPatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP, 
                                Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
-
+    template<typename F>
     void FillPatchCore (int const lev, Real const time, MultiFab &mf, 
                         const Vector<MultiFab*>& cmf, const Vector<Real>& ctime,
                         const Vector<MultiFab*>& fmf, const Vector<Real>& ftime,
-                        const Vector<BCRec>& bcs, amrex::UserFillBox FillExternalVariable);
+                        const Vector<BCRec>& bcs);
 
     //family of fill coarse patch
     void FillCoarsePatchNew(int const lev, Real const time, DUGKSAmr::LevelData &newld);
@@ -470,11 +548,10 @@ private:
 
     void FillCoarsePatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP, 
                                      Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
-
+    template<typename F>
     void FillCoarsePatchCore(int const lev, Real const time, 
                              MultiFab &mf, MultiFab const &cmf,
-                             const Vector<BCRec> &bcrec, 
-                             amrex::UserFillBox FillExternalVariable);
+                             const Vector<BCRec> &bcrec);
 
     //DUGKSSetBC.cpp
     void average_scalar_x (Array4<Real> const &dst, Array4<Real const> const &src, 
@@ -504,6 +581,24 @@ private:
     void set_dirichlet_pressure_zF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
                                     int const /*fixed index*/, Orientation face);
 
+    void set_dirichlet_phase_xF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_phase_yF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_phase_zF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_density_xF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_density_yF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
+    void set_dirichlet_density_zF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+                                    int const /*fixed index*/, Orientation face);
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // case
@@ -531,7 +626,7 @@ private:
 
     void ZalesakDisk(int const lev);
 
-    void InterfaceElongation (int const lev);
+    void ElongatedInterface (int const lev);
 
     void SmoothDeformation (int const lev);
 
@@ -545,7 +640,13 @@ private:
 
     void FlatInterface(int const lev);
 
-    void case_droplet_impact(int const lev);
+    void DropletImpact(int const lev);
+    
+    void TaylorBubble(int const lev);
+
+    void RisingBubble(int const lev);
+
+    void FallingDrop(int const lev);
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -553,15 +654,19 @@ private:
     // discrete_velocity_model
     //
     ///////////////////////////////////////////////////////////////////////////
-    void Update_DVDF_Eq(int const lev);
-    void Update_DVDF_Eq_hDt(int const lev);
 
     void Update_MacroVars(int const lev);
-    void Update_MacroVars_hDt(int const lev);
+    void Update_MacroVars_hDt(int const lev, double const hTime);
 
+    void Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv);
     void Update_MacroSourceVars(Array<MultiFab, Ark::MSVNUM> &msv, const Real interval);
 
-    void Update_Tau_Momentum(MultiFab &tauFab, MultiFab const &PhiFab, MultiFab const &RhoFab);
+    void Update_Tau_Phase(MultiFab &tauFab, Array<MultiFab, Ark::MSVNUM> &msv);
+    void Update_Tau_Momentum(MultiFab &tauFab, Array<MultiFab, Ark::MSVNUM> &msv);
+    void Update_Tau_Energy(MultiFab &tauFab, Array<MultiFab, Ark::MSVNUM> &msv);
+
+    void Update_DVDF_Eq(int const lev);
+    void Update_DVDF_Eq_hDt(int const lev);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -569,21 +674,81 @@ private:
     //
     ///////////////////////////////////////////////////////////////////////////
 
+    void Nullify_Source (int const lev);
+
+    void Construct_DVDF_Wave(int const lev, const Real dTime);
+
+    void Update_DVM_BarPlus(int const lev);
+
     void Update_DVDF_BarPlus (int const lev, double const hTime);
 
-    void Update_DVDF_Grad_BarPlus (int const lev);
+    void Update_DVDF_BarPlus_NonEq(int const lev, double const hTime);
+
+    void Update_FD_DVDF_BarPlus (int const lev, double const hTime);
+
+    void Update_DVDF_Grad_BarPlus_Null (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Default (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Default_Second (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Default_VanLeer (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Third (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Fourth (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Fourth_Third (int const lev);
+
+    void Update_DVDF_Grad_BarPlus_Fifth (int const lev);
+
+    void Update_DVDF_Barh_UW_Default (int const lev);
+    
+    void Update_DVDF_Barh_UW_Third (int const lev);
+
+    void Update_DVDF_Barh_UW_Fourth (int const lev);
+
+    void Update_DVDF_Barh_UW_Fourth_Cross (int const lev);
+
+    void Update_DVDF_Barh_UW_Fourth_Cross_Third (int const lev);
+
+    void Update_DVDF_Barh_UW_Fifth (int const lev);
+
+    void Update_DVDF_Barh_UW_Default_Second (int const lev);
 
     void Update_DVDF_Barh_CD (int const lev);
 
-    void Update_DVDF_Barh_UW (int const lev);
+    void Update_DVDF_Barh_WENO_Third (int const lev);
 
-    void Update_DVDF_Flux (int const lev);
+    void Update_DVDF_Barh_WENO_Fifth (int const lev);
 
-    void Update_DVDF_MesoFlux (int const lev);
+    void Update_FD_DVDF_Barh_WENO_Third (int const lev);
 
-    void Update_DVDF_Wave(int const lev);
+    void Update_FD_DVDF_Barh_WENO_Fifth (int const lev);
+
+    void Update_DVDF_Flux (int const lev, double const hTime);
+
+    void Update_DVDF_MesoFlux (int const lev, double const hTime);
+
+    void Update_DVDF_Wave(int const lev, double const hTime);
+
+    void Update_DVDF_Wave_NonEq(int const lev);
+
+    void Update_DVM_Wave(int const lev);
+
+    void Update_DVDF_Prime (int const lev, double const upTime, double const downTime);
+
+    void Update_DVDF_NonEq (int const lev, double const dTime);
+
+    void Update_DVDF_Wave_SS (int const lev, double const ssTime);
+
+    void Update_DVDF_Tau(int const lev);
+
+    void Update_DVDFnF_Tau (int const lev);
 
     void (DUGKSAmr::*Update_DVDF_Barh) (int const lev) = nullptr;
+
+    void (DUGKSAmr::*Update_DVDF_Grad_BarPlus) (int const lev) = nullptr;
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -611,16 +776,21 @@ private:
     // field operation
     //
     ///////////////////////////////////////////////////////////////////////////
+    double PhaseProfile (double const distance, LV token);
 
-    inline double SourcePhi (double const phi);
+    double SourcePhi (double const phi);
 
-    inline double ChemicalPotential (const double phi,const double lpPhi);
+    double ChemicalPotential (const double phi,const double lpPhi);
 
     void AllenCahnSource_hDt (Array<MultiFab, Ark::MSVNUM> &msv_nF,
                               Array<MultiFab, Ark::MSVNUM> const &msv,
                               const IntVect &faceIndex);
+
     void AllenCahnSource (int const lev);
+
     void AllenCahnTemporalPhiU(LevelData &ld);
+
+    void FreeEnergySource (int const lev);
 
     void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
                            amrex::MultiFab const& vel);
@@ -634,8 +804,17 @@ private:
                                    amrex::Geometry& lev_geom,
                                    amrex::Real time, int nghost);
 
+    void ReinitializePhase(MultiFab &PhaseFab);
+
+    void BoundPhase(MultiFab &PhaseFab);
+
+    void BoundGradient(MultiFab &GradPhaseFab);
+
     void ElongationVelocityField (MultiFab &VelFab, const Real *dx, 
                                   const RealBox &rb, int const token);
+
+    void ElongationVelocityField3D (MultiFab &VelFab, const Real *dx, 
+                                    const RealBox &rb, int const token);
 
     void DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
                                    const Real Time, int const token);
@@ -654,6 +833,7 @@ private:
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
     void SetMutableTraceTimeStep(const double hTime);
     void SetFluxScheme();
+    void SetAdvanceScheme();
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -679,6 +859,9 @@ private:
     void WriteL2NormVelocity(int const lev, double const vel_diff, double const vel_norm);
     void WriteInterfacePosition(const Vector<double> &interfacePosition);
     void WriteComputingTime(const double interval);
+
+    void WriteTecplotFlowField(int const lev);
+    void WriteTecplotGrid(int const lev);
     //diagnose
     void PrintMaxValues (amrex::Real time);
     void PrintMaxVel (int lev);
@@ -693,10 +876,17 @@ private:
     double L2NormDensity(int lev);
     double SumPhase(int lev);
     double InterfacePosition (const MultiFab& phi, const double rb_lo_y, const Real* dl,
-                              int const I, int const K);
-    Vector<double> InterfacePosition(int lev);
-    void reinitialize(MultiFab &);
-    void BoundPhase (MultiFab &phase);
+                              int const indexI, int const indexJ, int const indexK);
+
+    double InterfacePositionHighest (const MultiFab& PhaseFab, const double probDomain_lo_y,
+                                     const Real* dx, int const index);
+
+    double InterfacePositionLowest (const MultiFab& PhaseFab, const double probDomain_lo_y,
+                                    const Real* dx, int const index);
+
+    Vector<double> InterfacePositionRayleighTaylor(int lev);
+    Vector<double> InterfacePositionTaylorBubble(int lev);
+    Vector<double> InterfacePositionRisingBubble(int lev);
 
     void FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl);
     void FillLevelPhaseSphere (MultiFab &phase, const Real *dl, LV token);
@@ -716,4 +906,11 @@ public:
 
 };
 
+namespace amrex {
+    void FillExternalCore (const IntVect& iv, Array4<Real> const& q,
+                       const int dcomp, const int numcomp,
+                       GeometryData const& geom, const Real time,
+                       const BCRec* bcr, const int bcomp,
+                       const int orig_comp);
+}
 #endif

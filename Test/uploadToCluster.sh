@@ -1,4 +1,5 @@
 #!bash
+set -e
 workingdir=$(pwd)
 parentdir=${workingdir%/*}
 localdir=${parentdir##*/}
@@ -6,11 +7,11 @@ echo "folder name : $localdir"
 #
 if [ "$1" = "hn" ];
 then
-	hostIP=10.168.25.233
+	hostIP=10.168.17.85
 	rootdir=home
 elif [ "$1" = "mh" ];
 then
-	hostIP=10.168.1.63
+	hostIP=10.168.6.48
 	rootdir=data
 else
 	echo "unknown host name"
@@ -33,8 +34,9 @@ fi
 echo "working directory : ${workingdir}"
 echo "remote host name : $1"
 echo "remote directory : ${remotedir}"
+scp JOB.sh yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Test >/dev/null
 echo "uploading Test folder to $1 ${remotedir}"
-scp benchmark.* yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Test >/dev/null
+scp -r ./Benchmark/* yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Test/Benchmark >/dev/null
 echo "uploading Ark folder to $1 ${remotedir}"
 scp -r ../Ark/* yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Ark >/dev/null
 echo "upload done!"

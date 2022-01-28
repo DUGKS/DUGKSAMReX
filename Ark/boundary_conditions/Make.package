@@ -1,7 +1,7 @@
 CEXE_sources += DUGKSSetBC.cpp
 CEXE_sources += DUGKSAverage.cpp
 CEXE_sources += DUGKSFillPatch.cpp
-CEXE_sources += DUGKSExternal.cpp
+CEXE_sources += FillExternalCore.cpp
 CEXE_sources += DUGKSDVDFBC.cpp
 CEXE_sources += DUGKSPhysBC.cpp
 CEXE_headers += DUGKSExternal.H

@@ -19,14 +19,20 @@ void DUGKSAmr::AverageDownLevelAll(int const crse_lev)
 }
 void DUGKSAmr::AverageDownLevelMacroVars(int const crse_lev)
 {
+#if ARK_USE_PHASE
 	AverageDownLevelPhase(crse_lev);
-	AverageDownLevelDensity(crse_lev);
-	AverageDownLevelVelocity(crse_lev);
-	AverageDownLevelPressure(crse_lev);
-	// AverageDownLevelTemperature(crse_lev);
 	// AverageDownLevelGradPhase(crse_lev);
-	// AverageDownLevelGradDensity(crse_lev);
-	// AverageDownLevelForce(crse_lev);
+#endif
+
+	AverageDownLevelVelocity(crse_lev);
+
+#if ARK_USE_MOMENTUM
+	AverageDownLevelDensity(crse_lev);
+	AverageDownLevelPressure(crse_lev);
+	AverageDownLevelTemperature(crse_lev);
+	AverageDownLevelGradDensity(crse_lev);
+	AverageDownLevelForce(crse_lev);
+#endif
 }
 void DUGKSAmr::AverageDownLevelPhase(int const crse_lev)
 {
@@ -188,6 +194,9 @@ void DUGKSAmr::AverageDownAll()
 }
 void DUGKSAmr::AverageDownMacroVars()
 {
+
+BL_PROFILE_VAR("DUGKSAmr::AverageDownMacroVars()", AverageDownMacroVars);
+
 	for (int lev = finest_level-1; lev >= 0; --lev)
     {
 		AverageDownLevelMacroVars(lev);

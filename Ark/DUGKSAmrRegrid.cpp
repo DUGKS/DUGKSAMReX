@@ -54,6 +54,7 @@ void DUGKSAmr::RemakeLevel (int lev, Real time, const BoxArray& ba,
     std::unique_ptr<LevelData> new_leveldata(new LevelData(ba, dm, *new_fact, nghost_state()));
 
     FillPatchNew(lev, time, *new_leveldata);
+    PostFillPatchNew(lev,*new_leveldata);
 
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);

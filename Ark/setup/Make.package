@@ -1,5 +1,4 @@
 CEXE_headers += DUGKSMacro.H
-CEXE_headers += DUGKSNameSpace.H
 CEXE_headers += DUGKSFlowBase.H
 CEXE_sources += DUGKSFlowBase.cpp
 CEXE_sources += DUGKSAmrArray.cpp

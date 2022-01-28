@@ -88,6 +88,8 @@ void DUGKSAmr::InitBoundaryConditions()
 	ReadBoundaryCondition("DVDF_wave", m_bcrec_DVDF_wave, Ark::DVM_MOMENTUM);
 	ReadBoundaryCondition("DVDF_barplus", m_bcrec_DVDF_barplus, Ark::DVM_MOMENTUM);
 
+	ReadDirichletBoundaryCondition("dirichlet_phase", m_dirichlet_phase);
+	ReadDirichletBoundaryCondition("dirichlet_density", m_dirichlet_density);
 	ReadDirichletBoundaryCondition("dirichlet_velocity_x", m_dirichlet_velocity_x);
 	ReadDirichletBoundaryCondition("dirichlet_velocity_y", m_dirichlet_velocity_y);
 	ReadDirichletBoundaryCondition("dirichlet_velocity_z", m_dirichlet_velocity_z);
@@ -227,6 +229,91 @@ void DUGKSAmr::average_scalar_z (Array4<Real> const &dst, Array4<Real const> con
 		dst(i,j,kz)  = 0.5*( src(i,j,kz - 1)  + src(i,j,kz) );
 	}
 }
+
+void DUGKSAmr::set_dirichlet_phase_xF (Array4<Real> const &phi, 
+										const Dim3 &lo, const Dim3 &hi, 
+							  			int const ix, const Orientation face)
+{
+	LoopPS_YZ(lo,hi)
+	{
+		phi(ix,j,k) = get_dirichlet_phase()[int(face)];
+	}
+}
+void DUGKSAmr::set_dirichlet_phase_yF (Array4<Real> const &phi, 
+										const Dim3 &lo, const Dim3 &hi, 
+							  			int const jy, Orientation face)
+{
+	LoopPS_XZ(lo,hi)
+	{
+		phi(i,jy,k) = get_dirichlet_phase()[int(face)];
+	}
+}
+void DUGKSAmr::set_dirichlet_phase_zF (Array4<Real> const &phi, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const kz, Orientation face)
+{
+	LoopPS_XY(lo,hi) 
+	{
+		phi(i,j,kz) = get_dirichlet_phase()[int(face)];
+	}
+}
+
+void DUGKSAmr::set_dirichlet_density_xF (Array4<Real> const &rho, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const ix, const Orientation face)
+{
+	LoopPS_YZ(lo,hi)
+	{
+		rho(ix,j,k) = get_dirichlet_density()[int(face)];
+	}
+}
+void DUGKSAmr::set_dirichlet_density_yF (Array4<Real> const &rho, 
+										const Dim3 &lo, const Dim3 &hi, 
+							  			int const jy, Orientation face)
+{
+	LoopPS_XZ(lo,hi)
+	{
+		rho(i,jy,k) = get_dirichlet_density()[int(face)];
+	}
+}
+void DUGKSAmr::set_dirichlet_density_zF (Array4<Real> const &rho, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const kz, Orientation face)
+{
+	LoopPS_XY(lo,hi) 
+	{
+		rho(i,j,kz) = get_dirichlet_density()[int(face)];
+	}
+}
+
+void DUGKSAmr::set_dirichlet_pressure_xF (Array4<Real> const &pres, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const ix, const Orientation face)
+{
+	LoopPS_YZ(lo,hi)
+	{
+		pres(ix,j,k) = get_dirichlet_pressure()[int(face)];
+	}
+}
+void DUGKSAmr::set_dirichlet_pressure_yF (Array4<Real> const &pres, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const jy, Orientation face)
+{
+	LoopPS_XZ(lo,hi)
+	{
+		pres(i,jy,k) = get_dirichlet_pressure()[int(face)];		
+	}
+}
+void DUGKSAmr::set_dirichlet_pressure_zF (Array4<Real> const &pres, 
+										 const Dim3 &lo, const Dim3 &hi, 
+							  			 int const kz, Orientation face)
+{
+	LoopPS_XY(lo,hi) 
+	{
+		pres(i,j,kz) = get_dirichlet_pressure()[int(face)];
+	}
+}
+
 void DUGKSAmr::set_dirichlet_velocity_xF (Array4<Real> const &vel, 
 										 const Dim3 &lo, const Dim3 &hi, 
 							  			 int const ix, const Orientation face)
@@ -264,32 +351,5 @@ void DUGKSAmr::set_dirichlet_velocity_zF (Array4<Real> const &vel,
 #if(AMREX_SPACEDIM == 3)
 		vel(i,j,kz,Ark::Z) = get_dirichlet_velocity_z()[int(face)];
 #endif
-	}
-}
-void DUGKSAmr::set_dirichlet_pressure_xF (Array4<Real> const &pres, 
-										 const Dim3 &lo, const Dim3 &hi, 
-							  			 int const ix, const Orientation face)
-{
-	LoopPS_YZ(lo,hi)
-	{
-		pres(ix,j,k) = get_dirichlet_pressure()[int(face)];
-	}
-}
-void DUGKSAmr::set_dirichlet_pressure_yF (Array4<Real> const &pres, 
-										 const Dim3 &lo, const Dim3 &hi, 
-							  			 int const jy, Orientation face)
-{
-	LoopPS_XZ(lo,hi)
-	{
-		pres(i,jy,k) = get_dirichlet_pressure()[int(face)];		
-	}
-}
-void DUGKSAmr::set_dirichlet_pressure_zF (Array4<Real> const &pres, 
-										 const Dim3 &lo, const Dim3 &hi, 
-							  			 int const kz, Orientation face)
-{
-	LoopPS_XY(lo,hi) 
-	{
-		pres(i,j,kz) = get_dirichlet_pressure()[int(face)];
 	}
 }

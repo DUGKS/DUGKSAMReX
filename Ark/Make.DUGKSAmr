@@ -21,7 +21,7 @@ Bdirs += Ark/fields
 Bdirs += Ark/setup
 Bdirs += Ark/utilities
 
-ifeq ($(USE_EB), TRUE)
+ifeq ($(strip $(USE_EB)),TRUE)
   Bdirs += Ark/embedded_boundary
   USERSuffix += .EB
 endif

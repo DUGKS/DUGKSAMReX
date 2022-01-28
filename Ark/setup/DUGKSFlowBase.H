@@ -30,7 +30,8 @@ public:
 	const std::string& CaseName() const {return case_name;}
 	const std::string& SolverName() const {return solver_name;}
 	const std::string& FluxScheme() const { return flux_scheme; }
-	const std::string& MomentumName() const {return momentum_name;}
+	const std::string& AdvanceScheme() const {return advance_scheme;}
+	const std::string& DmVnName() const {return DmVn_name;}
 	int CaseIndex() const {return case_index;}
 	int SchemeIndex() const {return scheme_index;}
 	
@@ -50,8 +51,8 @@ public:
 	double Ma() const {return _Mach;}
 	double Re() const {return _Reynolds;}
 	double Kn() const {return _Knudsen;}
-	double TauMomentum() const {return _TauF;}  //the relaxation time for fDVDF
-	double TauEnergy() const {return _TauG;}
+	double TauMomentum() const {return _TauMomentum;}  //the relaxation time for fDVDF
+	double TauEnergy() const {return _TauEnergy;}
 
 	//control parameters
 	int EndStep() const {return end_step;}
@@ -78,6 +79,7 @@ public:
 	double RadiusPF() const {return radiusPF;}
 	double Gravity(int i) const {return gravity[i];}
 	double CenterPF(int i) const {return centerPF[i];}
+	const amrex::Vector<double>& Gravity() const {return gravity;}
 
 	double Cn() const {return _Cahn;}
 	double Pe() const {return _Peclet;}
@@ -92,8 +94,9 @@ public:
 private:
 	std::string case_name;
 	std::string solver_name;
+	std::string advance_scheme;
+	std::string DmVn_name;
 	std::string flux_scheme;
-	std::string momentum_name;
 	int case_index = 0;
 	int scheme_index = 0;
 
@@ -109,8 +112,8 @@ private:
 	double _R0 		 = 0;
 	double _Mu0      = 0;
 	double _Nu0      = 0;
-	double _TauF     = 0;
-	double _TauG     = 0;
+	double _TauMomentum = 0;
+	double _TauEnergy     = 0;
 	double _Mach     = 0;
 	double _Reynolds = 0;
 	double _Knudsen  = 0;

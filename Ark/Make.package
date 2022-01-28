@@ -3,4 +3,5 @@ CEXE_sources += DUGKSAmr.cpp
 CEXE_sources += DUGKSAmrTag.cpp
 CEXE_sources += DUGKSAmrEvolve.cpp
 CEXE_sources += DUGKSAmrRegrid.cpp
+CEXE_headers += DUGKSNameSpace.H
 CEXE_headers += DUGKSAmr.H

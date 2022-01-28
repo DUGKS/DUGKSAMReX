@@ -40,3 +40,4 @@ Docs/sphinx/build
 
 #
 !JOB.sh
+!uploadToCluster.sh

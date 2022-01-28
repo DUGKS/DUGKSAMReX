@@ -9,10 +9,10 @@
 int main(int argc, char* argv[])
 {
 	amrex::Initialize(argc,argv,true,MPI_COMM_WORLD);
+
+	BL_PROFILE_VAR("main()",pmain);
+
 	{
-
-	BL_PROFILE("main()");
-
 	// Issue an error if input file is not given 
 	if(argc < 2) amrex::Abort("Input file must be given as command-line argument.");
 
@@ -27,6 +27,8 @@ int main(int argc, char* argv[])
 
 
 	dugks_amr.Evolve();
+
+	// 	dugks_amr.Test();
 
 	// Time spent in total
 	Real end_time = amrex::ParallelDescriptor::second() - start_time;
@@ -43,5 +45,8 @@ int main(int argc, char* argv[])
     amrex::Print() << "Time spent in Evolve():      " << end_time - init_time <<" seconds\n";
 	Ark::PrintSplitLine();
 	}
+
+	BL_PROFILE_VAR_STOP(pmain);
+	
 	amrex::Finalize();
 }

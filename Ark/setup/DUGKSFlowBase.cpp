@@ -14,10 +14,11 @@ void Ark::FlowParm::InitFlowParmBase()
 
 	ppCase.get("case_index",case_index);
 	ppCase.get("case_name",case_name);
+	ppCase.get("advance_scheme",advance_scheme);
+	ppCase.get("DmVn_name",DmVn_name);
 	ppCase.get("flux_scheme",flux_scheme);
 	ppCase.get("scheme_index",scheme_index);
 	ppCase.get("solver_name",solver_name);
-	ppCase.get("momentum_name",momentum_name);
 	}
 
 	{
@@ -37,7 +38,7 @@ void Ark::FlowParm::InitFlowParmBase()
 	ppBase.get("R0",_R0);
 	ppBase.get("Mu0",_Mu0);
 	ppBase.get("Nu0",_Nu0);	
-	ppBase.get("TauF",_TauF);
+	ppBase.get("TauMomentum",_TauMomentum);
 	}
 
 	{

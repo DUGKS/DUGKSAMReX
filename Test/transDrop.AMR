@@ -2,27 +2,27 @@
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =  0 0 0     # Lo corner coordinates
-geometry.prob_hi        =  512 512 512     # Hi corner coordinates
+geometry.prob_hi        =  128 128 128     # Hi corner coordinates
 
 geometry.is_periodic    =   1 1 1   # Periodicity x y z (0/1)
 
-geometry.ch_num         = 512
-geometry.ch_length      = 512.0
-geometry.min_length     = 1.0
+geometry.ch_num = 128 
+geometry.ch_length  = 128.0
+geometry.min_length = 1.0
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              = 512  512  512     # Grid cells at coarsest AMRlevel
+amr.n_cell              = 128 128 128     # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.v                   =	2
 amr.regrid_int          =  -1
 amr.check_input         =   1
-amr.blocking_factor     =   8
-amr.max_grid_size       =  64
-#amr.grid_eff           =   0.7
-#amr.n_error_buf        =   1
+amr.blocking_factor    =   8
+amr.max_grid_size      =  64
+amr.grid_eff           =   0.8
+amr.n_error_buf        =   4
 #amr.n_proper           =   1           #default set by InitAmrMesh() in AmrMesh.cpp
 #amr.ref_ratio          =   2
 #amr.refine_grid_layout =   0
@@ -31,29 +31,32 @@ amr.max_grid_size       =  64
 #              DUGKSAmr                 #
 #.......................................#
 DUGKSAmr.verbose         =  1              #
-DUGKSAmr.phi_error       =   0 0 0
-DUGKSAmr.grad_phi_error  =   0 0 0
-DUGKSAmr.tag_region      =   0 
-DUGKSAmr.tag_region_lo   =   0 0 0
-DUGKSAmr.tag_region_hi   =   0 0 0
+DUGKSAmr.n_ghost         =  2
+DUGKSAmr.phi_error       =   0.9 0.9 10 10
+DUGKSAmr.grad_phi_error  =   1e-2 1e-3 8e-4 8e-5
+#DUGKSAmr.tag_region      =   0 
+DUGKSAmr.tag_region_lo   =   6 6 0
+DUGKSAmr.tag_region_hi   =   10 10 0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            CASE & SOLVER              #
 #.......................................#
-case.case_index		=  226          # case index
-case.case_name      =  "SpinodalDecomposition"  # case name
+case.case_index		=  220          # case index
+case.case_name      =  "QuiescentDrop"  # case name
 case.flux_scheme    = UW
-case.scheme_index   =    -32
-case.solver_name	=	"DUGKSAMReX"			# solver name
-case.momentum_name	=	"DoubleGhosts"			# momentum model
+case.DmVn_name		= "DmVnAC"
+case.flux_scheme    = UW
+case.scheme_index   = -32
+case.solver_name	=	"DVMDUGKSAMReX"			# solver name
+case.advance_scheme	=	"CN"			# momentum model
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-time.fixed_trace        =   true       # Use fix trace time step?
-time.CFL	            =   0.8        # Use this constant CFL
+time.fixed_trace        =   false       # Use fix time step size in tracing?
+time.trace_time_step    =   0.4  
 time.advance_time_step 	=   0.8        # time step size
-time.trace_time_step    =   0.4        # default vaule equals half advance_time_step
+time.CFL	            =   0.8        # Use this constant CFL
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #             PHYSICS BASE              #
@@ -70,27 +73,35 @@ base.TauF = 0.3
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #             PHASE FIELD               #
 #.......................................#
-PF.mobility_phi  =     0.1
-PF.tau_phi       =     0.3
-PF.widthI        =     6
-PF.sigma         =     1E-01
+PF.mobility_phi  =     0.02
+PF.tau_phi       =     0.06
+PF.widthI        =     5
+PF.sigma         =     1E-03
 PF.phiL          =     1
 PF.phiV          =     0
 PF.rhoL          =     10
 PF.rhoV          =     1
-PF.muL           =     0.1
+PF.muL           =     1
 PF.muV           =     0.1
 PF.gravity       =     0.  0.  0.                 # Gravitational force
-PF.centerPF      =     0.5  0.5  0.0
-PF.radiusPF      =     0.2
+PF.centerPF      =     0.5  0.5  0.5
+PF.radiusPF      =     0.1
 
-#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
-#         BOUNDARY CONDITIONS           #
-#.......................................#
-bc.physical_lo = 0 0 0
-bc.physical_hi = 0 0 0
-
-bc.phase_lo   = 5 5 5
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#         					BOUNDARY CONDITIONS          				 #
+#........................................................................#
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+# INTERIOR 0, INFLOW 1, OUTFLOW 2, SYMMETRY 3, SLIPWALL 4, NONSLIPWALL 5 #
+#........................................................................#
+#
+bc.physical_lo = 0 5 0
+bc.physical_hi = 0 2 0
+#
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+# REFLECT_ODD -1, INTERIOR 0, REFLECT_EVEN 1, FOEXTRAP 2, EXTERNAL 3, #
+# HOEXTRAP 4, HOEXTRAPCC 5  										  #
+#.....................................................................#
+bc.phase_lo   = 5 3 5
 bc.phase_hi   = 5 5 5
 
 bc.density_lo   = 5 5 5
@@ -105,11 +116,11 @@ bc.pressure_hi   = 5 5 5
 bc.temperature_lo   = 5 5 5
 bc.temperature_hi   = 5 5 5
 
-bc.force_lo   = 5 5 5
-bc.force_hi   = 5 5 5
+bc.force_lo   = 5 2 5
+bc.force_hi   = 5 2 5
 
-bc.DVDF_wave_lo   = 5 2 5
-bc.DVDF_wave_hi   = 5 2 5
+bc.DVDF_wave_lo   = 5 5 5
+bc.DVDF_wave_hi   = 5 5 5
 
 bc.DVDF_barplus_lo   = 5 5 5
 bc.DVDF_barplus_hi   = 5 5 5
@@ -129,15 +140,15 @@ bc.dirichlet_velocity_y_hi = 0 0 0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-control.steady_state            = false
-control.end_step                =  20000          # Max number of time steps
+control.steady_state            = true
+control.end_step                =  -1          # Max number of time steps
 control.residual_tolerance      =  1E-8           # 
 control.adapt_tolerance			=	0.0001
 control.plot_file               = "plt"
 control.check_file              = "chk"
 control.restart_file            = ""        # Checkpoint to restart from
-control.conv_interval	    =	0 		#norm, sum_density, etc...
-control.residual_interval   = 	0         
-control.plot_interval		=	2000          # Steps between plot files
-control.check_interval    		=   -1           # Steps between checkpoint files
-control.plt_ccse_regtest        = 0           #0 : default plot 
+control.conv_interval	    =	1000 		#norm, sum_density, etc...
+control.residual_interval   = 	1000         
+control.plot_interval		=	10000          # Steps between plot files
+control.check_interval    		=   250000           # Steps between checkpoint files
+control.plt_ccse_regtest        = 1           #0 : default plot 

@@ -43,7 +43,7 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         }
         case 223:
         {
-            InterfaceElongation(lev);
+            ElongatedInterface(lev);
             break;
         }
         case 224:
@@ -73,7 +73,22 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         }
         case 229:
         {
-            case_droplet_impact(lev);
+            DropletImpact(lev);
+            break;
+        }
+        case 230:
+        {
+            TaylorBubble(lev);
+            break;
+        }
+        case 231:
+        {
+            RisingBubble(lev);
+            break;
+        }
+        case 232:
+        {
+            FallingDrop(lev);
             break;
         }
         case -666:
@@ -188,8 +203,9 @@ void DUGKSAmr::post_case_init(int const lev)
     auto& ld = Data(lev);
     
     //The following would result in a slight increase in L-2 norm error;
-    // MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
-    // MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
+    MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
+    MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
+    
 #ifdef ARK_USE_PHASE
     FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 

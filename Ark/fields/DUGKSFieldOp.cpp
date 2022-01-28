@@ -23,30 +23,7 @@ Real DUGKSAmr::ComputeKineticEnergy () const
     return -1;
 }
 //
-void DUGKSAmr::BoundPhase (MultiFab &phase)
-{
-    #ifdef _OPENMP
-    #pragma omp parallel
-    #endif
-    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
-    {
-        const Box& bx = mfi.tilebox();
-        //
-        Array4<Real> const &phi  = phase.array(mfi);
 
-        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            if (phi(i,j,k) > PhiL()) 
-            { 
-                phi(i,j,k) = PhiL(); 
-            }
-            else if (phi(i,j,k) < PhiV())
-            {
-                phi(i,j,k) = PhiV();
-            }
-        }); 
-    }  
-}
 //The following codes are directly copied from incflo
 void DUGKSAmr::ComputeStrainrateAtLevel (int lev,
                                          MultiFab* strainrate,
@@ -354,22 +331,75 @@ void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const
 }
 #endif
 
-void DUGKSAmr::ElongationVelocityField  (MultiFab &VelFab, const Real *dx, 
-                                         const RealBox &rb, int const token)
+double DUGKSAmr::PhaseProfile (double const d, LV token)
 {
+    return 0.5*(PhiL()+PhiV() + static_cast<int>(token)*(PhiL()-PhiV())*tanh(d*2.0/WidthI()));
+}
+void DUGKSAmr::Nullify_Source (int const lev)
+{
+    auto &ld = Data(lev);
+
+    // ld.msv[Ark::GradPHI].setVal(0);
+    ld.msv[Ark::GradRHO].setVal(0);
+    ld.msv[Ark::FORCE].setVal(0);
+}
+void DUGKSAmr::BoundPhase(MultiFab &PhaseFab)
+{
+    const Real bound = 5e-6;
+    // const Real bound = 0;
+
+    for(amrex::MFIter mfi(PhaseFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &phi  = PhaseFab.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            if(phi(i,j,k) < bound) {
+                phi(i,j,k) = 0;
+            }
+            else if(phi(i,j,k) > 1 - bound) {
+                phi(i,j,k) = 1;
+            }
+        });
+    }
+}
+
+void DUGKSAmr::BoundGradient(MultiFab &GradPhaseFab)
+{
+    for(amrex::MFIter mfi(GradPhaseFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        //
+        Array4<Real> const &GradPhi  = GradPhaseFab.array(mfi);
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            if(std::fabs(GradPhi(i,j,k,Ark::X)) < 1e-12) {
+                GradPhi(i,j,k,Ark::X) = 0;
+            }
+            if(std::fabs(GradPhi(i,j,k,Ark::Y)) < 1e-12) {
+                GradPhi(i,j,k,Ark::Y) = 0;
+            }
+        });
+    }
+}
+//Sudden Reverse 2D
+void DUGKSAmr::ElongationVelocityField (MultiFab &VelFab, const Real *dx, const RealBox &rb, int const token)
+{
+    const double multiplier = (nstep <=0 ? 1.0 : -1.0);
+
     double di = 0;
     double dj = 0;
 
-    if(token == -1)
-    {
+    if(token == -1) {
         di = 0.5,dj = 0.5;
     }
-    else if(token == Ark::X)
-    {
+    else if(token == Ark::X) {
         di = 0,dj = 0.5;
     }
-    else if(token == Ark::Y)
-    {
+    else if(token == Ark::Y) {
         di = 0.5,dj = 0;
     }
     else {
@@ -393,30 +423,126 @@ void DUGKSAmr::ElongationVelocityField  (MultiFab &VelFab, const Real *dx,
 
         amrex::ParallelFor(bx,[=](int i,int j,int k)
         {
-            const double x = (i + di)*dlx;
-            const double y = (j + dj)*dly;
+            const double x = (i + di)*dlx + real_lo_x;
+            const double y = (j + dj)*dly + real_lo_y;
+
+            const double xT = x/ChLength()*Ark::PI;
+            const double yT = y/ChLength()*Ark::PI;
             
-            vel(i,j,k,Ark::X) = 
-            -U0()*Ark::PI*sin(Ark::pi*x/ChLength())*cos(Ark::PI*y/ChLength());
-            vel(i,j,k,Ark::Y) =  
-            U0()*Ark::PI*cos(Ark::PI*x/ChLength())*sin(Ark::PI*y/ChLength());
-    
-            if(token == Ark::X){
-            if(x == real_lo_x or x == real_hi_x)
-            {
-                vel(i,j,k,Ark::X) = 0;
-                vel(i,j,k,Ark::Y) = 0; 
-            }}
+            vel(i,j,k,Ark::X) =  U0()*Ark::PI*sin(xT)*cos(yT)*multiplier;
+            vel(i,j,k,Ark::Y) = -U0()*Ark::PI*cos(xT)*sin(yT)*multiplier;
+
+            if(token == Ark::X) {
+                if(x == real_lo_x or x == real_hi_x)
+                {
+                    vel(i,j,k,Ark::X) = 0;
+                    vel(i,j,k,Ark::Y) = 0; 
+                }
+            }
             //
-            if(token == Ark::Y){
-            if(y == real_lo_y or y == real_hi_y)
-            {
-                vel(i,j,k,Ark::X) = 0;
-                vel(i,j,k,Ark::Y) = 0; 
-            }}
+            if(token == Ark::Y) {
+                if(y == real_lo_y or y == real_hi_y)
+                {
+                    vel(i,j,k,Ark::X) = 0;
+                    vel(i,j,k,Ark::Y) = 0; 
+                }
+            }
         });
     }
 }
+
+//Sudden Reverse 3D
+void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, const RealBox &rb, int const token)
+{
+#if(AMREX_SPACEDIM == 3)
+
+    // const double multiplier = (nstep <=0 ? 1.0 : -1.0);
+    const double tT = cur_time*U0()/(2*ChLength());
+
+    double di = 0;
+    double dj = 0;
+    double dk = 0;
+
+    if(token == -1) {
+        di = 0.5, dj = 0.5, dk = 0.5;
+    }
+    else if(token == Ark::X) {
+        di = 0, dj = 0.5, dk = 0.5;
+    }
+    else if(token == Ark::Y) {
+        di = 0.5, dj = 0, dk = 0.5;
+    }
+    else if(token == Ark::Z) {
+        di = 0.5, dj = 0.5, dk = 0.0;
+    }
+    else {
+        amrex::Abort("meaningless face id");
+    }
+
+    const Real dlx = dx[Ark::X];
+    const Real dly = dx[Ark::Y];
+    const Real dlz = dx[Ark::Z];
+
+    const double real_lo_x = rb.lo(Ark::X);
+    const double real_hi_x = rb.hi(Ark::X);
+
+    const double real_lo_y = rb.lo(Ark::Y);
+    const double real_hi_y = rb.hi(Ark::Y);
+
+    const double real_lo_z = rb.lo(Ark::Z);
+    const double real_hi_z = rb.hi(Ark::Z);
+
+    for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &vel = VelFab.array(mfi);
+
+        amrex::ParallelFor(bx,[=](int i,int j,int k)
+        {
+            const double x = (i + di)*dlx + real_lo_x;
+            const double y = (j + dj)*dly + real_lo_y;
+            const double z = (k + dk)*dlz + real_lo_z;
+
+            const double xT = (x/ChLength()-0.5)*Ark::PI;
+            const double yT = (y/ChLength()-0.5)*Ark::PI;
+            const double zT = (z/ChLength()-0.5)*Ark::PI;
+            
+            vel(i,j,k,Ark::X) = Ark::PI*U0()*cos(xT)*(sin(yT)-sin(zT))*cos(Ark::PI*tT);
+            vel(i,j,k,Ark::Y) = Ark::PI*U0()*cos(yT)*(sin(zT)-sin(xT))*cos(Ark::PI*tT);
+            vel(i,j,k,Ark::Z) = Ark::PI*U0()*cos(zT)*(sin(xT)-sin(yT))*cos(Ark::PI*tT);
+
+            if(token == Ark::X) {
+                if(x == real_lo_x or x == real_hi_x) {
+                    vel(i,j,k,Ark::X) = 0;
+                    vel(i,j,k,Ark::Y) = 0; 
+                    vel(i,j,k,Ark::Z) = 0; 
+                }
+            }
+            //
+            if(token == Ark::Y) {
+                if(y == real_lo_y or y == real_hi_y)
+                {
+                    vel(i,j,k,Ark::X) = 0;
+                    vel(i,j,k,Ark::Y) = 0; 
+                    vel(i,j,k,Ark::Z) = 0; 
+                }
+            }
+
+            if(token == Ark::Z) {
+                if(z == real_lo_z or z == real_hi_z)
+                {
+                    vel(i,j,k,Ark::X) = 0;
+                    vel(i,j,k,Ark::Y) = 0; 
+                    vel(i,j,k,Ark::Z) = 0; 
+                }
+            }
+        });
+    }
+#endif
+}
+
+//smoothed
 void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
                                          const Real time, int const token)
 {
@@ -426,16 +552,13 @@ void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
     double di = 0;
     double dj = 0;
 
-    if(token == -1)
-    {
+    if(token == -1) {
         di = 0.5,dj = 0.5;
     }
-    else if(token == Ark::X)
-    {
+    else if(token == Ark::X) {
         di = 0,dj = 0.5;
     }
-    else if(token == Ark::Y)
-    {
+    else if(token == Ark::Y) {
         di = 0.5,dj = 0;
     }
     else {
@@ -461,6 +584,8 @@ void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
         });
     }
 }
+
+// Trailing tail
 void DUGKSAmr::ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx, 
                                             const Real time, int const token)
 {
@@ -592,23 +717,12 @@ void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
             const double y = dl[Ark::Y]*(j+0.5);
 #if(AMREX_SPACEDIM == 3)
             const double z = dl[Ark::Z]*(k+0.5);
-
-        phi(i,j,k) = 
-        0.5*(PhiL() + PhiV()) + 0.5*static_cast<int>(token)*(PhiL() - PhiV())*
-        tanh((
-            std::sqrt(
-            Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z))
-            ) - RadiusPF())*2.0/WidthI()
-        );
-
+            const double distance = 
+            Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
 #else
-        phi(i,j,k) = 
-        0.5*(PhiL() + PhiV()) + 0.5*static_cast<int>(token)*(PhiL() - PhiV())*
-        tanh((std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF()
-             )*2.0/WidthI()
-            
-        );           
+            const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();           
 #endif
+            phi(i,j,k) = PhaseProfile(distance, token);
         });
     }
 }
@@ -647,7 +761,7 @@ void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
         });
     }
 }
-void DUGKSAmr::reinitialize(MultiFab &phase)
+void DUGKSAmr::ReinitializePhase(MultiFab &phase)
 {
     #ifdef _OPENMP
     #pragma omp parallel

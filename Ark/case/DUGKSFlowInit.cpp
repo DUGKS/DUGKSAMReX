@@ -3,9 +3,12 @@
 void DUGKSAmr::BasicCase(int const lev)
 {
     AMREX_ALWAYS_ASSERT(CaseIndex() == -666 && CaseName() == "BasicCase");
+
 #ifdef AMREX_DEBUG
-    auto &ld = Data(lev);
+
+    LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
 
     for(amrex::MFIter mfi(ld.msv[Ark::RHO], true);mfi.isValid();++mfi)
     {
@@ -28,12 +31,17 @@ void DUGKSAmr::BasicCase(int const lev)
 
 
 
-        ParallelFor(tbx, Ark::DVM_MOMENTUM, [=](int i,int j,int k,int n) noexcept
+        ParallelFor(tbx, Ark::DVM_PHASE, [=](int i,int j,int k,int n) noexcept
         {
-            const double x = dx[Ark::X]*(i+0.5);
-            const double y = dx[Ark::Y]*(j+0.5);
+            const double x = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double z = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+#else
+            const double z = 0;
+#endif
             phi(i,j,k) = 2*x*x + y*y;
-            rho(i,j,k) = 2*x + x*y;
+            rho(i,j,k) = 2*x + x*y + y*z;
 
             vel(i,j,k,0) = 0.1*x + x*y;
             vel(i,j,k,1) = 1.1*x + x*y;
@@ -57,7 +65,7 @@ void DUGKSAmr::BasicCase(int const lev)
         Array4<Real> const &fFluxX = ld.fDVDFxF[Ark::FLUX].array(mfi);
 
 
-        ParallelFor(tbx, Ark::DVM_MOMENTUM, [=](int i,int j,int k,int n) noexcept
+        ParallelFor(tbx, Ark::DVM_PHASE, [=](int i,int j,int k,int n) noexcept
         {
             const double x = dx[Ark::X]*(i);
             const double y = dx[Ark::Y]*(j+0.5);
@@ -165,9 +173,16 @@ void DUGKSAmr::QuiescentDrop(int const lev)
 	MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
 	ld.msv[Ark::RHO].mult(APhi(), 0);
     ld.msv[Ark::RHO].plus(BPhi(), 0);
-    ld.msv[Ark::VEL].setVal(0);
+    // ld.msv[Ark::VEL].setVal(0);
 	ld.msv[Ark::P].setVal(P0());
 	ld.msv[Ark::T].setVal(T0());
+
+    ld.msv[Ark::VEL].setVal(U0());
+    ld.msv_xF[Ark::VEL].setVal(U0());
+    ld.msv_yF[Ark::VEL].setVal(U0());
+#if(AMREX_SPACEDIM == 3)
+    ld.msv_zF[Ark::VEL].setVal(U0());
+#endif
 }
 void DUGKSAmr::TransDrop(int const lev)
 {
@@ -175,6 +190,7 @@ void DUGKSAmr::TransDrop(int const lev)
 
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
 
     FillLevelPhaseSphere(ld.msv[Ark::PHI], dl, LV::drop);
     FillLevelPhaseSphere(ld.density_old, dl, LV::drop);
@@ -183,10 +199,10 @@ void DUGKSAmr::TransDrop(int const lev)
     ld.msv[Ark::RHO].mult(APhi(), 0);
     ld.msv[Ark::RHO].plus(BPhi(), 0);
 
-    ld.msv[Ark::VEL].setVal(U0());
     ld.msv[Ark::P].setVal(P0());
     ld.msv[Ark::T].setVal(T0());
 
+    ld.msv[Ark::VEL].setVal(U0());
     ld.msv_xF[Ark::VEL].setVal(U0());
     ld.msv_yF[Ark::VEL].setVal(U0());
 #if(AMREX_SPACEDIM == 3)
@@ -211,6 +227,9 @@ void DUGKSAmr::ZalesakDisk(int const lev)
 
     ld.msv[Ark::P].setVal(P0());
     ld.msv[Ark::T].setVal(T0());
+
+    ld.msv[Ark::VEL].setVal(0);
+
     {
     MultiFab &VelFab    = ld.msv[Ark::VEL];
     for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
@@ -219,15 +238,13 @@ void DUGKSAmr::ZalesakDisk(int const lev)
         //
         Array4<Real> const &vel = VelFab.array(mfi);
         //
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
             const double x = dx[0]*(i+0.5);
             const double y = dx[1]*(j+0.5);
 
             vel(i,j,k,Ark::X) = -U0()*pi*(y-CenterPF(Ark::Y))/ChLength();
-            vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();
-            
+            vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();           
         });
     }}
     {
@@ -238,8 +255,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
         //
         Array4<Real> const &vel = VelFab_xF.array(mfi);
         //
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
             const double x = dx[0]*(i);
             const double y = dx[1]*(j+0.5);
@@ -257,8 +273,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
         //
             Array4<Real> const &vel = VelFab_yF.array(mfi);
         //
-            amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i,int j,int k)
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
             {
                 const double x = dx[0]*(i+0.5);
                 const double y = dx[1]*(j);
@@ -276,8 +291,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
         //
             Array4<Real> const &vel = VelFab_zF.array(mfi);
         //
-            amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i,int j,int k)
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
             {
                 const double x = dx[0]*(i+0.5);
                 const double y = dx[1]*(j+0.5);
@@ -288,15 +302,46 @@ void DUGKSAmr::ZalesakDisk(int const lev)
     }}
 #endif
 }
-void DUGKSAmr::InterfaceElongation(int const lev)
+void DUGKSAmr::ElongatedInterface(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() ==223 && CaseName() == "InterfaceElongation"));
+    AMREX_ALWAYS_ASSERT((CaseIndex() ==223 && CaseName() == "ElongatedInterface"));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
     const RealBox &rb = Geom(lev).ProbDomain();
+
+    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
+    FillLevelPhaseSphere(ld.density_old, dx, LV::drop);
+
+    MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
+    ld.msv[Ark::RHO].mult(APhi(), 0);
+    ld.msv[Ark::RHO].plus(BPhi(), 0);
+
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+#if(AMREX_SPACEDIM == 2)
+    ElongationVelocityField (ld.msv[Ark::VEL],    dx, rb, -1);
+    ElongationVelocityField (ld.msv_xF[Ark::VEL], dx, rb, Ark::X);
+    ElongationVelocityField (ld.msv_yF[Ark::VEL], dx, rb, Ark::Y);
+#elif(AMREX_SPACEDIM == 3)
+    ElongationVelocityField3D (ld.msv[Ark::VEL],    dx, rb, -1);
+    ElongationVelocityField3D (ld.msv_xF[Ark::VEL], dx, rb, Ark::X);
+    ElongationVelocityField3D (ld.msv_yF[Ark::VEL], dx, rb, Ark::Y);
+    ElongationVelocityField3D (ld.msv_zF[Ark::VEL], dx, rb, Ark::Z);
+#endif
+
+}
+void DUGKSAmr::SmoothDeformation(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 224 && CaseName() == "SmoothDeformation"));
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
 
     FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
     FillLevelPhaseSphere(ld.density_old, dx, LV::drop);
@@ -316,102 +361,7 @@ void DUGKSAmr::InterfaceElongation(int const lev)
         //
         Array4<Real> const &vel = VelFab.array(mfi);
 
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
-        {
-            const double x = dx[0]*(i+0.5)/ChLength();
-            const double y = dx[1]*(j+0.5)/ChLength();
-
-            vel(i,j,k,Ark::X) =  U0()*pi*sin(pi*x)*cos(pi*y);
-            vel(i,j,k,Ark::Y) = -U0()*pi*cos(pi*x)*sin(pi*y);
-            
-        });
-    }}
-
-    {
-    const double real_lo_x = rb.lo(Ark::X);
-    const double real_hi_x = rb.hi(Ark::X);
-
-    MultiFab &VelFab_xF = ld.msv_xF[Ark::VEL];
-    for(amrex::MFIter mfi(VelFab_xF);mfi.isValid();++mfi)
-    {
-        const amrex::Box& bx = mfi.validbox();
-        //
-        Array4<Real> const &vel = VelFab_xF.array(mfi);
-
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
-        {
-            const double x = dx[0]*(i);
-            const double y = dx[1]*(j+0.5);
-
-            vel(i,j,k,Ark::X) =  U0()*pi*sin(pi*x/ChLength())*cos(pi*y/ChLength());
-            vel(i,j,k,Ark::Y) = -U0()*pi*cos(pi*x/ChLength())*sin(pi*y/ChLength());
-
-            if(x == real_lo_x or x == real_hi_x) {
-                vel(i,j,k,Ark::X) = 0;
-                vel(i,j,k,Ark::Y) = 0;
-            }
-            
-        });
-    }}
-
-    {
-    const double real_lo_y = rb.lo(Ark::Y);
-    const double real_hi_y = rb.hi(Ark::Y);
-
-    MultiFab &VelFab_yF = ld.msv_yF[Ark::VEL];
-    for(amrex::MFIter mfi(VelFab_yF);mfi.isValid();++mfi)
-    {
-        const amrex::Box& bx = mfi.validbox();
-        //
-        Array4<Real> const &vel = VelFab_yF.array(mfi);
-
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
-        {
-            const double x = dx[0]*(i+0.5);
-            const double y = dx[1]*(j);
-
-            vel(i,j,k,Ark::X) =  U0()*pi*sin(pi*x/ChLength())*cos(pi*y/ChLength());
-            vel(i,j,k,Ark::Y) = -U0()*pi*cos(pi*x/ChLength())*sin(pi*y/ChLength());
-
-            if(y == real_lo_y or y == real_hi_y) {
-                vel(i,j,k,Ark::X) = 0;
-                vel(i,j,k,Ark::Y) = 0;
-            }
-            
-        });    
-    }}
-}
-void DUGKSAmr::SmoothDeformation(int const lev)
-{
-    using namespace Ark;
-
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 224 && CaseName() == "SmoothDeformation"));
-
-    LevelData &ld = Data(lev);
-    const Real *dx = Geom(lev).CellSize();
-
-    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
-
-    MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
-    ld.msv[Ark::RHO].mult(APhi(), 0);
-    ld.msv[Ark::RHO].plus(BPhi(), 0);
-
-    ld.msv[Ark::P].setVal(P0());
-    ld.msv[Ark::T].setVal(T0());
-
-    {
-    MultiFab &VelFab    = ld.msv[Ark::VEL];
-    for(amrex::MFIter mfi(VelFab);mfi.isValid();++mfi)
-    {
-        const amrex::Box& bx = mfi.validbox();
-        //
-        Array4<Real> const &vel = VelFab.array(mfi);
-
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
             const double x = dx[0]*(i+0.5)/ChLength();
             const double y = dx[1]*(j+0.5)/ChLength();
@@ -574,12 +524,12 @@ void DUGKSAmr::FlatInterface(int const lev)
                        *(tanh(2.*(y-yA)/WidthI()) - tanh(2.*(y-yB)/WidthI()));
             rho(i,j,k) = RhoV() + 0.5*(RhoL() - RhoV())
                        *(tanh(2.*(y-yA)/WidthI()) - tanh(2.*(y-yB)/WidthI()));
-            rho_old(i,j,k) = phi(i,j,k);          
+            rho_old(i,j,k) = rho(i,j,k);          
         });
     }
 }
 
-void DUGKSAmr::case_droplet_impact(int const lev)
+void DUGKSAmr::DropletImpact(int const lev)
 {
     using namespace Ark;
 
@@ -591,6 +541,8 @@ void DUGKSAmr::case_droplet_impact(int const lev)
     const Box &domain = Geom(lev).Domain();
 
     ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
 
     MultiFab &PhiFab = ld.msv[Ark::PHI];
     MultiFab &RhoFab = ld.msv[Ark::RHO];
@@ -609,15 +561,20 @@ void DUGKSAmr::case_droplet_impact(int const lev)
 
         const Real centerX = CenterPF(Ark::X);
         const Real centerY = Hw + RadiusPF() + 2*wI;
-
-        amrex::ParallelFor(bx,
-        [=] AMREX_GPU_DEVICE (int i,int j,int k)
+#if(AMREX_SPACEDIM == 3)
+        const Real centerZ = CenterPF(Ark::Z);
+#endif
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
             const double x  = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
             const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
-
-            phi(i,j,k) = (PhiV() + PhiL())/2.0 + (PhiV() - PhiL())/2.0
-                       *tanh((std::hypot(x-centerX, y-centerY) - RadiusPF())*2.0/WidthI());
+#if(AMREX_SPACEDIM == 3)
+            const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+            const double distance = std::sqrt(Ark::Square(x-centerX, y-centerY, z-centerZ)) - RadiusPF();
+#elif(AMREX_SPACEDIM == 2)
+            const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
+#endif
+            phi(i,j,k) = (PhiV() + PhiL())/2.0 + (PhiV() - PhiL())*tanh(distance*2.0/WidthI())/2.0;
 
             vel(i,j,k,Ark::Y) = -phi(i,j,k)*U0();
 
@@ -627,6 +584,183 @@ void DUGKSAmr::case_droplet_impact(int const lev)
             }
             
             rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
+        });
+    }
+}
+
+void DUGKSAmr::TaylorBubble(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 230 && CaseName() == "TaylorBubble"));
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+    const Box &domain = Geom(lev).Domain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+    // MultiFab &VelFab = ld.msv[Ark::VEL];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+        // Array4<Real> const &vel = VelFab.array(mfi);
+
+        const Real centerX = CenterPF(Ark::X);
+        const Real centerY = CenterPF(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+        const Real centerZ = CenterPF(Ark::Z);
+#endif
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double x  = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+#elif(AMREX_SPACEDIM == 2)
+            const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
+#endif
+            phi(i,j,k) = PhaseProfile(distance, LV::bubble);
+
+            const double tailY = RadiusPF();
+
+            if(y < centerY + rb.lo(Ark::Y))
+            {
+#if(AMREX_SPACEDIM == 3)
+                const double distanceCylinder = std::hypot(x-centerX,z-centerZ) - RadiusPF();
+#elif(AMREX_SPACEDIM == 2)
+                const double distanceCylinder = std::hypot(x-centerX,0) - RadiusPF();
+#endif
+                const double distanceTail = tailY - y;
+
+                double distanceMin = 0;
+
+                if(distanceCylinder <= 0 && distanceTail <= 0) 
+                {
+                    distanceMin = 
+                    distanceCylinder > distanceTail ? distanceCylinder : distanceTail;
+                }
+                else if(distanceCylinder > 0 && distanceTail <= 0)
+                {
+                    distanceMin = distanceCylinder;
+                }
+                else if(distanceCylinder <= 0 && distanceTail > 0)
+                {
+                    distanceMin = distanceTail;
+                }
+                else
+                {
+                    distanceMin = std::hypot(distanceCylinder, distanceTail);
+                }
+
+                phi(i,j,k) = PhaseProfile(distanceMin, LV::bubble);
+            }
+        });
+    }
+}
+
+
+void DUGKSAmr::RisingBubble(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 231 && CaseName() == "RisingBubble"));
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+    const Box &domain = Geom(lev).Domain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+    // MultiFab &VelFab = ld.msv[Ark::VEL];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+        // Array4<Real> const &vel = VelFab.array(mfi);
+
+        const Real centerX = CenterPF(Ark::X);
+        const Real centerY = CenterPF(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+        const Real centerZ = CenterPF(Ark::Z);
+#endif
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double x  = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+#elif(AMREX_SPACEDIM == 2)
+            const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
+#endif
+            phi(i,j,k) = PhaseProfile(distance, LV::bubble);
+        });
+    }
+}
+
+void DUGKSAmr::FallingDrop(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 232 && CaseName() == "FallingDrop"));
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    // const RealBox &rb = Geom(lev).ProbDomain();
+    const Real* prob_lo = Geom(lev).ProbDomain().lo();
+    const Box &domain = Geom(lev).Domain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+    // MultiFab &VelFab = ld.msv[Ark::VEL];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+        // Array4<Real> const &vel = VelFab.array(mfi);
+
+        const Real centerX = CenterPF(Ark::X);
+        const Real centerY = CenterPF(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+        const Real centerZ = CenterPF(Ark::Z);
+#endif
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double x  = dx[Ark::X]*(i+0.5) + prob_lo[Ark::X];
+            const double y  = dx[Ark::Y]*(j+0.5) + prob_lo[Ark::Y];
+#if(AMREX_SPACEDIM == 3)
+            const double z  = dx[Ark::Z]*(k+0.5) + prob_lo[Ark::Z];
+            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+#elif(AMREX_SPACEDIM == 2)
+            const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
+#endif
+            phi(i,j,k) = PhaseProfile(distance, LV::drop);
         });
     }
 }

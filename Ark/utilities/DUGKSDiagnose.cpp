@@ -316,22 +316,41 @@ void DUGKSAmr::CheckDUGKSAmr()
         "Fatal Error : mismatch between DVM_ENERGY and DmVnEnergy");
 #endif
 
-    //
-    if (Geom(max_level).Domain().length(Ark::X) != ChNum() 
+    if( DmVnModel != DmVnName())
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "wrong discrete velocity model!!!" 
+            << '\n';
+        amrex::Abort(ss.str());
+    }
+
+    if (Geom(0).Domain().length(Ark::X) != ChNum() 
         and 
-        Geom(max_level).Domain().length(Ark::Y) != ChNum()
+        Geom(0).Domain().length(Ark::Y) != ChNum()
 #if(AMREX_SPACEDIM == 3)
         and 
-        Geom(max_level).Domain().length(Ark::Z) != ChNum()
+        Geom(0).Domain().length(Ark::Z) != ChNum()
 #endif
         )
     {
         std::ostringstream ss;   
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "incosistence between ch_num and ncell!!!" 
+        ss  << "incosistence between ch_num:" << ChNum() 
+            << " and ncell_x:" << Geom(0).Domain().length(Ark::X) 
             << '\n';
         amrex::Abort(ss.str());
     }    
+    if (static_cast<int>(ChLength()/MinL()) != ChNum())
+    {
+        std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  << "incosistence among ch_length:" << ChLength() 
+            << " ch_num:" << ChNum()  
+            <<" and min_length:" << MinL()
+            << '\n';
+        amrex::Abort(ss.str());
+    }
     if(steady_state && end_step > 0) 
     {
         std::ostringstream ss;   
@@ -350,19 +369,8 @@ void DUGKSAmr::CheckDUGKSAmr()
         amrex::Abort(ss.str());
     }
 
-    if (Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_UW 
-        and 
-        Update_DVDF_Barh != &DUGKSAmr::Update_DVDF_Barh_CD)
     {
-        std::ostringstream ss;   
-        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "Invalid function for Update_DVDF_Barh!!!" 
-            << '\n';
-        amrex::Abort(ss.str());
-    }
-
-    {
-        if (!Ark::tinyEqual(CFL()*MinL(), Dt(), 1E-10))
+        if (!Ark::tinyEqual(CFL()*MinL()/std::pow(2,max_level), Dt(), 1E-10))
         {
            std::ostringstream ss;   
            ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
@@ -376,92 +384,7 @@ void DUGKSAmr::CheckDUGKSAmr()
 }
 //
 #ifdef AMREX_DEBUG
-void DUGKSAmr::Verify(int const lev)
-{
-	auto &ld = *m_leveldata[lev];
 
-	const Real *dx = Geom(lev).CellSize();
-
-	for(amrex::MFIter mfi(ld.msv[Ark::PHI]);mfi.isValid();++mfi)
-    {
-        // const Box& bx = mfi.validbox();
-        const Box& bx = mfi.growntilebox(1);
-        // const Box& bx = mfi.fabbox();
-        //
-        Array4<Real> const &phi  = ld.msv[Ark::PHI].array(mfi);
-        Array4<Real> const &rho  = ld.msv[Ark::RHO].array(mfi);
-        Array4<Real> const &vel  = ld.msv[Ark::VEL].array(mfi);
-        Array4<Real> const &pres = ld.msv[Ark::P].array(mfi);
-        Array4<Real> const &temp = ld.msv[Ark::T].array(mfi);
-        Array4<Real> const &grad_phi = ld.msv[Ark::GradPHI].array(mfi);
-
-        // Array4<Real> const &phi_old  = ld.phase_old.array(mfi);
-        // Array4<Real> const &rho_old  = ld.density_old.array(mfi);
-        // Array4<Real> const &vel_old  = ld.velocity_old.array(mfi);
-
-        Array4<Real> const &hWave = ld.hDVDF[Ark::WAVE].array(mfi);
-        Array4<Real> const &hBP = ld.hDVDF[Ark::BP].array(mfi);
-
-        Array4<Real> const &fBP = ld.fDVDF[Ark::BP].array(mfi);
-        Array4<Real> const &fWave = ld.fDVDF[Ark::WAVE].array(mfi);
-
-        int const Num = 1;//Ark::DVM_MOMENTUM;
-        // 
-
-        std::shared_ptr<int> nn = std::make_shared<int>(0);
-
-        ParallelFor(bx,Num,[=](int i,int j,int k,int n) noexcept
-        {
-            const double x = dx[Ark::X]*(i+0.5);
-            const double y = dx[Ark::Y]*(j+0.5);
-
-            Real value_real = 2*x + x*y;
-            Real value_average = rho(i,j,k);
-
-            if(fabs(value_average - value_real) > 1E-12)
-            {
-            	// if(not (i == -1 || i == 16 || j == -1 || j == 16 ) )
-                // if((j == 31 or j == 0) or fabs(value_average - value_real) > 1E-12)
-                {
-                amrex::AllPrint().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
-                                      <<"phi : "<<value_average<<"    "<<"Real phi : "
-                                      <<value_real<<" nn : "<<++(*nn)<<std::endl;
-                }
-            }
-        });
-    }
-
-    // for(amrex::MFIter mfi(ld.msv_yF[Ark::RHO], true);mfi.isValid();++mfi)
-    // {
-    //     const Box& tbx = mfi.tilebox();
-    //     //
-    //     Array4<Real> const &rho  = ld.msv_yF[Ark::RHO].array(mfi);
-    //     Array4<Real> const &pres = ld.msv_yF[Ark::P].array(mfi);
-
-    //     std::shared_ptr<int> nn = std::make_shared<int>(0);
-    //     amrex::ParallelFor(tbx, 1,
-    //     [=](int i,int j,int k,int n) noexcept
-    //     {
-    //         const Real x = dx[Ark::X]*(i+0.5);
-    //         const Real y = dx[Ark::Y]*(j);
-
-    //         Real value_real = 2*x + 3*y;
-    //         // Real value_real = (2.0 * x + 4.0*y);
-    //         Real value_average = pres(i,j,k);
-    //         // if(fabs(value_average - value_real) < 1E-14)
-    //         if(value_average != 1)
-    //         {
-    //         	amrex::Print().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
-    //                                   <<"phi : "<<value_average<<"    "<<"Real phi : "
-    //                                   <<value_real<<" nn : "<<++(*nn)<<std::endl;
-    //         }
-    //     });
-    // }
-    //
-    if (m_verbose > 0 and amrex::ParallelDescriptor::IOProcessor()) {
-        printGridSummary(amrex::OutStream(), 0, finest_level);
-    }
-}
 void DUGKSAmr::SetUnit(int const lev)
 {
     auto &ld = *m_leveldata[lev];
@@ -500,15 +423,138 @@ void DUGKSAmr::Test()
 {
     int const lev = 0;
     auto &ld = Data(lev);
-    SetUnit(lev);
+    // SetUnit(lev);
     // ld.msv[Ark::RHO].FillBoundary(0, 1, IntVect(2), Geom(lev).periodicity());
-    // FillPatchNew(lev,cur_time,ld);
+    FillPatchNew(lev,cur_time,ld);
     // FillCoarsePatchDensity(lev,cur_time,ld.density_old);
     // ld.density_old.FillBoundary(0,1,IntVect(1), Geom(lev).periodicity());
     // amrex::Print()<<ld.msv[Ark::PHI].norm2();
-    L2NormPhase(0);
-    // Verify(lev);
+    // L2NormPhase(0);
+    Verify(lev);
     WritePlotFile();
+}
+
+void DUGKSAmr::Verify(int const lev)
+{
+    LevelData &ld = Data(lev);
+    const Box &domain_box = Geom(lev).Domain();
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+
+    const auto& domain_hi = domain_box.hiVect();
+    const auto& domain_lo = domain_box.loVect();
+
+    const int ilo = domain_lo[0];
+    const int ihi = domain_hi[0];
+
+    for(amrex::MFIter mfi(ld.msv[Ark::PHI]);mfi.isValid();++mfi)
+    {
+        // const Box& bx = mfi.validbox();
+        const Box& bx = mfi.growntilebox(3);
+        // const Box& bx = mfi.fabbox();
+        //
+        Array4<Real> const &phi  = ld.msv[Ark::PHI].array(mfi);
+        Array4<Real> const &rho  = ld.msv[Ark::RHO].array(mfi);
+        Array4<Real> const &vel  = ld.msv[Ark::VEL].array(mfi);
+        Array4<Real> const &pres = ld.msv[Ark::P].array(mfi);
+        Array4<Real> const &temp = ld.msv[Ark::T].array(mfi);
+        Array4<Real> const &grad_phi = ld.msv[Ark::GradPHI].array(mfi);
+
+        // Array4<Real> const &phi_old  = ld.phase_old.array(mfi);
+        // Array4<Real> const &rho_old  = ld.density_old.array(mfi);
+        // Array4<Real> const &vel_old  = ld.velocity_old.array(mfi);
+
+        Array4<Real> const &hWave = ld.hDVDF[Ark::WAVE].array(mfi);
+        Array4<Real> const &hBP = ld.hDVDF[Ark::BP].array(mfi);
+
+        Array4<Real> const &fBP = ld.fDVDF[Ark::BP].array(mfi);
+        Array4<Real> const &fWave = ld.fDVDF[Ark::WAVE].array(mfi);
+
+        int const Num = 1;//Ark::DVM_MOMENTUM;
+        // 
+
+        std::shared_ptr<int> nn = std::make_shared<int>(0);
+
+        ParallelFor(bx,Num,[=](int i,int j,int k,int n) noexcept
+        {
+            const double x = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double z = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
+#else
+            const double z = 0;
+#endif
+
+            Real value_real = 2*x + x*y + y*z;
+            Real value_average = rho(i,j,k);
+
+            if(fabs(value_average - value_real) > 1E-12)
+            {
+                // if(not (i == -1 || i == 16 || j == -1 || j == 16 ) )
+                // if((j == 31 or j == 0) or fabs(value_average - value_real) > 1E-12)
+                {
+                amrex::AllPrint().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
+                                    <<"k : "<<k<<"    "
+                                    <<"phi : "<<value_average<<"    "
+                                    <<"Real phi : "<<value_real
+                                    <<" nn : "<<++(*nn)<<std::endl;
+                }
+            }
+            
+            // if(i < ilo) {
+            // if(rho(i,j,k) != rho(ihi+(i-ilo+1),j,k))
+            // {
+            // amrex::AllPrint().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
+            //                     <<"k : "<<k<<"    "
+            //                     <<"phi : "<<rho(i,j,k)<<"    "
+            //                     <<"Real phi : "<<rho(ihi-(i-ilo+1),j,k)
+            //                     <<" nn : "<<++(*nn)<<std::endl;
+            // }
+            // }
+            // //
+            // if(i > ihi) {
+            // if(rho(i,j,k) != rho(ilo+(i-ihi-1),j,k))
+            // {
+            // amrex::AllPrint().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
+            //                     <<"k : "<<k<<"    "
+            //                     <<"phi : "<<rho(i,j,k)<<"    "
+            //                     <<"Real phi : "<<rho(ilo+(i-ihi-1),j,k)
+            //                     <<" nn : "<<++(*nn)<<std::endl;
+            // }
+            // }
+        });
+    }
+
+    // for(amrex::MFIter mfi(ld.msv_yF[Ark::RHO], true);mfi.isValid();++mfi)
+    // {
+    //     const Box& tbx = mfi.tilebox();
+    //     //
+    //     Array4<Real> const &rho  = ld.msv_yF[Ark::RHO].array(mfi);
+    //     Array4<Real> const &pres = ld.msv_yF[Ark::P].array(mfi);
+
+    //     std::shared_ptr<int> nn = std::make_shared<int>(0);
+    //     amrex::ParallelFor(tbx, 1,
+    //     [=](int i,int j,int k,int n) noexcept
+    //     {
+    //         const Real x = dx[Ark::X]*(i+0.5);
+    //         const Real y = dx[Ark::Y]*(j);
+
+    //         Real value_real = 2*x + 3*y;
+    //         // Real value_real = (2.0 * x + 4.0*y);
+    //         Real value_average = pres(i,j,k);
+    //         // if(fabs(value_average - value_real) < 1E-14)
+    //         if(value_average != 1)
+    //         {
+    //          amrex::Print().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
+    //                                   <<"phi : "<<value_average<<"    "<<"Real phi : "
+    //                                   <<value_real<<" nn : "<<++(*nn)<<std::endl;
+    //         }
+    //     });
+    // }
+    //
+    if (m_verbose > 0 and amrex::ParallelDescriptor::IOProcessor()) {
+        printGridSummary(amrex::OutStream(), 0, finest_level);
+    }
 }
 #endif
 // Real DUGKSAmr::L2NormDiff(const MultiFab& xFabA, const MultiFab& xFabB, int const comp)

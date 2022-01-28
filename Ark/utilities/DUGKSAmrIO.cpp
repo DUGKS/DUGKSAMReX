@@ -84,20 +84,85 @@ void DUGKSAmr::WriteCheckPointFile() const
 
     for(int lev = 0; lev <= finest_level; ++lev)
     {
+#ifdef ARK_USE_PHASE
         VisMF::Write(m_leveldata[lev]->msv[Ark::PHI],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Phase"));
 
+        VisMF::Write(m_leveldata[lev]->msv[Ark::GradPHI],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "GradPhase"));
+
+        VisMF::Write(m_leveldata[lev]->phase_prev,
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "PhasePrev"));
+
+        VisMF::Write(m_leveldata[lev]->velocity_prev,
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "VelocityPrev"));
+        
+        if(steady_state) {
+            VisMF::Write(m_leveldata[lev]->phase_old,
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "PhaseOld"));
+        }
+
+        for(int nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("hWave", nV);
+
+            VisMF::Write(m_leveldata[lev]->hDVDF[Ark::WAVE],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, xWaveName));
+        }
+#endif   
+
+#ifdef ARK_USE_MOMENTUM
         VisMF::Write(m_leveldata[lev]->msv[Ark::RHO],
-            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Density"));
+        amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Density"));
 
         VisMF::Write(m_leveldata[lev]->msv[Ark::VEL],
-            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Velocity"));
+        amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Velocity"));
 
         VisMF::Write(m_leveldata[lev]->msv[Ark::P],
-            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "P"));
+        amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "P"));
 
+        VisMF::Write(m_leveldata[lev]->msv[Ark::GradRHO],
+        amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "GradDensity"));
+
+        VisMF::Write(m_leveldata[lev]->msv[Ark::FORCE],
+        amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "Force"));
+
+        if(steady_state) {
+
+            VisMF::Write(m_leveldata[lev]->density_old,
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "DensityOld"));
+
+            VisMF::Write(m_leveldata[lev]->velocity_old,
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "VelocityOld"));
+        }
+
+        VisMF::Write(m_leveldata[lev]->fDVDF[Ark::TAU],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "TauMomentum"));
+
+        for(int nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("fWave", nV);
+
+            VisMF::Write(m_leveldata[lev]->fDVDF[Ark::WAVE],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, xWaveName));
+        }
+#endif 
+
+#ifdef ARK_USE_ENERGY
         VisMF::Write(m_leveldata[lev]->msv[Ark::T],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "T"));
+
+        VisMF::Write(m_leveldata[lev]->gDVDF[Ark::TAU],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "TauEnergy"));
+
+        for(int nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("gWave", nV);
+
+            VisMF::Write(m_leveldata[lev]->gDVDF[Ark::WAVE],
+            amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, xWaveName));
+        }
+#endif
     }
 }
 
@@ -202,22 +267,88 @@ void DUGKSAmr::ReadCheckpointFile()
      ***************************************************************************/
 
     // Load the field data
+
     for(int lev = 0; lev <= finest_level; ++lev)
     {
+#ifdef ARK_USE_PHASE
         VisMF::Read(m_leveldata[lev]->msv[Ark::PHI],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Phase"));
 
+        VisMF::Read(m_leveldata[lev]->msv[Ark::GradPHI],
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "GradPhase"));
+
+        VisMF::Read(m_leveldata[lev]->phase_prev,
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "PhasePrev"));
+
+        VisMF::Read(m_leveldata[lev]->velocity_prev,
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "VelocityPrev"));
+        
+        if(steady_state) {
+            VisMF::Read(m_leveldata[lev]->phase_old,
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "PhaseOld"));
+        }
+
+        for(int nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("hWave", nV);
+
+            VisMF::Read(m_leveldata[lev]->hDVDF[Ark::WAVE],
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, xWaveName));
+        }
+#endif   
+
+#ifdef ARK_USE_MOMENTUM
         VisMF::Read(m_leveldata[lev]->msv[Ark::RHO],
-            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Density"));
+        amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Density"));
 
         VisMF::Read(m_leveldata[lev]->msv[Ark::VEL],
-            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Velocity"));
+        amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Velocity"));
 
         VisMF::Read(m_leveldata[lev]->msv[Ark::P],
-            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "P"));
+        amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "P"));
 
+        VisMF::Read(m_leveldata[lev]->msv[Ark::GradRHO],
+        amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "GradDensity"));
+
+        VisMF::Read(m_leveldata[lev]->msv[Ark::FORCE],
+        amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "Force"));
+
+        if(steady_state) {
+
+            VisMF::Read(m_leveldata[lev]->density_old,
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "DensityOld"));
+
+            VisMF::Read(m_leveldata[lev]->velocity_old,
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "VelocityOld"));
+        }
+
+        VisMF::Read(m_leveldata[lev]->fDVDF[Ark::TAU],
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "TauMomentum"));
+
+        for(int nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("fWave", nV);
+
+            VisMF::Read(m_leveldata[lev]->fDVDF[Ark::WAVE],
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, xWaveName));
+        }
+#endif 
+
+#ifdef ARK_USE_ENERGY
         VisMF::Read(m_leveldata[lev]->msv[Ark::T],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "T"));
+            
+        VisMF::Read(m_leveldata[lev]->gDVDF[Ark::TAU],
+            amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "TauEnergy"));
+
+        for(int nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
+        {
+            const std::string& xWaveName = amrex::Concatenate("gWave", nV);
+
+            VisMF::Read(m_leveldata[lev]->gDVDF[Ark::WAVE],
+                amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, xWaveName));
+        }
+#endif
     }
 
     amrex::Print() << "Restart complete" << std::endl;
@@ -230,8 +361,9 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
         // job_info file with details about the run
         std::ofstream jobInfoFile;
         std::string FullPathJobInfoFile = path;
-        std::string PrettyLine =
-            "===============================================================================\n";
+        std::string PrettyLine = std::string(78, '=') + "\n";
+        std::string OtherLine = std::string(78, '-') + "\n";
+        std::string SkipSpace = std::string(8, ' ');
 
         FullPathJobInfoFile += "/DUGKSAmr_job_info";
         jobInfoFile.open(FullPathJobInfoFile.c_str(), std::ios::out);
@@ -400,6 +532,18 @@ void DUGKSAmr::WritePlotFile()
     if(m_plt_volfrac) ++ncomp;
 #endif
 
+#if ARK_USE_PHASE
+    if(m_plt_hDVDF) ncomp += Ark::DmVnPhase::Q;
+#endif 
+
+#if ARK_USE_MOMENTUM
+    if(m_plt_fDVDF) ncomp += Ark::DmVnMomentum::Q;
+#endif
+
+#if ARK_USE_ENERGY
+    if(m_plt_gDVDF) ncomp += Ark::DmVnEnergy::Q;
+#endif
+
     Vector<MultiFab> mf(finest_level + 1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         mf[lev].define(grids[lev], dmap[lev], ncomp, 0, MFInfo(), Factory(lev));
@@ -518,6 +662,41 @@ void DUGKSAmr::WritePlotFile()
         pltscaVarsName.push_back("tauMOM");
         ++icomp;
     }
+#if ARK_USE_PHASE
+    if (m_plt_hDVDF) {
+        for (int nDVM = 0; nDVM < Ark::DmVnPhase::Q; ++nDVM) {
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                MultiFab::Copy(mf[lev], m_leveldata[lev]->hDVDF[Ark::WAVE], nDVM, icomp, 1, 0);
+            }
+            pltscaVarsName.push_back("hWave" + std::to_string(nDVM));
+            ++icomp;
+        }
+    }
+#endif
+
+#if ARK_USE_MOMENTUM
+    if (m_plt_fDVDF) {
+        for (int nDVM = 0; nDVM < Ark::DmVnMomentum::Q; ++nDVM) {
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                MultiFab::Copy(mf[lev], m_leveldata[lev]->fDVDF[Ark::WAVE], nDVM, icomp, 1, 0);
+            }
+            pltscaVarsName.push_back("fWave" + std::to_string(nDVM));
+            ++icomp;
+        }
+    } 
+#endif
+
+#if ARK_USE_ENERGY
+    if (m_plt_gDVDF) {
+        for (int nDVM = 0; nDVM < Ark::DmVnEnergy::Q; ++nDVM) {
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                MultiFab::Copy(mf[lev], m_leveldata[lev]->gDVDF[Ark::WAVE], nDVM, icomp, 1, 0);
+            }
+            pltscaVarsName.push_back("gWave" + std::to_string(nDVM));
+            ++icomp;
+        }
+    }
+#endif     
     // if (m_plt_p) {
     //     for (int lev = 0; lev <= finest_level; ++lev) {
     //         amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
@@ -579,6 +758,8 @@ void DUGKSAmr::WritePlotFile()
         EB_set_covered(mf[lev], 0.0);
     }
 #endif
+
+
 
     AMREX_ALWAYS_ASSERT(ncomp == static_cast<int>(pltscaVarsName.size()));
 

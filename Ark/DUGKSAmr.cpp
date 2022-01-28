@@ -36,6 +36,8 @@ DUGKSAmr::DUGKSAmr():FlowParm(),AmrCore()
 
     SetFluxScheme();
 
+    SetAdvanceScheme();
+
     CheckDUGKSAmr();
 }
 
@@ -44,10 +46,10 @@ DUGKSAmr::~DUGKSAmr()
 
 }
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
-// Only used during initialization.
 // overrides the pure virtual function in AmrCore
+//! Only used during initialization
 void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_grids,
-                                      const DistributionMapping& new_dmap)
+                                        const DistributionMapping& new_dmap)
 {
     BL_PROFILE("DUGKSAmr::MakeNewLevelFromScratch()");
 
@@ -59,8 +61,8 @@ void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_
         }
     }
 
-    // SetBoxArray(lev, new_grids);
-    // SetDistributionMap(lev, new_dmap);
+    SetBoxArray(lev, new_grids);
+    SetDistributionMap(lev, new_dmap);
 
 #ifdef AMREX_USE_EB
     m_factory[lev] = makeEBFabFactory(geom[lev], new_grids, new_dmap,
@@ -72,15 +74,14 @@ void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_
     m_factory[lev].reset(new FArrayBoxFactory());
 #endif
 
-    m_leveldata[lev].reset(new LevelData(new_grids, new_dmap,
-                                         *m_factory[lev], nghost_state()));
+    m_leveldata[lev].reset(new LevelData(new_grids, new_dmap, *m_factory[lev], nghost_state()));
 
         m_t_new[lev] = time;
         m_t_old[lev] = time;
 
-        if (name_restart_file.empty()) {
+        // if (name_restart_file.empty()) {
             CaseInitFluid(lev);
-        }
+        // }
 }
 
 Vector<MultiFab*> DUGKSAmr::LevelData::get_hDVDFnF_flux() noexcept
