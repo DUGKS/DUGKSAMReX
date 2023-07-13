@@ -2,6 +2,212 @@
 
 // //non-equilibrium extrapolation from adjacent face
 template <typename DVM>
+void DUGKSBoundary<DVM>::FillPhysicalBoundaryFlux_Eq (
+	const Vector<MultiFab*> &xFluxFabPtr, 
+	const Vector<const MultiFab*> &xEqFabPtr,
+	int const lo_min, int const hi_max,	int const dir)
+{
+
+AMREX_ASSERT(xFluxFabPtr.size() == AMREX_SPACEDIM);
+AMREX_ASSERT(xEqFabPtr.size() == AMREX_SPACEDIM);
+
+MultiFab &xFluxFabnF = *xFluxFabPtr[dir%AMREX_SPACEDIM];
+MultiFab const &xEqFabnF = *xEqFabPtr[dir%AMREX_SPACEDIM];
+
+
+if(dir == Ark::X)
+{
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_xF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_xF   = xEqFabnF.const_array(mfi);
+
+		if(lo.x == lo_min)
+		{
+			int const ixF = lo_min + 1; //neighbour face index
+
+			LoopVS(DVM::Q)
+			LoopPS_YZ(lo,hi)
+			{
+				xFlux_xF(lo_min,j,k,n) = xEq_xF(lo_min,j,k,n);
+			}
+		}
+	}
+}
+else if(dir == Ark::X + AMREX_SPACEDIM)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_xF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_xF   = xEqFabnF.const_array(mfi);
+
+		if(hi.x == hi_max)
+		{
+			int const ixF = hi_max - 1; //neighbour face index
+
+			LoopVS(DVM::Q)
+			LoopPS_YZ(lo,hi)
+			{
+				xFlux_xF(hi_max,j,k,n) = xEq_xF(hi_max,j,k,n);
+			}
+		}
+	}	
+}
+else if(dir == Ark::Y)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_yF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_yF   = xEqFabnF.const_array(mfi);
+
+		if(lo.y == lo_min)
+		{
+			int const jyF = lo_min + 1; //neighbour face index for lower boundary
+
+			LoopVS(DVM::Q)
+			LoopPS_XZ(lo,hi)
+			{
+				xFlux_yF(i,lo_min,k,n) = xEq_yF(i,lo_min,k,n);
+			}
+		}
+	}	
+}
+else if(dir == Ark::Y + AMREX_SPACEDIM)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_yF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_yF   = xEqFabnF.const_array(mfi);
+
+		if(hi.y == hi_max)
+		{
+			int const jyF = hi_max - 1; //neighbour face index for upper boundary
+
+			LoopVS(DVM::Q)
+			LoopPS_XZ(lo,hi)
+			{
+				xFlux_yF(i,hi_max,k,n) = xEq_yF(i,hi_max,k,n);
+			}
+		}
+	}	
+}
+#if(AMREX_SPACEDIM == 3)
+else if(dir == Ark::Z)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_zF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_zF   = xEqFabnF.const_array(mfi);
+
+		if(lo.z == lo_min)
+		{
+			int const kzF = lo_min + 1; //neighbour face index fo lower boundary
+
+			LoopVS(DVM::Q)
+			LoopPS_XY(lo,hi)
+			{
+				xFlux_zF(i,j,lo_min,n) = xEq_zF(i,j,lo_min,n);
+			}
+		}
+	}	
+}
+else if(dir == Ark::Z + AMREX_SPACEDIM)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for(amrex::MFIter mfi(xFluxFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const Box &bx = mfi.tilebox();
+
+		const auto lo = lbound(bx);
+		const auto hi = ubound(bx);
+
+		//target
+		Array4<Real 	 > const &xFlux_zF = xFluxFabnF.array(mfi);
+
+		//source
+		Array4<Real const> const &xEq_zF   = xEqFabnF.const_array(mfi);
+
+		if(hi.z == hi_max)
+		{
+			int const kzF = hi_max - 1; //cell index
+
+			LoopVS(DVM::Q)
+			LoopPS_XY(lo,hi)
+			{
+				xFlux_zF(i,j,lo_min,n) = xEq_zF(i,j,lo_min,n);
+			}
+		}
+	}	
+}
+#endif
+	else {
+		std::ostringstream ss;   
+        ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
+        ss  <<"Invalid face direction\n";
+        amrex::Abort(ss.str());	
+	}
+}
+
+// //non-equilibrium extrapolation from adjacent face
+template <typename DVM>
 void DUGKSBoundary<DVM>::FillPhysicalBoundaryFlux_NEE (
 	const Vector<MultiFab*> &xFluxFabPtr, 
 	const Vector<const MultiFab*> &xEqFabPtr,
@@ -339,10 +545,9 @@ else if(dir == Ark::Y)
 
 				xFlux_yF(i,lo_min,k,n) = xEq_yF(i,lo_min,k,n)
 				+ xneq*(xWave(i,jyC,k,n) - xEq(i,jyC,k,n) + hdTime*xSo(i,jyC,k,n));
-				;
 			}
 		}
-	}	
+	}
 }
 else if(dir == Ark::Y + AMREX_SPACEDIM)
 {
@@ -381,6 +586,7 @@ else if(dir == Ark::Y + AMREX_SPACEDIM)
 			}
 		}
 	}	
+
 }
 #if(AMREX_SPACEDIM == 3)
 else if(dir == Ark::Z)
@@ -472,15 +678,15 @@ void DUGKSBoundary<DVM>::BounceBack (Array4<Real> const &xFlux,
                  				 	 Array4<const Real> const &vel,
                  				 	 int const i, int const j, int const k, int const n)
 {
-	xFlux(i,j,k,n) = xFlux(i,j,k,DVM::BB[n]) 
-			   		+ 2.0*var(i,j,k)*DVM::omega[n]
-			   		*(
-				   		DVM::xi_u[n]*vel(i,j,k,Ark::X)
-				   	 +	DVM::xi_v[n]*vel(i,j,k,Ark::Y)	
-				   	 #if(AMREX_SPACEDIM == 3)
-				   	 +	DVM::xi_w[n]*vel(i,j,k,Ark::Z)
-				   	 #endif	
-				   	 )/DVM::RT;
+	xFlux(i,j,k,n) = xFlux(i,j,k,DVM::BB[n]);
+			   		// + 2.0*var(i,j,k)*DVM::omega[n]
+			   		// *(
+				   	// 	DVM::xi_u[n]*vel(i,j,k,Ark::X)
+				   	//  +	DVM::xi_v[n]*vel(i,j,k,Ark::Y)	
+				   	//  #if(AMREX_SPACEDIM == 3)
+				   	//  +	DVM::xi_w[n]*vel(i,j,k,Ark::Z)
+				   	//  #endif	
+				   	//  )/DVM::RT;
 #ifdef AMREX_DEBUG
 	if(vel(i,j,k,Ark::X) != 0 or vel(i,j,k,Ark::Y) != 0)
 	amrex::Print()  << vel(i,j,k,Ark::X) <<"    "
@@ -751,8 +957,8 @@ void DUGKSAmr::FillPhysicalBoundaryDVDF(int const lev)
 	for(int dir = 0; dir < AMREX_SPACEDIM;++dir)
 	{
 		FillPhysicalBoundaryDVDF(lev, get_physical_bcrec()[0].lo(dir), dir);
-
 		FillPhysicalBoundaryDVDF(lev, get_physical_bcrec()[0].hi(dir), dir + AMREX_SPACEDIM);
+
 	}
 }
 void DUGKSAmr::FillPhysicalBoundaryDVDF(int const lev, int const bcid, int const dir)
@@ -795,36 +1001,39 @@ void DUGKSAmr::FillPhysicalBoundaryDVDF(int const lev, int const bcid, int const
 		case amrex::PhysBCType::noslipwall :
 		{
 #ifdef ARK_USE_PHASE
-DUGKSBoundary<Ark::DmVnPhase>::FillPhysicalBoundaryFlux_NEE (ld.get_hDVDFnF_flux(),
-													   	 	 ld.get_hDVDFnF_eq_const(),
-													   		 lo_min_face, hi_max_face, dir);
-// DUGKSBoundary<Ark::DmVnPhase>::FillPhysicalBoundaryFlux_NEECF (ld.get_hDVDFnF_flux(),
-// 													   	 	   ld.get_hDVDFnF_eq_const(),
-// 													   		   ld.hDVDF, 
-// 													   		   lo_min_face, hi_max_face,
-// 													   		   Dt()/2, dir);
+// DUGKSBoundary<Ark::DmVnPhase>::FillPhysicalBoundaryFlux_NEE (ld.get_hDVDFnF_flux(),
+// 													   	 	 ld.get_hDVDFnF_eq_const(),
+// 													   		 lo_min_face, hi_max_face, dir);
+DUGKSBoundary<Ark::DmVnPhase>::FillPhysicalBoundaryFlux_NEECF (ld.get_hDVDFnF_flux(),
+													   	 	   ld.get_hDVDFnF_eq_const(),
+													   		   ld.hDVDF, 
+													   		   lo_min_face, hi_max_face,
+													   		   Dt()/2, dir);
 
 DUGKSBoundary<Ark::DmVnPhase>::FillPhysicalBoundaryFlux_BB (ld.get_hDVDFnF_flux(), 
 									  				  		ld.get_face_phase_const(),
 									  				  		ld.get_face_velocity_const(),
 									  				  		lo_min_face, hi_max_face, dir);
+
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_NEE (ld.get_fDVDFnF_flux(),
-													   	 	    ld.get_fDVDFnF_eq_const(),
-													   		 	lo_min_face, hi_max_face, dir);
-
-// DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_NEECF (ld.get_gDVDFnF_flux(),
-// 													   	 	      ld.get_gDVDFnF_eq_const(),
-// 													   		  	  ld.gDVDF, 
+// DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_NEE (ld.get_fDVDFnF_flux(),
+// 													   	 	    ld.get_fDVDFnF_eq_const(),
+// 													   		 	lo_min_face, hi_max_face, dir);
+// DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_NEECF (ld.get_fDVDFnF_flux(),
+// 													   	 	      ld.get_fDVDFnF_eq_const(),
+// 													   		  	  ld.fDVDF, 
 // 													   		  	  lo_min_face, hi_max_face,
 // 													   		  	  Dt()/2, dir);
-
+// DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_Eq (ld.get_fDVDFnF_flux(),
+// 															    ld.get_fDVDFnF_eq_const(),
+																// lo_min_face, hi_max_face, dir);
 DUGKSBoundary<Ark::DmVnMomentum>::FillPhysicalBoundaryFlux_BB (ld.get_fDVDFnF_flux(), 
 									  				  		   ld.get_face_density_const(),
 									  				  		   ld.get_face_velocity_const(),
 									  				  		   lo_min_face, hi_max_face, dir);
+
 #endif
 
 #ifdef ARK_USE_ENERGY

@@ -251,7 +251,7 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 	DUGKSCore<Ark::DmVnPhase>::Integral_MacroBaseVars_Phase(ld.msv, ld.hDVDF[Ark::WAVE]);
 	if(lev != finest_level) 
 	{
-		BoundPhase(ld.msv[Ark::PHI]);
+		// BoundPhase(ld.msv[Ark::PHI]);
 	}
 #endif
 
@@ -277,7 +277,8 @@ void DUGKSAmr::Update_MacroVars(int const lev)
 	
 	FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
-	AllenCahnSource(lev);
+	// AllenCahnSource(lev);
+	CahnHilliardSource(lev);
 
 	Update_MacroSourceVars(ld.msv, 0.5*Dt());
 
@@ -326,10 +327,10 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, double const hTime)
 	// ReversedVortexVelocityField(ld.msv_xF[Ark::VEL], Geom(lev).CellSize(),cur_time+hDt(lev), Ark::X);
 	// ReversedVortexVelocityField(ld.msv_yF[Ark::VEL], Geom(lev).CellSize(),cur_time+hDt(lev), Ark::Y);
 	// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
-	AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
+	InterpolateFaceSource(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
+	InterpolateFaceSource(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 #if(AMREX_SPACEDIM == 3)
-	AllenCahnSource_hDt(ld.msv_zF, ld.msv, IntVect::TheDimensionVector(Ark::Z));
+	InterpolateFaceSource(ld.msv_zF, ld.msv, IntVect::TheDimensionVector(Ark::Z));
 #endif
 
 	Update_MacroSourceVars(ld.msv_xF, hTime);
@@ -416,4 +417,4 @@ void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, Array<MultiFab, Ark::MSVNU
 	// tauFab.setVal(TauMomentum());
 }
 
-#include <DmVnEq.H>
+#include <DUGKSDmVnEq.H>

@@ -2,8 +2,7 @@
 #define ARK_DUGKS_CORE_IMPLEMENTATION_H
 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-							   		Real const hTime, Real const dTime)
+void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -69,9 +68,10 @@ void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real c
     }
 }
 
+// - Construct Prime from Wave 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-								   Real const upTime, Real const downTime)
+template<bool ENABLESOURCE>
+void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -82,6 +82,7 @@ void DUGKSCore<DVM>::Update_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 
 		Array4<Real const> const &xTau  = xDVDF[Ark::TAU].const_array(mfi);
         Array4<Real const> const &xEq   = xDVDF[Ark::EQ].const_array(mfi);
+        Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
 
         Array4<Real>       const &xWave   = xDVDF[Ark::BP].array(mfi);
 
@@ -89,15 +90,28 @@ void DUGKSCore<DVM>::Update_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real xtau = xTau(i,j,k);
-        	const Real b = upTime/(2.0*xtau + downTime);
+        	const Real b = hdTime/(xtau + hdTime);
 
-        	xWave(i,j,k,n) = xWave(i,j,k,n)+ b*(xEq(i,j,k,n) - xWave(i,j,k,n));
+        	// xWave(i,j,k,n) += b*(xEq(i,j,k,n) + xtau*xSo(i,j,k,n)*ENABLESOURCE - xWave(i,j,k,n));
+
+        	// c++ 17
+        	if constexpr (ENABLESOURCE) {
+        		xWave(i,j,k,n) += b*(xEq(i,j,k,n) + xtau*xSo(i,j,k,n) - xWave(i,j,k,n));
+        	}
+        	else {
+        		xWave(i,j,k,n) += b*(xEq(i,j,k,n)- xWave(i,j,k,n));
+        	}
         });
     }
 }
 
+// - Construct NonEq from Wave or Prime
+/*******************************************************************************\
+f^{N} = \frac{2\tau}{2\tau+{\Delta}t}(\tilde{f}-f^{E}+\frac{{\Delta}t}{2}f^{S})
+\*******************************************************************************/
 template<typename DVM>
-void DUGKSCore<DVM>::Update_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
+template<bool ENABLESOURCE>
+void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -111,7 +125,6 @@ void DUGKSCore<DVM>::Update_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real co
         Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
 
         Array4<Real>       const &xWave    = xDVDF[Ark::WAVE].array(mfi);
-        Array4<Real>       const &xBarPlus = xDVDF[Ark::BP].array(mfi);
 
         amrex::ParallelFor(bx, DVM::Q, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -119,12 +132,25 @@ void DUGKSCore<DVM>::Update_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real co
         	const Real xtau = xTau(i,j,k);
         	const Real xneq = xtau/(xtau + hdTime);
 
-        	xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n) + hdTime*xSo(i,j,k,n));
+        	// xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n) + ENABLESOURCE*hdTime*xSo(i,j,k,n));
+
+        	// c++ 17
+        	if constexpr (ENABLESOURCE) {
+        		xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n) + hdTime*xSo(i,j,k,n));
+        	}
+        	else {
+        		xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n));
+        	}
         });
     }
 }
 
+// - Construct Wave from NonEq
+/*******************************************************************************\
+\tilde{f} = f^{E} + \frac{2\tau+{\Delta}t}{2\tau}f^{N} - \frac{{\Delta}t}{2}f^{S}
+\*******************************************************************************/
 template<typename DVM>
+template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
 {
 	#ifdef _OPENMP
@@ -147,12 +173,15 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         	const Real xtau = xTau(i,j,k);
         	const Real xneq = (xtau + hdTime)/xtau;
 
-        	xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - hdTime*xSo(i,j,k,n);
+        	// xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - ENABLESOURCE*hdTime*xSo(i,j,k,n);
 
-        	// if(!Ark::tinyEqual(xBP(i,j,k,n), xWave(i,j,k,n)))
-        	// {
-        	// 	amrex::Print()  << "diff : "<<xBP(i,j,k,n) - xWave(i,j,k,n)<<"\n";
-        	// }
+        	// c++ 17
+        	if constexpr (ENABLESOURCE) {
+        		xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - hdTime*xSo(i,j,k,n);
+        	}
+        	else {
+        		xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n);
+        	}
         });
     }
 }
@@ -371,6 +400,101 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDV
 	}
 
 #endif
+}
+
+template <typename DVM>
+void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF, 
+									 	 Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
+									 	 const Real* dx, const Real hTime, 
+									 	 amrex::Direction FaceID)
+{
+	#ifdef _OPENMP
+	#pragma omp parallel
+	#endif
+	for(amrex::MFIter mfi(xBarhFabnF, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
+
+		Array4<Real> const &xBh = xBarhFabnF.array(mfi);
+
+		Array4<Real const> const &xBP   = xDVDF[Ark::BP].const_array(mfi);
+
+		if(FaceID == amrex::Direction::x) {
+
+		LoopVS(DVM::Q)
+		{
+			int const token = Ark::sign(DVM::xi_u[n]);
+			int const di = token < 0 ? 0 : -1;
+			//
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{
+				int const ii = i + di;
+
+				xBh(i,j,k,n) = xBP(ii,j,k,n);						 
+			});
+			if(token == 0) {
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{					 
+				xBh(i,j,k,n) += xBP(i,j,k,n);
+				xBh(i,j,k,n) /= 2;
+			});
+			}		
+		}
+		}
+		else if(FaceID == amrex::Direction::y){
+
+		LoopVS(DVM::Q)
+		{
+			int const token = Ark::sign(DVM::xi_v[n]);
+			int const dj = token < 0 ? 0 : -1;
+
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{
+				int const jj = j + dj;
+				xBh(i,j,k,n) = xBP(i,jj,k,n);
+			});
+
+			if(token == 0) {
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{					 
+				xBh(i,j,k,n) += xBP(i,j,k,n);
+				xBh(i,j,k,n) /= 2.0;
+			});
+			}
+		}
+		}
+#if(AMREX_SPACEDIM == 3)
+		else if(FaceID == amrex::Direction::z){
+
+		const Real delta = dx[Ark::Z];
+
+		LoopVS(DVM::Q)
+		{
+			int const token = Ark::sign(DVM::xi_w[n]);
+			int const dk = token < 0 ? 0 : -1;
+
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{
+				int const kk = k + dk;
+
+				xBh(i,j,k,n) = xBP(i,j,kk,n); 
+			});
+
+			if(token == 0) {
+			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+			{
+				xBh(i,j,k,n) += xBP(i,j,k,n);
+				xBh(i,j,k,n) /= 2.0;
+			});
+			}
+		}
+		}			
+#endif
+		else {
+			amrex::Abort("UW-1st : How did we get here?");
+		}
+		
+	}
 }
 
 template <typename DVM>
@@ -2104,6 +2228,7 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 }	
 
 template<typename DVM>
+template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime)
 {
 	#ifdef _OPENMP
@@ -2125,25 +2250,11 @@ void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, c
         	const Real xtauh = xTauh(i,j,k);
         	const Real bh = hTime/(2.0*xtauh + hTime);
         	// const Real ch = bh*xtauh;
-       	//
+
         	xFlux(i,j,k,n) = xFlux(i,j,k,n) 
-        				   + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
+        				   + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n)*ENABLESOURCE);
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
-
-  //       const auto lo = lbound(bx);
-		// const auto hi = ubound(bx);
-  //       LoopPS(lo,hi)
-  //       {
-  //       	const Real ah = 2.0*xtauh(i,j,k)/(2.0*xtauh(i,j,k) + hTime);
-  //       	const Real bh = 1.0 - ah;
-  //       	const Real ch = bh*xtauh(i,j,k);
-
-  //       	LoopVS(DVM::Q)
-  //       	{
-  //       		xFlux(i,j,k,n) = ah*xBh(i,j,k,n) + bh*xEqh(i,j,k,n) + ch*xSoh(i,j,k,n);
-  //       	}
-  //       }
 	}
 }
 
@@ -2280,8 +2391,7 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 // }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab, 
-									 const Real ssTime)
+void DUGKSCore<DVM>::Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab, const Real ssTime)
 {
 	amrex::MultiFab::Saxpy(xWaveFab, ssTime, xSoFab, 0, 0, DVM::Q, 0);
 }

@@ -331,9 +331,9 @@ void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const
 }
 #endif
 
-double DUGKSAmr::PhaseProfile (double const d, LV token)
+double DUGKSAmr::HyperbolicTangentProfile (double const d, const double heavy, const double light, LV token)
 {
-    return 0.5*(PhiL()+PhiV() + static_cast<int>(token)*(PhiL()-PhiV())*tanh(d*2.0/WidthI()));
+    return 0.5*(heavy+light + static_cast<int>(token)*(heavy-light)*tanh(d*2.0/WidthI()));
 }
 void DUGKSAmr::Nullify_Source (int const lev)
 {
@@ -703,13 +703,14 @@ void DUGKSAmr::FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab,
         });
     }
 }
-void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
+void DUGKSAmr::FillLevelScalarFieldSphere (MultiFab &scalarFab, const double heavy, const double light,
+                                            const Real *dl, LV token)
 {
-    for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    for(amrex::MFIter mfi(scalarFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
     {
         const Box& bx = mfi.tilebox();
         //
-        Array4<Real> const &phi  = phase.array(mfi);
+        Array4<Real> const &scalar  = scalarFab.array(mfi);
 
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
@@ -722,10 +723,63 @@ void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
 #else
             const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();           
 #endif
-            phi(i,j,k) = PhaseProfile(distance, token);
+            scalar(i,j,k) = HyperbolicTangentProfile(distance, heavy, light, token);
         });
-    }
+    } 
+
+//     for(amrex::MFIter mfi(scalarFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+//     {
+//         const Box& bx = mfi.tilebox();
+//         //
+//         Array4<Real> const &scalar  = scalarFab.array(mfi);
+
+//         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//         {
+//             const double x = dl[Ark::X]*(i+0.5);
+//             const double y = dl[Ark::Y]*(j+0.5);
+// #if(AMREX_SPACEDIM == 3)
+//             const double z = dl[Ark::Z]*(k+0.5);
+//             const double distance = 
+//             Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
+// #else
+//             if( x < CenterPF(Ark::X)-RadiusPF() || 
+//                 x > CenterPF(Ark::X)+RadiusPF() ||
+//                 y < CenterPF(Ark::Y)-RadiusPF() ||
+//                 y > CenterPF(Ark::Y)+RadiusPF()
+//             ) {
+//                 scalar(i,j,k) = light;
+//             }
+//             else {
+//                 scalar(i,j,k) = heavy;
+//             }           
+// #endif
+//             // scalar(i,j,k) = HyperbolicTangentProfile(distance, heavy, light, token);
+//         });
+//     }     
 }
+// void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
+// {
+//     for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+//     {
+//         const Box& bx = mfi.tilebox();
+//         //
+//         Array4<Real> const &phi  = phase.array(mfi);
+
+//         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//         {
+//             const double x = dl[Ark::X]*(i+0.5);
+//             const double y = dl[Ark::Y]*(j+0.5);
+// #if(AMREX_SPACEDIM == 3)
+//             const double z = dl[Ark::Z]*(k+0.5);
+//             const double distance = 
+//             Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
+// #else
+//             const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();           
+// #endif
+//             phi(i,j,k) = HyperbolicTangentProfile(distance, PhiL(), PhiV(), token);
+//         });
+//     }
+// }
 void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
 {
     for(amrex::MFIter mfi(phase, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
@@ -743,9 +797,8 @@ void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
             Real slot_xR = CenterPF(Ark::X) + 0.1*RadiusPF();
 #if(AMREX_SPACEDIM == 3)
             const double z = dl[Ark::Z]*(k+0.5);
-            Real distance = std::sqrt(
-            Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z))
-            );
+            Real distance = 
+            std::sqrt(Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)));
 #else
             Real distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y));
 #endif
@@ -761,7 +814,7 @@ void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
         });
     }
 }
-void DUGKSAmr::ReinitializePhase(MultiFab &phase)
+void DUGKSAmr::StaircasePhase(MultiFab &phase)
 {
     #ifdef _OPENMP
     #pragma omp parallel

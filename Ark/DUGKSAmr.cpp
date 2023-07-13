@@ -53,7 +53,7 @@ void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_
 {
     BL_PROFILE("DUGKSAmr::MakeNewLevelFromScratch()");
 
-    if (m_verbose > 0)
+    if (m_verbose > 10)
     {
         amrex::Print() << "Making new level " << lev << " from scratch" << std::endl;
         if (m_verbose > 2) {
@@ -61,8 +61,9 @@ void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_
         }
     }
 
-    SetBoxArray(lev, new_grids);
-    SetDistributionMap(lev, new_dmap);
+// The following has been performed by FUNC AmrMesh::MakeNewGrids (Real time) in FILE AMReX_AmrMesh.cpp
+    // SetBoxArray(lev, new_grids);
+    // SetDistributionMap(lev, new_dmap);
 
 #ifdef AMREX_USE_EB
     m_factory[lev] = makeEBFabFactory(geom[lev], new_grids, new_dmap,

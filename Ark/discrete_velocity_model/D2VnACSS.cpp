@@ -1,5 +1,4 @@
 #include <DUGKSAmr.H>
-#include <DmVnAC.H>
 
 #error "Aborted due to inconsistency between PHASE and MOMENTUM kinetic equation"
 

@@ -89,9 +89,8 @@ double DUGKSAmr::L2NormVelocity(int lev)
 //
     WriteL2NormVelocity (lev, std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])),
                          std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y])));
-    return std::sqrt(
-			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y]) 
-			/Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y]));
+    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y]) 
+			         /Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y]));
 
 #endif
 }
@@ -148,6 +147,16 @@ Vector<double> DUGKSAmr::MultiLevelSum()
     }
     return cur_sum;
 }
+Vector<double> DUGKSAmr::MultiLevelSumDensity()
+{
+    Vector<double> cur_sum;
+
+    for(int lev = finest_level; lev >=0; --lev)
+    {
+        cur_sum.push_back(Data(lev).msv[Ark::RHO].sum());
+    }
+    return cur_sum;
+}
 Vector<double> DUGKSAmr::MultiLevelResidual()
 {
     Vector<double> cur_residual;
@@ -156,6 +165,7 @@ Vector<double> DUGKSAmr::MultiLevelResidual()
     {
 #ifdef ARK_USE_MOMENTUM
         cur_residual.push_back(L2NormVelocity(lev));
+        // cur_residual.push_back(L2NormDensity(lev));
 #elif defined ARK_USE_PHASE
         cur_residual.push_back(L2NormPhase(lev));
 #endif
@@ -173,7 +183,7 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
     // for(int lev = finest_level; lev >=0; --lev)
     // {
     //     MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
-    //     ReinitializePhase(Data(lev).phase_old);
+    //     StaircasePhase(Data(lev).phase_old);
     // }
 
     //* * * * * * * * * * * * * * * * Unsteady TGV * * * * * * * * * * * * * * * * 
@@ -182,18 +192,29 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
     // }
 
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    //* * * * * * * * * * * * * * * * Scalar L2-norm * * * * * * * * * * * * * * *
+    // //* * * * * * * * * * * * Scalar L2-norm Phase Field  * * * * * * * * * * * * *
+    // for(int lev = finest_level; lev >=0; --lev)
+    // {
+    //     // - General
+    //     Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
+        
+    //     // - Zalesak Disk
+    //     // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
+        
+    //     Real const norm_phase = Data(lev).density_old.norm2();        
+    //     cur_L2_norm.push_back(norm_diff/norm_phase);
+    // }
+
+    //* * * * * * * * * * * * Scalar L2-norm Density Field  * * * * * * * * * * * * *
     for(int lev = finest_level; lev >=0; --lev)
     {
         // - General
-        Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-        
-        // - Zalesak Disk
-        // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-        
+        Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::RHO]);
+               
         Real const norm_phase = Data(lev).density_old.norm2();        
         cur_L2_norm.push_back(norm_diff/norm_phase);
     }
+
     //* * * * * * * * * * * * * * * * Vector L2-norm * * * * * * * * * * * * * * *
     // for(int lev = finest_level; lev >=0; --lev) {   
     //     Real const norm_diff_x = 
@@ -256,8 +277,13 @@ double DUGKSAmr::InterfacePosition (const MultiFab& PhaseFab, const double probD
 double DUGKSAmr::InterfacePositionHighest (const MultiFab& PhaseFab, const double probDomain_lo_y,
                                            const Real* dx, int const index)
 {
+#ifdef ARK_USE_PHASE
     const double phiMid = (PhiL() + PhiV())/2;
     const double deltaPhi = (PhiL() - PhiV())/8.0;
+#else
+    const double phiMid = (RhoL() + RhoV())/2;
+    const double deltaPhi = (RhoL() - RhoV())/8.0;
+#endif
     double position = -1;
 //
     for(amrex::MFIter mfi(PhaseFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
@@ -289,8 +315,13 @@ double DUGKSAmr::InterfacePositionHighest (const MultiFab& PhaseFab, const doubl
 double DUGKSAmr::InterfacePositionLowest (const MultiFab& PhaseFab, const double probDomain_lo_y,
                                           const Real* dx, int const index)
 {
+#ifdef ARK_USE_PHASE
     const double phiMid = (PhiL() + PhiV())/2;
     const double deltaPhi = (PhiL() - PhiV())/8.0;
+#else
+    const double phiMid = (RhoL() + RhoV())/2;
+    const double deltaPhi = (RhoL() - RhoV())/8.0;
+#endif
     double position = std::numeric_limits<double>::max();
 //
     for(amrex::MFIter mfi(PhaseFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
@@ -389,7 +420,7 @@ Vector<double> DUGKSAmr::InterfacePositionTaylorBubble(int lev)
 
     const double prob_lo_y = rb.lo(Ark::Y);
     const int midX = domain.length(Ark::X)/2;
-    const int boundY = (CenterPF(Ark::Y)/ChLength() + (nstep*2.0)/end_step)*ChNum();
+    const int boundY = static_cast<int>((CenterPF(Ark::Y)/ChLength() + (nstep*2.0)/end_step)*ChNum());
 
     const MultiFab &PhaseFab = ld.msv[Ark::PHI];
 
@@ -414,9 +445,31 @@ Vector<double> DUGKSAmr::InterfacePositionRisingBubble(int lev)
     const double prob_lo_y = rb.lo(Ark::Y);
 
     const MultiFab &PhaseFab = ld.msv[Ark::PHI];
+    const MultiFab &DensityFab = ld.msv[Ark::RHO];
 
-    const double highPosition = InterfacePositionHighest(PhaseFab, prob_lo_y, dx, midX);
-    const double lowPosition  = InterfacePositionLowest (PhaseFab, prob_lo_y, dx, midX);
+    const double highPosition = InterfacePositionHighest(DensityFab, prob_lo_y, dx, midX);
+    const double lowPosition  = InterfacePositionLowest (DensityFab, prob_lo_y, dx, midX);
 
     return {highPosition, lowPosition};
+}
+
+Vector<double> DUGKSAmr::InterfacePositionLiquidBridge(int lev)
+{
+    const Real *dx = Geom(lev).CellSize();
+    const Box &domain = Geom(lev).Domain();
+    const RealBox &rb = Geom(lev).ProbDomain();
+    const auto &ld = Data(lev);
+
+    const int midX = domain.length(Ark::X)/2;
+    const double prob_lo_y = rb.lo(Ark::Y);
+
+    const MultiFab &PhaseFab = ld.msv[Ark::PHI];
+    const MultiFab &DensityFab = ld.msv[Ark::RHO];
+
+    const double highPosition = InterfacePositionHighest(DensityFab, prob_lo_y, dx, midX);
+    const double lowPosition  = InterfacePositionLowest (DensityFab, prob_lo_y, dx, midX);
+
+    const double bridge = (highPosition - lowPosition)*ChLength()/RadiusPF()/2.0;
+
+    return {bridge};
 }

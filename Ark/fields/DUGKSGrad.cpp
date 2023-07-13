@@ -672,6 +672,87 @@ void GradFunc::gradient_operator_isotropy (const Box &bx, Real const* dl,
 		)/(12.0*dly);
 	});
 }
+
+void GradFunc::gradient_operator_isotropy_blend (const Box &bx, Real const* dl, 
+								 		 		 Array4<Real const> const &src,
+								 		 		 Array4<Real> const &dst)
+{
+	const Real dlx = dl[Ark::X];
+	const Real dly = dl[Ark::Y];
+
+	AMREX_ASSERT(dlx == dly);
+	AMREX_ASSERT(dst.nComp() == AMREX_SPACEDIM);
+
+	ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	{
+		Real biased_x = 
+		(
+			(src(i+1,j  ,k) - src(i-1,j  ,k))*16.0 - (src(i+2,j  ,k) - src(i-2,j  ,k))*4.0
+		+	(src(i+1,j-1,k) - src(i-1,j-1,k))*4.0  - (src(i+2,j-2,k) - src(i-2,j-2,k))
+		+	(src(i+1,j+1,k) - src(i-1,j+1,k))*4.0  - (src(i+2,j+2,k) - src(i-2,j+2,k))
+		)/(24.0*dlx);
+
+		Real central_x = 
+		(
+			(src(i+1,j  ,k) - src(i-1,j  ,k))*4.0
+		+	(src(i+1,j-1,k) - src(i-1,j-1,k))
+		+	(src(i+1,j+1,k) - src(i-1,j+1,k))
+		)/(12.0*dlx);
+
+		dst(i,j,k,Ark::X) = 0.5*(biased_x + central_x);
+	});
+	//
+	ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	{
+		Real biased_y =
+		(
+			(src(i,  j+1,k) - src(i,  j-1,k))*16.0 - (src(i,  j+2,k) - src(i,  j-2,k))*4.0
+		+	(src(i-1,j+1,k) - src(i-1,j-1,k))*4.0  - (src(i-2,j+2,k) - src(i-2,j-2,k))
+		+	(src(i+1,j+1,k) - src(i+1,j-1,k))*4.0  - (src(i+2,j+2,k) - src(i+2,j-2,k))
+		)/(24.0*dly);
+
+		Real central_y =
+		(
+			(src(i,  j+1,k) - src(i,  j-1,k))*4.0
+		+	(src(i-1,j+1,k) - src(i-1,j-1,k))
+		+	(src(i+1,j+1,k) - src(i+1,j-1,k))
+		)/(12.0*dly);
+
+		dst(i,j,k,Ark::Y) = 0.5*(biased_y + central_y);
+	});
+}
+
+void GradFunc::gradient_operator_isotropy_biased (const Box &bx, Real const* dl, 
+								 		 		 Array4<Real const> const &src,
+								 		 		 Array4<Real> const &dst)
+{
+	const Real dlx = dl[Ark::X];
+	const Real dly = dl[Ark::Y];
+
+	AMREX_ASSERT(dlx == dly);
+	AMREX_ASSERT(dst.nComp() == AMREX_SPACEDIM);
+
+	ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	{
+		dst(i,j,k,Ark::X) = 
+		(
+			(src(i+1,j  ,k) - src(i-1,j  ,k))*16.0 - (src(i+2,j  ,k) - src(i-2,j  ,k))*4.0
+		+	(src(i+1,j-1,k) - src(i-1,j-1,k))*4.0  - (src(i+2,j-2,k) - src(i-2,j-2,k))
+		+	(src(i+1,j+1,k) - src(i-1,j+1,k))*4.0  - (src(i+2,j+2,k) - src(i-2,j+2,k))
+		)/(24.0*dlx);
+	});
+	//
+	ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	{
+		dst(i,j,k,Ark::Y) =
+		(
+			(src(i,  j+1,k) - src(i,  j-1,k))*16.0 - (src(i,  j+2,k) - src(i,  j-2,k))*4.0
+		+	(src(i-1,j+1,k) - src(i-1,j-1,k))*4.0  - (src(i-2,j+2,k) - src(i-2,j-2,k))
+		+	(src(i+1,j+1,k) - src(i+1,j-1,k))*4.0  - (src(i+2,j+2,k) - src(i+2,j-2,k))
+		)/(24.0*dly);
+	});
+}
+
 void GradFunc::gradient_operator_5th (const Box &bx, Real const* dl, 
 								 	  Array4<Real const> const &src,
 								 	  Array4<Real> const &dst)
@@ -760,10 +841,11 @@ void GradFunc::laplacian_operator_5th (const Box &bx, Real const *dl,
 		)/(12.*dlxy);
 	});
 }
+// nabla^2{_n}{\phi}
 void GradFunc::laplacian_normal_operator_isotropy (const Box &bx, Real const* dl,
-												   Array4<Real const> const &src,	 
-								 				   Array4<Real const> const &gradsrc,
-								 				   Array4<Real> const &dst)
+												Array4<Real const> const &src,	 
+								 				Array4<Real const> const &gradsrc,
+								 				Array4<Real> const &dst)
 {
 	const Real dlx = dl[Ark::X];
 	const Real dly = dl[Ark::Y];
@@ -805,13 +887,13 @@ void GradFunc::laplacian_normal_operator_isotropy (const Box &bx, Real const* dl
 			-	src(i+1,j-1,k) - src(i-1,j+1,k)
 			)/(4.0*dlxy);
 
-			const Real numerator = 
-			(src_y*src_xy - src_x*src_yy)*src_x + (src_x*src_xy - src_y*src_xx)*src_y;
+			const Real numerator = src_x*src_x*src_xx + src_y*src_y*src_yy + 2.*src_x*src_y*src_xy;
 
 			dst(i,j,k) = numerator/denominator;
 		}
 	});
 }
+
 void GradFunc::laplacian_normal_operator_5th (const Box &bx, Real const* dl,
 											  Array4<Real const> const &src,	 
 								 			  Array4<Real const> const &gradsrc,
@@ -866,5 +948,56 @@ void GradFunc::laplacian_normal_operator_5th (const Box &bx, Real const* dl,
 	});
 }
 
+void GradFunc::laplacian_normal_chemip_isotropy (const Box &bx, Real const* dl,
+												   Array4<Real const> const &src,	 
+								 				   Array4<Real const> const &gradsrc,
+								 				   Array4<Real> const &dst)
+{
+	const Real dlx = dl[Ark::X];
+	const Real dly = dl[Ark::Y];
+
+	const Real dlx2 = dlx*dlx;
+	const Real dly2 = dly*dly;
+	const Real dlxy = dlx*dly;
+
+	ParallelFor(bx,	[=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	{
+		const Real src_x = gradsrc(i,j,k,Ark::X);
+		const Real src_y = gradsrc(i,j,k,Ark::Y);
+
+		const double denominator = Ark::Square(src_x,src_y);
+
+		if(Ark::tinyEqual(denominator,0.0,1E-30))
+		{
+			dst(i,j,k) = 0;
+		}
+		else
+		{
+			const Real src_xx = 
+			(
+				(src(i-1,j,  k) - 2.0*src(i,j,  k) + src(i+1,j,  k))*10.0
+			+	(src(i-1,j+1,k) - 2.0*src(i,j+1,k) + src(i+1,j+1,k))
+			+	(src(i-1,j-1,k) - 2.0*src(i,j-1,k) + src(i+1,j-1,k))
+			)/(12.0*dlx2);
+
+			const Real src_yy =
+			(
+				(src(i,  j-1,k) - 2.0*src(i,  j,k) + src(i,  j+1,k))*10.0
+			+	(src(i+1,j-1,k) - 2.0*src(i+1,j,k) + src(i+1,j+1,k))
+			+	(src(i-1,j-1,k) - 2.0*src(i-1,j,k) + src(i-1,j+1,k))
+			)/(12.0*dly2);
+
+			const Real src_xy = 
+			(
+				src(i+1,j+1,k) + src(i-1,j-1,k)
+			-	src(i+1,j-1,k) - src(i-1,j+1,k)
+			)/(4.0*dlxy);
+
+			const Real numerator = (src_y*src_xy - src_x*src_yy)*src_x + (src_x*src_xy - src_y*src_xx)*src_y;
+
+			dst(i,j,k) = numerator/denominator;
+		}
+	});
+}
 #endif
 

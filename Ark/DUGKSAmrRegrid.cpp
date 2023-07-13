@@ -8,7 +8,7 @@ void DUGKSAmr::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
 {
 	BL_PROFILE("DUGKSAmr::MakeNewLevelFromCoarse()");
 
-	if (m_verbose > 0) {
+	if (m_verbose > 10) {
         amrex::Print() << "Making new level " << lev << " from coarse" << std::endl;
     }
 
@@ -33,12 +33,11 @@ void DUGKSAmr::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
 // Remake an existing level using provided BoxArray and DistributionMapping and
 // fill with existing fine and coarse data.
 // overrides the pure virtual function in AmrCore
-void DUGKSAmr::RemakeLevel (int lev, Real time, const BoxArray& ba,
-			   const DistributionMapping& dm)
+void DUGKSAmr::RemakeLevel (int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
     BL_PROFILE("DUGKSAmr::RemakeLevel()");
 
-    if (m_verbose > 0) {
+    if (m_verbose > 10) {
         amrex::Print() << "Remaking level " << lev << std::endl;
     }
 

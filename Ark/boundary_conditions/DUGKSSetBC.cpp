@@ -83,6 +83,7 @@ void DUGKSAmr::InitBoundaryConditions()
 	ReadBoundaryCondition("velocity", m_bcrec_velocity, AMREX_SPACEDIM);
 	ReadBoundaryCondition("pressure", m_bcrec_pressure);
 	ReadBoundaryCondition("temperature", m_bcrec_temperature);
+	ReadBoundaryCondition("chemicalP", m_bcrec_chemicalP);
 	ReadBoundaryCondition("force", m_bcrec_force, AMREX_SPACEDIM);
 
 	ReadBoundaryCondition("DVDF_wave", m_bcrec_DVDF_wave, Ark::DVM_MOMENTUM);
@@ -165,6 +166,7 @@ void DUGKSAmr::SetPeriodicityOverwrite(int const dir)
 	SetPeriodicityOverwrite(dir, m_bcrec_velocity);
 	SetPeriodicityOverwrite(dir, m_bcrec_pressure);
 	SetPeriodicityOverwrite(dir, m_bcrec_temperature);
+	SetPeriodicityOverwrite(dir, m_bcrec_chemicalP);
 	SetPeriodicityOverwrite(dir, m_bcrec_force);
 	SetPeriodicityOverwrite(dir, m_bcrec_DVDF_wave);
 	SetPeriodicityOverwrite(dir, m_bcrec_DVDF_barplus);
@@ -188,12 +190,13 @@ void DUGKSAmr::SetPeriodicBoundaryCondition()
 	}
 #endif	
 }
+
 void DUGKSAmr::average_scalar_x (Array4<Real> const &dst, Array4<Real const> const &src, 
-				  				 const Dim3 &lo, const Dim3 &hi, int const ix)
+				  				 const Dim3 &lo, const Dim3 &hi, int const ix, int const ncomp)
 {
 	LoopPS_YZ(lo,hi) 
 	{
-		dst(ix,j,k)  = 0.5*( src(ix - 1,j,k)  + src(ix,j,k) );
+		dst(ix,j,k,ncomp)  = 0.5*( src(ix - 1,j,k,ncomp)  + src(ix,j,k,ncomp) );
 #ifdef AMREX_DEBUG
 		if(dst(ix,j,k) != src(ix,j,k) || dst(ix,j,k) != src(ix-1,j,k)) {
 			amrex::AllPrint().SetPrecision(12)
@@ -205,11 +208,11 @@ void DUGKSAmr::average_scalar_x (Array4<Real> const &dst, Array4<Real const> con
 	}
 }
 void DUGKSAmr::average_scalar_y (Array4<Real> const &dst, Array4<Real const> const &src, 
-				  				 const Dim3 &lo, const Dim3 &hi, int const jy)
+				  				 const Dim3 &lo, const Dim3 &hi, int const jy, int const ncomp)
 {
 	LoopPS_XZ(lo,hi) 
 	{
-		dst(i,jy,k)  = 0.5*( src(i,jy - 1,k)  + src(i,jy,k) );
+		dst(i,jy,k,ncomp)  = 0.5*( src(i,jy - 1,k,ncomp)  + src(i,jy,k,ncomp) );
 #ifdef AMREX_DEBUG
 		if(dst(i,jy,k) != src(i,jy,k) || dst(i,jy,k) != src(i,jy-1,k)) 
 		{
@@ -222,13 +225,50 @@ void DUGKSAmr::average_scalar_y (Array4<Real> const &dst, Array4<Real const> con
 	}
 }
 void DUGKSAmr::average_scalar_z (Array4<Real> const &dst, Array4<Real const> const &src, 
-				  				 const Dim3 &lo, const Dim3 &hi, int const kz)
+				  				 const Dim3 &lo, const Dim3 &hi, int const kz, int const ncomp)
 {
 	LoopPS_XY(lo,hi) 
 	{
-		dst(i,j,kz)  = 0.5*( src(i,j,kz - 1)  + src(i,j,kz) );
+		dst(i,j,kz,ncomp)  = 0.5*( src(i,j,kz - 1,ncomp)  + src(i,j,kz,ncomp) );
 	}
 }
+
+// void DUGKSAmr::average_vector_x (Array4<Real> const &dst, Array4<Real const> const &src, 
+// 				  				 const Dim3 &lo, const Dim3 &hi, int const ix, int const ncomp)
+// {
+// 	LoopPS_YZ(lo,hi) 
+// 	{
+// 		dst(ix,j,k,ncomp)  = 0.5*( src(ix - 1,j,k,ncomp)  + src(ix,j,k,ncomp) );
+// #ifdef AMREX_DEBUG
+// 		if(dst(ix,j,k) != src(ix,j,k) || dst(ix,j,k) != src(ix-1,j,k)) {
+// 			amrex::AllPrint().SetPrecision(12)
+// 							<< dst(ix,j,k) <<"    "
+// 							<< src(ix,j,k) <<"    "
+// 						   	<< src(ix-1,j,k) <<"\n";
+// 		}
+// #endif
+// 	}
+// }
+void DUGKSAmr::average_vector_y (Array4<Real> const &dst, Array4<Real const> const &src, 
+				  				 const Dim3 &lo, const Dim3 &hi, int const jy)
+{
+	LoopPS_XZ(lo,hi) 
+	{
+		// dst(i,jy,k,Ark::X)  = 0.5*( src(i,jy - 1,k,Ark::X)  + src(i,jy,k,Ark::X) );
+		dst(i,jy,k,Ark::Y)  = 0.5*( src(i,jy - 1,k,Ark::Y)  + src(i,jy,k,Ark::Y) );
+#if(AMREX_SPACEDIM == 3)
+		dst(i,jy,k,Ark::Z)  = 0.5*( src(i,jy - 1,k,Ark::Z)  + src(i,jy,k,Ark::Z) );
+#endif
+	}
+}
+// void DUGKSAmr::average_vector_z (Array4<Real> const &dst, Array4<Real const> const &src, 
+// 				  				 const Dim3 &lo, const Dim3 &hi, int const kz, int const ncomp)
+// {
+// 	LoopPS_XY(lo,hi) 
+// 	{
+// 		dst(i,j,kz,ncomp)  = 0.5*( src(i,j,kz - 1,ncomp)  + src(i,j,kz,ncomp) );
+// 	}
+// }
 
 void DUGKSAmr::set_dirichlet_phase_xF (Array4<Real> const &phi, 
 										const Dim3 &lo, const Dim3 &hi, 

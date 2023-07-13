@@ -64,6 +64,50 @@ static const double xi_w[Q];
 
 static const unsigned BB[Q];
 
+static const unsigned SPBBY[Q];
+
+};
+
+struct D2M9
+{
+
+static const unsigned D = 2;
+
+static const unsigned Q = 9;
+
+static const double MaxU;
+
+static const double MaSpan;//sqrt(3.0*RT)
+
+static const double RT;
+
+static const double Lambda;
+
+static const double Alpha;
+
+static const double A;
+static const double B;
+static const double C;
+
+static const double E;
+static const double F;
+static const double G;
+static const double H;
+
+static const double M[Q][Q];  // Matrix
+
+static const double IM[Q][Q]; //Inverse Matrix
+
+static const double omega[Q];
+
+static const double xi_u[Q];
+
+static const double xi_v[Q];
+
+static const unsigned BB[Q];
+
+static const unsigned SPBBY[Q];
+
 };
 
 struct D3V7

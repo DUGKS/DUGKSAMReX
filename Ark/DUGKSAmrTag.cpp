@@ -19,23 +19,50 @@ void DUGKSAmr::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     const Real *prob_lo = Geom(lev).ProbLo(); 
     const double *dl = Geom(lev).CellSize();
 
-    const MultiFab &PhiFab     = ld.msv[Ark::PHI];
-    const MultiFab &GradPhiFab = ld.msv[Ark::GradPHI];
+    const MultiFab &PhaseFab = ld.msv[Ark::PHI];
+    const MultiFab &GradPhaseFab = ld.msv[Ark::GradPHI];
+
+    const MultiFab &VelocityFab  = ld.msv[Ark::VEL];
+
+    // const MultiFab &ScalarFab = ld.msv[Ark::RHO];
+    // const MultiFab &VectorFab = ld.msv[Ark::GradRHO];
 
     // const auto tagval = amrex::TagBox::SET;
     // const auto clearval = amrex::TagBox::CLEAR;
 
-    const bool tag_scalar = lev < phi_error.size();
-    const bool tag_vector = lev < grad_phi_error.size();
+    //tag scalar field
+
+    if(lev < phi_error.size()) {
+        TagScalarField(tags, PhaseFab, phi_error[lev]);
+    }
+
+    //tag vector field
+
+    Vector<const MultiFab*> MultiVectorFieldPtr;
+    Vector<double> TagErrorPtr;
+
+    if(lev < grad_phi_error.size()) { 
+        MultiVectorFieldPtr.push_back(&GradPhaseFab); 
+        TagErrorPtr.push_back(grad_phi_error[lev]);
+    }
+    if(lev < vel_error.size()) { 
+        MultiVectorFieldPtr.push_back(&VelocityFab); 
+        TagErrorPtr.push_back(vel_error[lev]);
+    }
+
+
+    TagMultiVectorField(tags, MultiVectorFieldPtr, TagErrorPtr);
+
+    // if(tag_vector_phase) {
+    //     TagVectorField(tags, GradPhaseFab, dl, grad_phi_error[lev]);
+    // }
+
+    // if(tag_vector_velocity) {
+    //     TagVectorField(tags, VelocityFab, dl, vel_error[lev]);
+    // }
+
     const bool tag_designated_region = lev < tag_region.size();
 
-    if(tag_scalar) {
-        TagScalarField(tags, PhiFab, dl, phi_error[lev]);
-    }
-
-    if(tag_vector) {
-        TagVectorField(tags, GradPhiFab, dl, grad_phi_error[lev]);
-    }
     if(tag_designated_region and tag_region[lev]) {
         TagDesignatedRegion(tags, prob_lo, dl);
     }
@@ -50,19 +77,10 @@ void DUGKSAmr::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
 #endif
 }
 
-void DUGKSAmr::TagScalarField (TagBoxArray& Tab, const MultiFab &ScalarFab, const Real *dx, 
-                               const Real &tagError)
+void DUGKSAmr::TagScalarField (TagBoxArray& Tab, const MultiFab &ScalarFab, const Real &estimator)
 {
     const char tagval = static_cast<char>(amrex::TagBox::SET);
 //    const auto clearval = amrex::TagBox::CLEAR;
-
-    const Real dlx = dx[Ark::X];
-    const Real dly = dx[Ark::Y];
-#if (AMREX_SPACEDIM == 3)
-    const Real dlz = dx[Ark::Z];
-#else
-    const Real dlz = 0.;
-#endif
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -75,27 +93,18 @@ void DUGKSAmr::TagScalarField (TagBoxArray& Tab, const MultiFab &ScalarFab, cons
         Array4<Real const> const &scalar = ScalarFab.const_array(mfi);   
 
         amrex::ParallelFor(bx, 
-        [scalar, tagError, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        [scalar, estimator, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if(scalar(i,j,k) > tagError) {
+            if(scalar(i,j,k) > estimator) {
                 tagArray(i,j,k) = tagval;
             }
         });
     }
 }
-void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, const Real *dx, 
-                               const Real &tagError)
+void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, const Real &estimator)
 {
-    const auto tagval = amrex::TagBox::SET;
+    const auto tagval = static_cast<char>(amrex::TagBox::SET);
 //    const auto clearval = amrex::TagBox::CLEAR;
-
-    const Real dlx = dx[Ark::X];
-    const Real dly = dx[Ark::Y];
-#if (AMREX_SPACEDIM == 3)
-    const Real dlz = dx[Ark::Z];
-#else
-    const Real dlz = 0.;
-#endif
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -108,8 +117,9 @@ void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, cons
         Array4<Real const> const &vec = VectorFab.const_array(mfi);   
 
         amrex::ParallelFor(bx, 
-        [vec, tagError, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        [vec, estimator, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            if(tagval != tagArray(i,j,k)) {
 #if(AMREX_SPACEDIM == 3)
                 Real const mod_vector = Ark::Hypot (vec(i,j,k,Ark::X),
                                                     vec(i,j,k,Ark::Y), 
@@ -118,10 +128,26 @@ void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, cons
 #else
                 Real const mod_vector = std::hypot(vec(i,j,k,Ark::X),vec(i,j,k,Ark::Y)); 
 #endif
-                if (mod_vector > tagError) {
+                if (mod_vector > estimator) {
                     tagArray(i,j,k) = tagval;
                 }
+            }
         });
+    }
+}
+void DUGKSAmr::TagMultiVectorField (TagBoxArray& Tab, Vector<MultiFab const*> &VectorFabPtr, 
+                                    const Vector<double> &tagError)
+{
+    if (VectorFabPtr.size() == 0) return;
+
+    AMREX_ASSERT(VectorFabPtr.size() == tagError.size());
+
+    for (int ni = 0; ni < VectorFabPtr.size(); ++ni) {
+
+        const MultiFab &VectorFab = *VectorFabPtr[ni];
+        const double estimator    =  tagError[ni];
+
+        TagVectorField(Tab, VectorFab, estimator);
     }
 }
 

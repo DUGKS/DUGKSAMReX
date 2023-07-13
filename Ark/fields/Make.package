@@ -3,6 +3,7 @@ CEXE_sources += DUGKSLimiter.cpp
 CEXE_sources += DUGKSWENO.cpp
 CEXE_sources += DUGKSFieldOp.cpp
 CEXE_sources += DUGKSAllenCahn.cpp
-CEXE_sources += DUGKSSplittingSource.cpp
-
+CEXE_sources += DUGKSFreeEnergy.cpp
+CEXE_sources += DUGKSPseudoPotential.cpp
+CEXE_sources += DUGKSEoS.cpp
 CEXE_headers += DUGKSField.H

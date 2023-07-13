@@ -7,7 +7,7 @@ echo "folder name : $localdir"
 #
 if [ "$1" = "hn" ];
 then
-	hostIP=10.168.17.85
+	hostIP=10.168.36.131
 	rootdir=home
 elif [ "$1" = "mh" ];
 then

@@ -44,7 +44,7 @@ namespace Ark
 
 	enum EnumFaceDVDF {TAUF,FLUX,EQF,SOF,FACEDVDFNUM};
 
-	enum EnumMSQ {PHI,RHO,VEL,P,T,GradPHI,GradRHO,FORCE,MSVNUM};
+	enum EnumMSQ {PHI,RHO,VEL,P,T,GradPHI,GradRHO,FORCE,CHEMIP,MSVNUM};
 
 	constexpr unsigned DVM_PHASE    = DmVnPhase::Q;
 
@@ -179,23 +179,24 @@ namespace GradFunc
 
 	//
 	
-	void gradient_operator_central (const Box &bx, Real const* dl, 
-						  			Array4<Real const> const &src,
+	void gradient_operator_central (const Box &bx, Real const* dl, Array4<Real const> const &src,
 						  			Array4<Real> const &dst);
-	void gradient_operator_isotropy (const Box &bx, Real const* dl, 
-						  			 Array4<Real const> const &src,
+	void gradient_operator_isotropy (const Box &bx, Real const* dl, Array4<Real const> const &src,
 						  			 Array4<Real> const &dst);
 
-	void gradient_operator_5th (const Box &bx, Real const* dl, 
-								Array4<Real const> const &src,
+	void gradient_operator_isotropy_biased (const Box &bx, Real const* dl, Array4<Real const> const &src,
+						  			 		Array4<Real> const &dst);
+
+	void gradient_operator_isotropy_blend (const Box &bx, Real const* dl, Array4<Real const> const &src,
+						  			 	   Array4<Real> const &dst);
+
+	void gradient_operator_5th (const Box &bx, Real const* dl, Array4<Real const> const &src,
 								Array4<Real> const &dst);
 
-	void laplacian_operator_isotropy (const Box &bx, Real const *dl, 
-									  Array4<Real const> const &src, 
+	void laplacian_operator_isotropy (const Box &bx, Real const *dl, Array4<Real const> const &src, 
 					  	   			  Array4<Real> const &dst);
 
-	void laplacian_operator_5th (const Box &bx, Real const *dl, 
-								 Array4<Real const> const &src, 
+	void laplacian_operator_5th (const Box &bx, Real const *dl, Array4<Real const> const &src, 
 					  	   		 Array4<Real> const &dst);
 
 	void laplacian_normal_operator_isotropy (const Box &bx, Real const* dl,
@@ -207,6 +208,11 @@ namespace GradFunc
 										Array4<Real const> const &src,	 
 								 		Array4<Real const> const &gradsrc,
 								 		Array4<Real> const &dst);
+
+	void laplacian_normal_chemip_isotropy (const Box &bx, Real const* dl,
+											 Array4<Real const> const &src,	 
+								 			 Array4<Real const> const &gradsrc,
+								 			 Array4<Real> const &dst);
 
 	double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var, 
 					  	   				int const i,int const j,int const k);
@@ -231,11 +237,64 @@ namespace GradFunc
                    const double downstream1, const double downstream2);							 
 }
 
+namespace EoS {
+// The chemical potential here is the bulk chemical potential, i.e. \mu_0 = d{\psi}\d{\rho}
+
+//  Van Der Waals Equation Li2021PRE [103, 013304 (2021)]
+
+	double PressureVdWIdeal (const double Density, const double Temp);
+
+	double PressureVdW (const double Density, const double Temp);
+
+	double FreeEnergyDensityVdW (const double Density, const double Temp);
+
+	double ChemicalPotentialVdW (const double Density, const double Temp);
+
+// Redlich-Kwong-Soave Wen2017PRE [95, 063305 (2017)]
+
+	double AlphaRKS (const double Temp);
+
+	double PressureRKS (const double Density, const double Temp);
+
+	double FreeEnergyDensityRKS (const double Density, const double Temp);
+
+	double ChemicalPotentialRKS (const double Density, const double Temp);
+
+// Peng-Robinson Yuan2006PoF[https://doi.org/10.1063/1.2187070]
+
+	double AlphaPR (const double Temp);
+
+	double PressurePR (const double Density, const double Temp);
+
+	double FreeEnergyDensityPR (const double Density, const double Temp);
+
+	double ChemicalPotentialPR (const double Density, const double Temp);
+
+// Carnahan-Starling  Yuan2006PoF[https://doi.org/10.1063/1.2187070]
+
+	double PressureCS (const double Density, const double Temp);
+
+	double FreeEnergyDensityCS (const double Density, const double Temp);
+
+	double ChemicalPotentialCS (const double Density, const double Temp);
+
+// Double Well Potential
+	double ChemicalPotentialDW (const double order, const double orderA, const double orderB);
+
+// Pseudo-Potential
+	double PseudoPotential(const double Density, const double Tr);
+}
+
 namespace Limiter
 {
 	double VanAlbada2(const double vF, const double vB);
 
 	double VanLeer(const double vF, const double vB);
+}
+
+namespace Quadrature
+{
+	double NInt (int const Num, double const *f, double const *c);
 }
 
 #endif

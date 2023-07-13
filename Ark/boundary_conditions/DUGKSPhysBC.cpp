@@ -31,7 +31,7 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVars(int const lev, int const bcid, int 
 		}
 		case amrex::PhysBCType::symmetry :
 		{
-			//to be done... may be never
+			FillPhysicalBoundaryMacroVarsSymmetry(lev,dir);
 			amrex::Abort("symmetry boundary has not finished");
 			break;
 		}
@@ -89,11 +89,11 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			Orientation LowX = Orientation(Ark::X, Orientation::Side::low);
 
 			// average_scalar_x (phi_xF,  phi,  lo, hi, lo_min);
-			// average_scalar_x (rho_xF,  rho,  lo, hi, lo_min);
+			average_scalar_x (rho_xF,  rho,  lo, hi, lo_min);
 			average_scalar_x (pres_xF, pres, lo, hi, lo_min);
 
-			set_dirichlet_phase_xF (phi_xF, lo, hi, lo_min, LowX);
-			set_dirichlet_density_xF (rho_xF, lo, hi, lo_min, LowX);
+			// set_dirichlet_phase_xF (phi_xF, lo, hi, lo_min, LowX);
+			// set_dirichlet_density_xF (rho_xF, lo, hi, lo_min, LowX);
 			set_dirichlet_velocity_xF (vel_xF, lo, hi, lo_min, LowX);
 
 			// set_dirichlet_pressure_xF (pres_xF, lo, hi, lo_min, LowX);
@@ -127,13 +127,13 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			Orientation HighX = Orientation(Ark::X, Orientation::Side::high);
 
 			// average_scalar_x (phi_xF,  phi,  lo, hi, hi_max);
-			// average_scalar_x (rho_xF,  rho,  lo, hi, hi_max);
+			average_scalar_x (rho_xF,  rho,  lo, hi, hi_max);
 			average_scalar_x (pres_xF, pres, lo, hi, hi_max);
 
 			// set_dirichlet_pressure_xF (pres_xF, lo, hi, hi_max, HighX);
 
-			set_dirichlet_phase_xF (phi_xF, lo, hi, hi_max, HighX);
-			set_dirichlet_density_xF (rho_xF, lo, hi, hi_max, HighX);
+			// set_dirichlet_phase_xF (phi_xF, lo, hi, hi_max, HighX);
+			// set_dirichlet_density_xF (rho_xF, lo, hi, hi_max, HighX);
 			set_dirichlet_velocity_xF (vel_xF, lo, hi, hi_max, HighX);
 		}
 	}
@@ -152,6 +152,7 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 
 		Array4<Real const> const &phi  = ld.msv[Ark::PHI].const_array(mfi);
 		Array4<Real const> const &rho  = ld.msv[Ark::RHO].const_array(mfi);
+		Array4<Real const> const &vel  = ld.msv[Ark::VEL].const_array(mfi);
 		Array4<Real const> const &pres = ld.msv[Ark::P].const_array(mfi);
 
 		Array4<Real> const &phi_yF  = ld.msv_yF[Ark::PHI].array(mfi);
@@ -165,12 +166,14 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 
 			// average_scalar_y(phi_yF,  phi,  lo, hi, lo_min);
 			// average_scalar_y(rho_yF,  rho,  lo, hi, lo_min);
-			average_scalar_y(pres_yF, pres, lo, hi, lo_min);
+			// average_scalar_y(pres_yF, pres, lo, hi, lo_min);	
 
-			set_dirichlet_phase_yF (phi_yF, lo, hi, lo_min, LowY);
-			set_dirichlet_density_yF (rho_yF, lo, hi, lo_min, LowY);
+			// set_dirichlet_phase_yF (phi_yF, lo, hi, lo_min, LowY);
+			// set_dirichlet_density_yF (rho_yF, lo, hi, lo_min, LowY);
 			// set_dirichlet_pressure_yF (pres_yF, lo, hi, lo_min,LowY);
 			set_dirichlet_velocity_yF (vel_yF, lo, hi, lo_min, LowY);
+
+			// average_scalar_y(vel_yF,  vel,  lo, hi, lo_min, Ark::X);
 		}
 	}
   }
@@ -188,6 +191,7 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 
 		Array4<Real const> const &phi  = ld.msv[Ark::PHI].const_array(mfi);
 		Array4<Real const> const &rho  = ld.msv[Ark::RHO].const_array(mfi);
+		Array4<Real const> const &vel  = ld.msv[Ark::VEL].const_array(mfi);
 		Array4<Real const> const &pres = ld.msv[Ark::P].const_array(mfi);
 
 		Array4<Real> const &phi_yF  = ld.msv_yF[Ark::PHI].array(mfi);
@@ -200,11 +204,11 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			Orientation HighY = Orientation(Ark::Y, Orientation::Side::high);
 
 			// average_scalar_y(phi_yF,  phi,  lo, hi, hi_max);
-			// average_scalar_y(rho_yF,  rho,  lo, hi, hi_max);
+			average_scalar_y(rho_yF,  rho,  lo, hi, hi_max);
 			average_scalar_y(pres_yF, pres, lo, hi, hi_max);
 
-			set_dirichlet_phase_yF   (phi_yF, lo, hi, hi_max, HighY);
-			set_dirichlet_density_yF (rho_yF, lo, hi, hi_max, HighY);
+			// set_dirichlet_phase_yF   (phi_yF, lo, hi, hi_max, HighY);
+			// set_dirichlet_density_yF (rho_yF, lo, hi, hi_max, HighY);
 			// set_dirichlet_pressure_yF (pres_yF, lo, hi, hi_max, HighY);
 			set_dirichlet_velocity_yF (vel_yF, lo, hi, hi_max,HighY); 
 		}
@@ -237,11 +241,11 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			Orientation LowZ = Orientation(Ark::Z, Orientation::Side::low);
 
 			// average_scalar_z(phi_zF,  phi,  lo, hi, lo_min);
-			// average_scalar_z(rho_zF,  rho,  lo, hi, lo_min);
+			average_scalar_z(rho_zF,  rho,  lo, hi, lo_min);
 			average_scalar_z(pres_zF, pres, lo, hi, lo_min);
 
-			set_dirichlet_phase_zF   (phi_zF, lo, hi, lo_min, LowZ);
-			set_dirichlet_density_zF (rho_zF, lo, hi, lo_min, LowZ);
+			// set_dirichlet_phase_zF   (phi_zF, lo, hi, lo_min, LowZ);
+			// set_dirichlet_density_zF (rho_zF, lo, hi, lo_min, LowZ);
 			// set_dirichlet_pressure_zF (pres_zF, lo, hi, lo_min,LowZ);
 			set_dirichlet_velocity_zF (vel_zF, lo, hi, lo_min, LowZ);
 		}
@@ -273,11 +277,11 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 			Orientation HighZ = Orientation(Ark::Z, Orientation::Side::high);
 
 			// average_scalar_z( phi_zF, phi,  lo, hi, hi_max);
-			// average_scalar_z( rho_zF, rho,  lo, hi, hi_max);
+			average_scalar_z( rho_zF, rho,  lo, hi, hi_max);
 			average_scalar_z(pres_zF, pres, lo, hi, hi_max);
 
-			set_dirichlet_phase_zF   (phi_zF, lo, hi, hi_max, HighZ);
-			set_dirichlet_density_zF (rho_zF, lo, hi, hi_max, HighZ);
+			// set_dirichlet_phase_zF   (phi_zF, lo, hi, hi_max, HighZ);
+			// set_dirichlet_density_zF (rho_zF, lo, hi, hi_max, HighZ);
 			// set_dirichlet_pressure_zF (pres_zF, lo, hi, hi_max, HighZ);
 			set_dirichlet_velocity_zF (vel_zF, lo, hi, hi_max, HighZ);
 		}
@@ -285,6 +289,8 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
   }
 #endif
 }
+
+
 
 // void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const dirdir)
 // {
@@ -440,8 +446,11 @@ void DUGKSAmr::FillPhysicalBoundaryMacroVarsNoSlipWall(int const lev, int const 
 //   }
 // #endif
 // }
+void DUGKSAmr::FillPhysicalBoundaryMacroVarsSymmetry (int const lev, int const dir)
+{
 
-void DUGKSAmr::FillPhysicalBoundaryMacroVarsOutFlow(int const lev, int const dir)
+}
+void DUGKSAmr::FillPhysicalBoundaryMacroVarsOutFlow (int const lev, int const dir)
 {
 	//nothing needs to be done
 }

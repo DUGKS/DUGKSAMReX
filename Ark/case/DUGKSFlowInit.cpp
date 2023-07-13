@@ -131,8 +131,8 @@ void DUGKSAmr::ReversedSingleVortex(int const lev)
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
 
-    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
-    FillLevelPhaseSphere(ld.density_old, dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dx, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -167,22 +167,25 @@ void DUGKSAmr::QuiescentDrop(int const lev)
     LevelData &ld = Data(lev);
     const Real *dl = Geom(lev).CellSize();
 
-	FillLevelPhaseSphere(ld.msv[Ark::PHI], dl, LV::drop);
-    FillLevelPhaseSphere(ld.density_old, dl, LV::drop);
+	FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dl, LV::drop);
+    // FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dl, LV::drop);
+    
+    FillLevelScalarFieldSphere(ld.density_old, RhoL(), RhoV(), dl, LV::drop);
 
 	MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
 	ld.msv[Ark::RHO].mult(APhi(), 0);
     ld.msv[Ark::RHO].plus(BPhi(), 0);
-    // ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::VEL].setVal(0);
 	ld.msv[Ark::P].setVal(P0());
-	ld.msv[Ark::T].setVal(T0());
+    ld.msv[Ark::T].setVal(T0());
 
-    ld.msv[Ark::VEL].setVal(U0());
-    ld.msv_xF[Ark::VEL].setVal(U0());
-    ld.msv_yF[Ark::VEL].setVal(U0());
+    ld.msv_xF[Ark::VEL].setVal(0);
+    ld.msv_yF[Ark::VEL].setVal(0);
 #if(AMREX_SPACEDIM == 3)
-    ld.msv_zF[Ark::VEL].setVal(U0());
+    ld.msv_zF[Ark::VEL].setVal(0);
 #endif
+
+    Update_DVDF_Tau(lev);
 }
 void DUGKSAmr::TransDrop(int const lev)
 {
@@ -192,8 +195,8 @@ void DUGKSAmr::TransDrop(int const lev)
     const Real *dl = Geom(lev).CellSize();
     const RealBox &rb = Geom(lev).ProbDomain();
 
-    FillLevelPhaseSphere(ld.msv[Ark::PHI], dl, LV::drop);
-    FillLevelPhaseSphere(ld.density_old, dl, LV::drop);
+    FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dl, LV::drop);
+    FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dl, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -312,8 +315,8 @@ void DUGKSAmr::ElongatedInterface(int const lev)
     const Real *dx = Geom(lev).CellSize();
     const RealBox &rb = Geom(lev).ProbDomain();
 
-    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
-    FillLevelPhaseSphere(ld.density_old, dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dx, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -343,8 +346,8 @@ void DUGKSAmr::SmoothDeformation(int const lev)
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
 
-    FillLevelPhaseSphere(ld.msv[Ark::PHI], dx, LV::drop);
-    FillLevelPhaseSphere(ld.density_old, dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dx, LV::drop);
+    FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dx, LV::drop);
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -434,13 +437,18 @@ void DUGKSAmr::SpinodalDecomposition(int const lev)
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i,int j,int k)
         {
-            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+            // const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 
+#ifdef ARK_USE_PHASE
             phi(i,j,k) = 0.6 + (amrex::Random())*0.01;
-            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();          
+            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
+#else
+            rho(i,j,k) = (RhoL()+RhoV())/3.0 + (amrex::Random())*0.01;
+#endif          
         });
     }
 }
+
 void DUGKSAmr::RayleighTaylorInstability(int const lev)
 {
     using namespace Ark;
@@ -556,11 +564,12 @@ void DUGKSAmr::DropletImpact(int const lev)
         Array4<Real> const &rho = RhoFab.array(mfi);
         Array4<Real> const &vel = VelFab.array(mfi);
 
-        const double Hw = 50.0;
+        const double Hw = 51.2;
         const double wI = WidthI();
 
         const Real centerX = CenterPF(Ark::X);
         const Real centerY = Hw + RadiusPF() + 2*wI;
+        // const Real centerY = Hw + RadiusPF();
 #if(AMREX_SPACEDIM == 3)
         const Real centerZ = CenterPF(Ark::Z);
 #endif
@@ -570,20 +579,44 @@ void DUGKSAmr::DropletImpact(int const lev)
             const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
             const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
-            const double distance = std::sqrt(Ark::Square(x-centerX, y-centerY, z-centerZ)) - RadiusPF();
+            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
-            phi(i,j,k) = (PhiV() + PhiL())/2.0 + (PhiV() - PhiL())*tanh(distance*2.0/WidthI())/2.0;
 
-            vel(i,j,k,Ark::Y) = -phi(i,j,k)*U0();
+#if ARK_USE_PHASE
+            const double phiA = HyperbolicTangentProfile (distance, PhiL(), PhiV(), LV::drop);
+            const double phiB = HyperbolicTangentProfile (y-Hw, PhiL(), PhiV(), LV::drop);
 
-            if(y < (Hw + wI)) {
-                phi(i,j,k) = (PhiV() + PhiL())/2.0 + (PhiV() - PhiL())/2.0*tanh(2.*(y-Hw)/WidthI());
-                vel(i,j,k,Ark::Y) = 0;
+            phi(i,j,k) = phiA > phiB ? phiA : phiB;
+
+            if(y > Hw) { 
+                vel(i,j,k,Ark::Y) = -phi(i,j,k)*U0();
             }
+            else {
+                phi(i,j,k) = HyperbolicTangentProfile (y-Hw, PhiL(), PhiV(), LV::drop);
+            }
+
+            // if(y < (Hw + wI)) {
+            //     phi(i,j,k) = HyperbolicTangentProfile (y-Hw, PhiL(), PhiV(), LV::drop);
+            //     vel(i,j,k,Ark::Y) = 0;
+            // }
             
             rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
+#else
+            const double rhoA = HyperbolicTangentProfile (distance, RhoL(), RhoV(), LV::drop);
+            const double rhoB = HyperbolicTangentProfile (y-Hw, RhoL(), RhoV(), LV::drop);
+
+            rho(i,j,k) = rhoA > rhoB ? rhoA : rhoB;
+
+            if(y > Hw) { 
+                vel(i,j,k,Ark::Y) = -(rho(i,j,k)-RhoV())*U0()/(RhoL()-RhoV());
+            }
+            else {
+                rho(i,j,k) = HyperbolicTangentProfile (y-Hw, RhoL(), RhoV(), LV::drop);
+            }
+#endif
+
         });
     }
 }
@@ -630,7 +663,7 @@ void DUGKSAmr::TaylorBubble(int const lev)
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
-            phi(i,j,k) = PhaseProfile(distance, LV::bubble);
+            phi(i,j,k) = HyperbolicTangentProfile(distance, PhiL(), PhiV(), LV::bubble);
 
             const double tailY = RadiusPF();
 
@@ -663,7 +696,7 @@ void DUGKSAmr::TaylorBubble(int const lev)
                     distanceMin = std::hypot(distanceCylinder, distanceTail);
                 }
 
-                phi(i,j,k) = PhaseProfile(distanceMin, LV::bubble);
+                phi(i,j,k) = HyperbolicTangentProfile(distanceMin, PhiL(), PhiV(), LV::bubble);
             }
         });
     }
@@ -712,10 +745,11 @@ void DUGKSAmr::RisingBubble(int const lev)
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
-            phi(i,j,k) = PhaseProfile(distance, LV::bubble);
+            phi(i,j,k) = HyperbolicTangentProfile(distance, PhiL(), PhiV(), LV::bubble);
         });
     }
 }
+
 
 void DUGKSAmr::FallingDrop(int const lev)
 {
@@ -760,7 +794,61 @@ void DUGKSAmr::FallingDrop(int const lev)
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
-            phi(i,j,k) = PhaseProfile(distance, LV::drop);
+            phi(i,j,k) = HyperbolicTangentProfile(distance, PhiL(), PhiV(), LV::drop);
+        });
+    }
+}
+
+void DUGKSAmr::DropletCoalescence(int const lev)
+{
+    using namespace Ark;
+
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 233 && CaseName() == __func__)); 
+
+    LevelData &ld = Data(lev);
+    const Real *dx = Geom(lev).CellSize();
+    const RealBox &rb = Geom(lev).ProbDomain();
+
+    ld.msv[Ark::VEL].setVal(0);
+    ld.msv[Ark::P].setVal(P0());
+    ld.msv[Ark::T].setVal(T0());
+
+    MultiFab &PhiFab = ld.msv[Ark::PHI];
+    MultiFab &RhoFab = ld.msv[Ark::RHO];
+
+    for(amrex::MFIter mfi(PhiFab);mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.validbox();
+        //
+        Array4<Real> const &phi = PhiFab.array(mfi);
+        Array4<Real> const &rho = RhoFab.array(mfi);
+
+        const Real centerX = CenterPF(Ark::X);
+        const Real centerY = CenterPF(Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+        const Real centerZ = CenterPF(Ark::Z);
+#endif
+
+        const double xcA = centerX - RadiusPF() - WidthI()/2.;
+        const double xcB = centerX + RadiusPF() + WidthI()/2.;
+        const double yc  = centerY;
+
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i,int j,int k)
+        {
+            const double x = dx[Ark::X]*(i+0.5) + rb.lo(Ark::X);
+            const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
+
+            const double distanceA = std::hypot(x-xcA, y-yc) - RadiusPF();
+            const double distanceB = std::hypot(x-xcB, y-yc) - RadiusPF();
+
+            const double weight = 1.0 - tanh(2.*distanceA/WidthI()) - tanh(2.*distanceB/WidthI());
+
+#ifdef ARK_USE_PHASE
+            phi(i,j,k) = (PhiL()+PhiV())/2.0 + (PhiL()-PhiV())/2.0*weight;
+            rho(i,j,k) = (RhoL()+RhoV())/2.0 + (RhoL()-RhoV())/2.0*weight;
+#else
+            rho(i,j,k) = (RhoL()+RhoV())/2.0 + (RhoL()-RhoV())/2.0*weight;
+#endif          
         });
     }
 }

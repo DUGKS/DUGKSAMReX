@@ -91,6 +91,11 @@ void DUGKSAmr::CaseInitFluid(int const lev)
             FallingDrop(lev);
             break;
         }
+        case 233:
+        {
+            DropletCoalescence(lev);
+            break;
+        }
         case -666:
         {
             BasicCase(lev);
@@ -119,9 +124,7 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 
     ld.phase_prev.setVal(0);
     ld.velocity_prev.setVal(0);
-
-    ld.chemiP.setVal(0);
-    
+   
     for(auto &mf : ld.msv){
         mf.setVal(0.0);
     }
@@ -186,7 +189,8 @@ void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
 {
 	auto& ld = *m_leveldata[lev];
 
-	Update_DVDF_Eq(lev);
+	// Force initialized to 0
+    Update_DVDF_Eq(lev);
 
 #ifdef ARK_USE_PHASE
 	ld.hDVDF[Ark::WAVE].ParallelCopy(ld.hDVDF[Ark::EQ], 0, 0, Ark::DVM_PHASE, 
@@ -221,7 +225,23 @@ void DUGKSAmr::post_case_init(int const lev)
 
         GradFunc::gradient_operator_isotropy(bx, Geom(lev).CellSize(), phi, grad_phi);
     }
+#else
+    FillPatchDensity(lev, cur_time, ld.msv[Ark::RHO]);
+
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(ld.msv[Ark::RHO], amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+    {
+        const amrex::Box& bx = mfi.tilebox();
+
+        Array4<Real const> const &rho      = ld.msv[Ark::RHO].const_array(mfi);
+        Array4<Real      > const &grad_rho = ld.msv[Ark::GradRHO].array(mfi);
+
+        GradFunc::gradient_operator_isotropy(bx, Geom(lev).CellSize(), rho, grad_rho);
+    }
 #endif
+
 
 #ifdef ARK_USE_MOMENTUM
     if(CaseIndex() == 1) 

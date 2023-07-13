@@ -1,6 +1,7 @@
 //!The definition can be moved to the Header file if C++17 is supported
 #include <DUGKSDmVn.H>
-using namespace Ark;
+
+namespace Ark {
 
 //#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 //#                 D2V5                  #
@@ -48,6 +49,66 @@ const double D2V9::xi_u[Q] = {0,1,0,-1,0,1,-1,-1,1};
 const double D2V9::xi_v[Q] = {0,0,1,0,-1,1,1,-1,-1};
 
 const unsigned D2V9::BB[Q] = {0,3,4,1,2,7,8,5,6};
+
+const unsigned D2V9::SPBBY[Q] = {0,3,4,1,2,8,7,6,5};
+
+
+//#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+//#                 D2M9                  #
+//#.......................................#
+const double D2M9::RT = 1.0/3.0;
+
+const double D2M9::Lambda = 1.5; // = 1/(2RT)
+
+const double D2M9::MaxU = 1.0;
+
+const double D2M9::MaSpan = 1.0;//sqrt(3.0*RT)
+
+const double D2M9::Alpha = 1.0;
+
+const double D2M9::A = 4.0/9.0;
+const double D2M9::B = 1.0/9.0;
+const double D2M9::C = 1.0/36.0;
+const double D2M9::E = 1.0/12.0;
+const double D2M9::F = 1.0/6.0;
+const double D2M9::G = 1.0/4.0;
+const double D2M9::H = 1.0/18.0;
+
+const double D2M9::M[Q][Q] =
+{
+    { 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {-4,-1,-1,-1,-1, 2, 2, 2, 2},
+    { 4,-2,-2,-2,-2, 1, 1, 1, 1},
+    { 0, 1, 0,-1, 0, 1,-1,-1, 1},
+    { 0,-2, 0, 2, 0, 1,-1,-1, 1},
+    { 0, 0, 1, 0,-1, 1, 1,-1,-1},
+    { 0, 0,-2, 0, 2, 1, 1,-1,-1},
+    { 0, 1,-1, 1,-1, 0, 0, 0, 0},
+    { 0, 0, 0, 0, 0, 1,-1, 1,-1}
+};
+
+const double D2M9::IM[Q][Q] = 
+{
+    { B,-B, B, 0, 0, 0, 0, 0, 0},
+    { B,-C,-H, F,-F, 0, 0, G, 0},
+    { B,-C,-H, 0, 0, F,-F,-G, 0},
+    { B,-C,-H,-F, F, 0, 0, G, 0},
+    { B,-C,-H, 0, 0,-F, F,-G, 0},
+    { B, H, C, F, E, F, E, 0, G},
+    { B, H, C,-F,-E, F, E, 0,-G},
+    { B, H, C,-F,-E,-F,-E, 0, G},
+    { B, H, C, F, E,-F,-E, 0,-G}
+};
+
+const double D2M9::omega[Q] = {A,B,B,B,B,C,C,C,C};
+
+const double D2M9::xi_u[Q] = {0,1,0,-1,0,1,-1,-1,1};
+
+const double D2M9::xi_v[Q] = {0,0,1,0,-1,1,1,-1,-1};
+
+const unsigned D2M9::BB[Q] = {0,3,4,1,2,7,8,5,6};
+
+const unsigned D2M9::SPBBY[Q] = {0,3,4,1,2,8,7,6,5};
 
 //#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 //#                 D3V7                  #
@@ -97,3 +158,5 @@ const double D3V15::xi_v[Q] = {0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1};
 const double D3V15::xi_w[Q] = {0, 0, 0, 0, 0, 1,-1, 1, 1, 1, 1,-1,-1,-1,-1};
 
 const unsigned D3V15::BB[Q] = {0,2,1,4,3,6,5,14,13,12,11,10,9,8,7};
+
+}

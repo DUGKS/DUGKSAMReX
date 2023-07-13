@@ -8,7 +8,7 @@ void DUGKSAmr::ResizeArrays ()
     m_t_new.resize(max_level + 1, 0.);
     m_t_old.resize(max_level + 1, 0.);
 
-    trace_time_step.resize(max_level + 1, 0.);;
+    trace_time_step.resize(max_level + 1, 0.);
 
     m_leveldata.resize(max_level+1);
     m_factory.resize(max_level+1);
@@ -35,18 +35,18 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
 
     {
     amrex::ParmParse ppTime("time");
-    ppTime.get("fixed_trace", use_fixed_trace);
+    ppTime.get("mutable_trace", use_mutable_trace);
     ppTime.get("CFL", Courant_Friedrichs_Lewy);
     ppTime.get("advance_time_step", advance_time_step);
 
     double hTime = 0.5*advance_time_step;
     ppTime.query("trace_time_step", hTime);
 
-    if(use_fixed_trace) {
-        for(auto &d : trace_time_step) { d = hTime; }
+    if(use_mutable_trace) {
+        SetMutableTraceTimeStep(hTime);      
     }
     else {
-        SetMutableTraceTimeStep(hTime);
+        for(auto &d : trace_time_step) { d = hTime; }       
     }
 
     }
@@ -68,6 +68,7 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
     //     Real last = grad_phi_error.back();
     //     grad_phi_error.resize(max_level+1, last);
     // }
+    pp.queryarr("vel_error", vel_error);
 
     tag_region_lo.resize(3);
     tag_region_hi.resize(3);
@@ -195,6 +196,9 @@ void DUGKSAmr::SetMutableTraceTimeStep(const double hTime)
     for(int lev = max_level-1;lev >= 0;--lev)
     {
         trace_time_step[lev] = ref_ratio[lev].min()*trace_time_step[lev + 1];
+    }
+    for(int lev = max_level;lev >=0;--lev)
+    {
         amrex::Print()  <<"tracing time for level " <<lev<<" : "                         
                         << trace_time_step[lev] << std::endl;
     }
@@ -233,6 +237,12 @@ void DUGKSAmr::SetFluxScheme()
     {
         Update_DVDF_Barh = &DUGKSAmr::Update_DVDF_Barh_UW_Default_Second;
         Update_DVDF_Grad_BarPlus = &DUGKSAmr::Update_DVDF_Grad_BarPlus_Default_Second;
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(n_ghost == 2, "Fatal Error : invalid n_ghost!!!");
+    }
+    else if(FluxScheme() == "UW-1")
+    {
+        Update_DVDF_Barh = &DUGKSAmr::Update_DVDF_Barh_UW_First;
+        Update_DVDF_Grad_BarPlus = &DUGKSAmr::Update_DVDF_Grad_BarPlus_Null;
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(n_ghost == 2, "Fatal Error : invalid n_ghost!!!");
     }
     else if(FluxScheme() == "UW-3")

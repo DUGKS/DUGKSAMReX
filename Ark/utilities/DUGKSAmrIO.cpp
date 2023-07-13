@@ -650,11 +650,12 @@ void DUGKSAmr::WritePlotFile()
 #endif
     if (m_plt_chemip) {
         for (int lev = 0; lev <= finest_level; ++lev) {
-            MultiFab::Copy(mf[lev], m_leveldata[lev]->chemiP, 0, icomp, 1, 0);
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->msv[Ark::CHEMIP], 0, icomp, 1, 0);
         }
         pltscaVarsName.push_back("chemiPotential");
         ++icomp;
     }
+#if ARK_USE_MOMENTUM
     if (m_plt_tau) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->fDVDF[Ark::TAU], 0, icomp, 1, 0);
@@ -662,6 +663,8 @@ void DUGKSAmr::WritePlotFile()
         pltscaVarsName.push_back("tauMOM");
         ++icomp;
     }
+#endif
+
 #if ARK_USE_PHASE
     if (m_plt_hDVDF) {
         for (int nDVM = 0; nDVM < Ark::DmVnPhase::Q; ++nDVM) {
@@ -773,31 +776,37 @@ void DUGKSAmr::WritePlotFile()
                                    pltscaVarsName, Geom(), cur_time, istep, refRatio());
     WriteJobInfo(plotfilename);
 }
+std::string DUGKSAmr::FileNameSuffix()
+{
+    std::ostringstream oss;
+
+#ifdef ARK_USE_PHASE   
+    oss <<"_Pe"<<Pe()
+        <<"_M"<<MPhi()
+        <<"_wI"<<WidthI()
+        <<"_NL"<<ChNum()
+        <<"_Flux"<<FluxScheme()
+        <<"_"<<CaseName()<<".dat";
+#else
+    oss <<"_U0"<<U0()
+        <<"_TauF"<<TauMomentum()
+        <<"_T0"<<T0()
+        <<"_NL"<<ChNum()
+        <<"_Flux"<<FluxScheme()
+        <<"_"<<CaseName()<<".dat";
+#endif
+
+    return oss.str();
+}
 void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
 {
     if(ParallelDescriptor::IOProcessor()) 
     {
-        std::ofstream L2NormFile;
-        std::ostringstream oss_L2;
-#ifdef ARK_USE_PHASE   
-        oss_L2<<"L2_norm"
-            <<"_Pe"<<Pe()
-            <<"_M"<<MPhi()
-            <<"_wI"<<WidthI()
-            <<"_NL"<<ChNum()
-            <<"_Flux"<<FluxScheme()
-            <<"_"<<CaseName()<<".dat";
-#else
-        oss_L2<<"L2_norm"
-            <<"_U0"<<U0()
-            <<"_TauF"<<TauMomentum()
-            <<"_NL"<<ChNum()
-            <<"_Flux"<<FluxScheme()
-            <<"_"<<CaseName()<<".dat";
-#endif
-        L2NormFile.open(oss_L2.str().c_str(), std::ios::app);
-        L2NormFile  << std::setiosflags(std::ios::scientific) 
-                    << std::setprecision(Ark::digitsNum);
+        const std::string L2NormFileName = "L2_norm" + FileNameSuffix();
+
+        std::ofstream L2NormFile(L2NormFileName.c_str(), std::ios::app);
+        L2NormFile  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
+
         L2NormFile << cur_time <<"    ";
         for(auto d : cur_L2_norm) 
         {
@@ -814,27 +823,11 @@ void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
 void DUGKSAmr::WriteResidualFile(const Vector<double> &cur_residual)
 {
     if(ParallelDescriptor::IOProcessor()) 
-    {
-        std::ofstream ResidualFile;
-        std::ostringstream oss_res;
-#ifdef ARK_USE_PHASE  
-        oss_res <<"Residual"
-                <<"_Pe"<<Pe()
-                <<"_Cn"<<Cn()
-                <<"_NL"<<ChNum()
-                <<"_Flux"<<FluxScheme()
-                <<"_"<<CaseName()<<".dat";
-#else
-        oss_res <<"Residual"
-                <<"_U0"<<U0()
-                <<"_TauF"<<TauMomentum()
-                <<"_NL"<<ChNum()
-                <<"_Flux"<<FluxScheme()
-                <<"_"<<CaseName()<<".dat";
-#endif
-        ResidualFile.open(oss_res.str().c_str(), std::ios::app);
-        ResidualFile << std::setiosflags(std::ios::scientific) 
-                     << std::setprecision(Ark::digitsNum);
+    {       
+        const std::string ResidualFileName = "Residual" + FileNameSuffix();
+
+        std::ofstream ResidualFile(ResidualFileName.c_str(), std::ios::app);
+        ResidualFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         ResidualFile << cur_time <<"    ";
         for(auto d : cur_residual) 
         {
@@ -849,25 +842,13 @@ void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double 
 {
     if(ParallelDescriptor::IOProcessor()) 
     {
-        std::ofstream L2NormVelocity;
         std::ostringstream oss_velocity;
-#ifdef ARK_USE_PHASE
-        oss_velocity <<"Level"<<lev<<"_velocity_norm"
-                     << "_Pe"<<Pe()
-                     << "_Cn"<<Cn()
-                     << "_NL"<<ChNum()
-                     <<"_"<< CaseName()<<".dat";
-#else
-        oss_velocity <<"Level"<<lev<<"_velocity_norm"
-                     <<"_U0"<<U0()
-                     <<"_TauF"<<TauMomentum()
-                     <<"_NL"<<ChNum()
-                     <<"_Flux"<<FluxScheme()
-                     <<"_"<<CaseName()<<".dat";
-#endif
-        L2NormVelocity.open(oss_velocity.str().c_str(), std::ios::app);
-        L2NormVelocity  << std::setiosflags(std::ios::scientific) 
-                        << std::setprecision(Ark::digitsNum);
+        oss_velocity <<"Level"<<lev<<"_velocity_norm";
+        const std::string &L2NormVelocityName = oss_velocity.str() + FileNameSuffix();
+
+        std::ofstream L2NormVelocity(L2NormVelocityName.c_str(), std::ios::app);
+        // L2NormVelocity(L2NormVelocityName.c_str(), std::ios::app);
+        L2NormVelocity  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         L2NormVelocity  << cur_time <<"    "<<vel_diff<<"    "<<vel_norm<<"\n";
         L2NormVelocity.close();
     }
@@ -875,40 +856,47 @@ void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double 
 void DUGKSAmr::WriteSumPhaseFile(const Vector<double> &cur_sum)
 {
     if(ParallelDescriptor::IOProcessor()) 
-    {
-        std::ofstream SumFile;
-        std::ostringstream oss_sum;  
-        oss_sum <<"SumPhase_Pe"<<Pe()
-                <<"_Cn"<<Cn()
-                <<"_NL"<<ChNum()<<"_"
-                <<CaseName()<<".dat";
-        SumFile.open(oss_sum.str().c_str(), std::ios::app);
-        SumFile << std::setiosflags(std::ios::scientific) 
-                     << std::setprecision(Ark::digitsNum);
-        SumFile << cur_time <<"    ";
+    {      
+        const std::string SumPhaseFileName = "SumPhase" + FileNameSuffix();
+
+        std::ofstream SumPhaseFile(SumPhaseFileName.c_str(), std::ios::app);
+        SumPhaseFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
+        SumPhaseFile << cur_time <<"    ";
         for(auto d : cur_sum) 
         {
-            SumFile << d <<"    ";
+            SumPhaseFile << d <<"    ";
         }
-        SumFile<<'\n';
+        SumPhaseFile<<'\n';
 
-        SumFile.close();
+        SumPhaseFile.close();
+    }
+}
+void DUGKSAmr::WriteSumDensityFile(const Vector<double> &cur_sum)
+{
+    if(ParallelDescriptor::IOProcessor()) 
+    {
+        const std::string SumDensityFileName = "SumDensity" + FileNameSuffix();
+
+        std::ofstream SumDensityFile(SumDensityFileName.c_str(), std::ios::app);
+        SumDensityFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
+        SumDensityFile << cur_time <<"    ";
+        for(auto d : cur_sum) 
+        {
+            SumDensityFile << d <<"    ";
+        }
+        SumDensityFile<<'\n';
+
+        SumDensityFile.close();
     }
 }
 void DUGKSAmr::WriteInterfacePosition(const Vector<double> &interfacePosition)
 {
     if(ParallelDescriptor::IOProcessor()) 
     {
-        std::ofstream position;
-        std::ostringstream oss_position;
-        oss_position <<"interface_position"
-                     << "_Pe"<<Pe()
-                     << "_Cn"<<Cn()
-                     << "_NL"<<ChNum()<<"_"
-                     << CaseName()<<".dat";
-        position.open(oss_position.str().c_str(), std::ios::app);
-        position  << std::setiosflags(std::ios::scientific) 
-                  << std::setprecision(Ark::digitsNum);
+        const std::string positionName = "interface_position" + FileNameSuffix();
+
+        std::ofstream position(positionName.c_str(), std::ios::app);
+        position  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         position  << cur_time <<"    ";
         for(auto &v : interfacePosition) {
             position << v <<"    ";
@@ -921,18 +909,11 @@ void DUGKSAmr::WriteComputingTime(const double elapsed_time)
 {
     if(ParallelDescriptor::IOProcessor()) 
     {
-        std::ofstream ofsTime;
-        std::ostringstream ossTime;
-        ossTime <<"elapsed_time"
-                <<"_Pe" << Pe()
-                <<"_M"<<MPhi()
-                <<"_wI"<<WidthI()
-                <<"_NL"<<ChNum()
-                <<"_Flux"<<FluxScheme()
-                <<"_"<<CaseName()<<".dat";
-        ofsTime.open(ossTime.str().c_str(), std::ios::app);
-        ofsTime  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
-        ofsTime  << cur_time <<"    " << elapsed_time <<"\n";
-        ofsTime.close();
+        const std::string TimeFileName = "elapsed_time" + FileNameSuffix();
+    
+        std::ofstream TimeFile(TimeFileName.c_str(), std::ios::app);
+        TimeFile  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
+        TimeFile  << cur_time <<"    " << elapsed_time <<"\n";
+        TimeFile.close();
     }
 }

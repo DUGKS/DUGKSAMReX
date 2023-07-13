@@ -13,3 +13,12 @@ double Limiter::VanLeer(const double vL, const double vR)
 
 	return Sign > 0 ? 2.0*vL/(vR + vL): 0;
 }
+
+double Quadrature::NInt (int const Num, double const *f, double const *w)
+{
+	double sum = 0;
+	for(int i = 0;i < Num;++i) {
+		sum += f[i]*w[i];
+	}
+	return sum;
+}

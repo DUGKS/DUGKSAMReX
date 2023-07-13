@@ -112,27 +112,6 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
 	PresFab.mult(Ark::DmVnMomentum::RT, 0);
 #endif
 }
-
-void DUGKSAmr::Update_DVDF_Eq(int const lev)
-{
-	auto &ld = Data(lev);
-#ifdef ARK_USE_MOMENTUM	
-	DUGKSCore<Ark::DmVnMomentum>::Update_Eq_Momentum(ld.fDVDF[Ark::EQ], ld.fDVDF[Ark::SO], 
-													 ld.msv);
-#endif
-}
-void DUGKSAmr::Update_DVDF_Eq_hDt(int const lev)
-{	
-	auto &ld = Data(lev);
-
-	#ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Eq_Momentum(ld.fDVDFxF[Ark::EQF], ld.fDVDFxF[Ark::SOF], 
-												     ld.msv_xF);
-
-	DUGKSCore<Ark::DmVnMomentum>::Update_Eq_Momentum(ld.fDVDFyF[Ark::EQF], ld.fDVDFyF[Ark::SOF], 
-												     ld.msv_yF);
-	#endif
-}
 void DUGKSAmr::Update_MacroVars(int const lev)
 {
 	auto &ld = Data(lev);

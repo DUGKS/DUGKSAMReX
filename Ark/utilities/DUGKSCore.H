@@ -8,18 +8,20 @@ class DUGKSCore
 {
 
 public:
-	//DUGKSCoreImp.H
-	static void Update_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-							  Real const dTime, Real const sTime);
+	template<bool ENABLESOURCE>
+	static void Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
-	static void Update_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const dTime);
+	template<bool ENABLESOURCE>
+	static void Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
-	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-								Real const hTime, Real const dTime);
-
-	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime);
-
+	template<bool ENABLESOURCE>
 	static void Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
+
+	// - construct \bar{f}^{+}
+	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime);
+
+	// - construct \bar{f}^{+} from f^{NEQ}
+	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime);
 
 	static void Update_Grad_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
 
@@ -32,6 +34,11 @@ public:
 	static void Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
 
 	static void Update_Grad_BarPlus_VanLeer (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
+
+	static void Update_Barh_UW_1st (MultiFab &xBarhFabnF, 
+									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
+									const Real* dx, const Real hTime, 
+									amrex::Direction FaceID);
 
 	static void Update_Barh_UW_2nd (MultiFab &xBarhFabnF, 
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
@@ -80,7 +87,7 @@ public:
 	static void Update_FD_Barh_WENO_5th (MultiFab &xBarhFab, const MultiFab &xBarPlusFab,
 								  	 	 amrex::Direction FaceID);
 	
-
+	template<bool ENABLESOURCE>
 	static void Update_xFluxX (Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime);
 	
 	static void Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
@@ -95,21 +102,19 @@ public:
 							 	const Real hTime);
 
 	//../discrete_velocity_model/DUGKSDmVn***.cpp
-	template<long unsigned NUM>
-	static void Update_Eq_Phase (MultiFab &hEq, MultiFab &hSo, 
-								 const Array<MultiFab, NUM> &msv);
+	template<bool ENABLESOURCE=true>
+	static void Update_Eq_Phase (MultiFab &hEq, MultiFab &hSo, const Array<MultiFab, Ark::MSVNUM> &msv);
 
-	template<long unsigned NUM>
-	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo,
-								 	const Array<MultiFab, NUM> &msv);
+	template<bool ENABLESOURCE=true>
+	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo, const Array<MultiFab, Ark::MSVNUM> &msv);
+
 	//used for strang-splitting
-	template<long unsigned NUM>
-	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo,
-								 	const Array<MultiFab, NUM> &msv, const amrex::Vector<double>&);
+	template<bool EnableSource=true>
+	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo, const Array<MultiFab, Ark::MSVNUM> &msv,
+									const amrex::Vector<double>& magic);
 
-	template<long unsigned NUM>
-	static void Update_Eq_Energy (MultiFab &gEq, MultiFab &gSo, 
-								  const Array<MultiFab, NUM> &msv);
+	template<bool EnableSource=true>
+	static void Update_Eq_Energy (MultiFab &gEq, MultiFab &gSo, const Array<MultiFab, Ark::MSVNUM> &msv);
 
 	static void Integral_MacroBaseVars_Phase (Array<MultiFab, Ark::MSVNUM> &msv, 
 										      const MultiFab &xDVDF);
@@ -124,6 +129,10 @@ template<typename DVM>
 class DUGKSBoundary
 {
 public:
+	static void FillPhysicalBoundaryFlux_Eq  (const Vector<MultiFab*> &xFluxFabPtr,
+											  const Vector<const MultiFab*> &xEqFabPtr,
+											  int const lo_min, int const hi_max, int const dir);
+
 	static void FillPhysicalBoundaryFlux_NEE (const Vector<MultiFab*> &xFluxFabPtr,
 											  const Vector<const MultiFab*> &xEqFabPtr,
 											  int const lo_min, int const hi_max, int const dir);

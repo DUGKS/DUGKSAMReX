@@ -30,8 +30,8 @@ void DUGKSAmr::AverageDownLevelMacroVars(int const crse_lev)
 	AverageDownLevelDensity(crse_lev);
 	AverageDownLevelPressure(crse_lev);
 	AverageDownLevelTemperature(crse_lev);
-	AverageDownLevelGradDensity(crse_lev);
-	AverageDownLevelForce(crse_lev);
+	// AverageDownLevelGradDensity(crse_lev);
+	// AverageDownLevelForce(crse_lev);
 #endif
 }
 void DUGKSAmr::AverageDownLevelPhase(int const crse_lev)
@@ -89,6 +89,13 @@ void DUGKSAmr::AverageDownLevelForce(int const crse_lev)
 						m_leveldata[crse_lev]->msv[Ark::FORCE],
                         // geom[crse_lev+1], geom[crse_lev],
                         0, AMREX_SPACEDIM, refRatio(crse_lev));
+}
+void DUGKSAmr::AverageDownLevelPotential(int const crse_lev)
+{
+	amrex::average_down(m_leveldata[crse_lev+1]->msv[Ark::CHEMIP], 
+						m_leveldata[crse_lev]->msv[Ark::CHEMIP],
+                        // geom[crse_lev+1], geom[crse_lev],
+                        0, 1, refRatio(crse_lev));
 }
 void DUGKSAmr::AverageDownLevelDVDFWave(int const crse_lev)
 {

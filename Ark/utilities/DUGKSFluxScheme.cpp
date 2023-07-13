@@ -153,6 +153,60 @@ void DUGKSAmr::Update_DVDF_Barh_UW_Default (int const lev)
 	Update_DVDF_Barh_UW_Third (lev);
 }
 
+void DUGKSAmr::Update_DVDF_Barh_UW_First (int const lev)
+{
+
+BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Barh_UW()", Update_DVDF_Barh_UW);
+
+	auto &ld = Data(lev);
+
+#ifdef ARK_USE_PHASE
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW_1st (ld.hDVDFxF[Ark::FLUX], ld.hDVDF,
+						 				  			Geom(lev).CellSize(), hDt(lev),
+						 				  			amrex::Direction::x);
+
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW_1st (ld.hDVDFyF[Ark::FLUX], ld.hDVDF,
+						 				  			Geom(lev).CellSize(), hDt(lev),
+						 				  			amrex::Direction::y);
+#if(AMREX_SPACEDIM == 3)
+	DUGKSCore<Ark::DmVnPhase>::Update_Barh_UW_1st (ld.hDVDFzF[Ark::FLUX], ld.hDVDF,
+						 				  			Geom(lev).CellSize(), hDt(lev),
+						 				  			amrex::Direction::z);
+#endif
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW_1st (ld.fDVDFxF[Ark::FLUX], ld.fDVDF,
+						 				  	 	  	  Geom(lev).CellSize(), hDt(lev),
+						 				  	 	  	  amrex::Direction::x);
+
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW_1st (ld.fDVDFyF[Ark::FLUX], ld.fDVDF,
+						 				  	 		  Geom(lev).CellSize(), hDt(lev),
+						 				  	 		  amrex::Direction::y);
+#if(AMREX_SPACEDIM == 3)
+	DUGKSCore<Ark::DmVnMomentum>::Update_Barh_UW_1st (ld.fDVDFzF[Ark::FLUX], ld.fDVDF,
+						 				  	 		  Geom(lev).CellSize(), hDt(lev),
+						 				  	 		  amrex::Direction::z);
+#endif
+#endif
+
+#ifdef ARK_USE_ENERGY
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW_1st (ld.gDVDFxF[Ark::FLUX], ld.gDVDF,
+						 				  	 		Geom(lev).CellSize(), hDt(lev),
+						 				  	 		amrex::Direction::x);
+
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW_1st (ld.gDVDFyF[Ark::FLUX], ld.gDVDF,
+						 				  	 		Geom(lev).CellSize(), hDt(lev),
+						 				  	 		amrex::Direction::y);
+#if(AMREX_SPACEDIM == 3)
+	DUGKSCore<Ark::DmVnEnergy>::Update_Barh_UW_1st (ld.gDVDFzF[Ark::FLUX], ld.gDVDF,
+						 				  	 		Geom(lev).CellSize(), hDt(lev),
+						 				  	 		amrex::Direction::z);
+#endif
+
+#endif
+}
+
 void DUGKSAmr::Update_DVDF_Barh_UW_Third (int const lev)
 {
 

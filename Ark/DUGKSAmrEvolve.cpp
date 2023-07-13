@@ -38,12 +38,13 @@ void DUGKSAmr::Evolve()
 			begin = amrex::ParallelDescriptor::second();
 
 			WriteComputingTime(elapsed_time);
-			// WriteL2NormFile(MultiLevelL2Norm());
-			WriteSumPhaseFile(MultiLevelSum());
+			WriteL2NormFile(MultiLevelL2Norm());
+			// WriteSumPhaseFile(MultiLevelSum());
+			WriteSumDensityFile(MultiLevelSumDensity());
 
 			// WriteInterfacePosition(InterfacePositionTaylorBubble(finest_level));
 			// WriteInterfacePosition(InterfacePositionRayleighTaylor(finest_level));
-			// WriteInterfacePosition(InterfacePositionRisingBubble(finest_level));
+			WriteInterfacePosition(InterfacePositionLiquidBridge(finest_level));
 		}
 		if(write_residual_interval > 0 and nstep%write_residual_interval == 0) {
 			const auto &level_residuals = MultiLevelResidual();
@@ -135,9 +136,11 @@ void DUGKSAmr::Update_DVM_Wave (int const lev)
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Wave (ld.fDVDF[Ark::WAVE], ld.fDVDF[Ark::BP],
-											   ld.get_fDVDFnF_flux_const(),
-									  	       Geom(lev).CellSize(), hDt(lev), Dt());
+	// DUGKSCore<Ark::DmVnMomentum>::Update_Wave (ld.fDVDF[Ark::WAVE], ld.fDVDF[Ark::BP],
+	// 										   ld.get_fDVDFnF_flux_const(),
+	// 								  	       Geom(lev).CellSize(), hDt(lev), Dt());
+
+	DVMCore<Ark::DmVnMomentum>::Update_Wave(ld.fDVDF, Dt(), MinL());
 #endif
 
 #ifdef ARK_USE_ENERGY
@@ -171,64 +174,69 @@ void DUGKSAmr::Update_DVM_Wave (int const lev)
 // #endif
 // }
 
-void DUGKSAmr::Update_DVDF_Prime (int const lev, double const upTime, double const downTime)
+template<bool ENABLESO>
+void DUGKSAmr::Construct_DVDF_Prime (int const lev, double const dTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Prime()", Update_DVDF_Prime);
+	BL_PROFILE_VAR("DUGKSAmr::Construct_DVDF_Prime()", Construct_DVDF_Prime);
+
+	const double hdTime = dTime/2.0;
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	// DUGKSCore<Ark::DmVnPhase>::Update_Prime(ld.hDVDF, upTime, downTime);
+	// DUGKSCore<Ark::DmVnPhase>::Construct_Prime<ENABLESO> (ld.hDVDF, upTime);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Prime(ld.fDVDF, upTime, downTime);
+	DUGKSCore<Ark::DmVnMomentum>::Construct_Prime<ENABLESO> (ld.fDVDF, hdTime);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_Prime(ld.gDVDF, upTime, downTime);
+	DUGKSCore<Ark::DmVnEnergy>::Construct_Prime<ENABLESO> (ld.gDVDF, hdTime);
 #endif
 }
 
 //hdTime = half of dTime
-void DUGKSAmr::Update_DVDF_NonEq (int const lev, double const dTime)
+template<bool ENABLESO>
+void DUGKSAmr::Construct_DVDF_NonEq (int const lev, double const dTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_NonEq()", Update_DVDF_NonEq);
+	BL_PROFILE_VAR("DUGKSAmr::Construct_DVDF_NonEq()", Construct_DVDF_NonEq);
 
 	const double hdTime = dTime/2.0;
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_NonEq(ld.hDVDF, hdTime);
+	DUGKSCore<Ark::DmVnPhase>::Construct_NonEq<ENABLESO> (ld.hDVDF, hdTime);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_NonEq(ld.fDVDF, hdTime);
+	DUGKSCore<Ark::DmVnMomentum>::Construct_NonEq<ENABLESO> (ld.fDVDF, hdTime);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_NonEq(ld.gDVDF, hdTime);
+	DUGKSCore<Ark::DmVnEnergy>::Construct_NonEq<ENABLESO> (ld.gDVDF, hdTime);
 #endif
 }
 
+template<bool ENABLESO>
 void DUGKSAmr::Construct_DVDF_Wave (int const lev, const Real dTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Wave()", Update_DVDF_Wave);
+	BL_PROFILE_VAR("DUGKSAmr::Construct_DVDF_Wave()", Construct_DVDF_Wave);
 
 	const double hdTime = dTime/2.0;
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Construct_Wave(ld.hDVDF, hdTime);
+	DUGKSCore<Ark::DmVnPhase>::Construct_Wave<ENABLESO> (ld.hDVDF, hdTime);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Construct_Wave(ld.fDVDF, hdTime);
+	DUGKSCore<Ark::DmVnMomentum>::Construct_Wave<ENABLESO> (ld.fDVDF, hdTime);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Construct_Wave(ld.gDVDF, hdTime);
+	DUGKSCore<Ark::DmVnEnergy>::Construct_Wave<ENABLESO> (ld.gDVDF, hdTime);
 #endif
 }
 
@@ -289,12 +297,12 @@ void DUGKSAmr::Update_DVM_BarPlus(int const lev)
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, hDt(lev), Dt());
+	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, Dt(), Dt());
 	FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, hDt(lev), Dt());
+	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, Dt(), Dt());
 	FillPatchDVDFBarPlus(lev, cur_time, ld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif
 }
@@ -322,7 +330,7 @@ void DUGKSAmr::Update_FD_DVDF_BarPlus (int const lev, double const hTime)
 #endif
 }
 
-
+template <bool ENABLESOURCE>
 void DUGKSAmr::Update_DVDF_Flux (int const lev, double const hTime)
 {
 
@@ -331,26 +339,26 @@ BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Flux()", Update_DVDF_Flux);
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX(ld.hDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX(ld.hDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX(ld.hDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFzF, hTime);
 #endif
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX(ld.fDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX(ld.fDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX(ld.fDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFzF, hTime);
 #endif
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX(ld.gDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX(ld.gDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX(ld.gDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFzF, hTime);
 #endif
 #endif
 BL_PROFILE_VAR_STOP(Update_DVDF_Flux);
@@ -363,17 +371,18 @@ BL_PROFILE_VAR_STOP(Update_DVDF_Flux_Boundary);
 
 }
 
+template <bool ENABLESOURCE>
 void DUGKSAmr::Update_DVDF_MesoFlux (int const lev, double const hTime)
 {
 BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_MesoFlux()", Update_DVDF_MesoFlux);
 
 	(this->*Update_DVDF_Barh) (lev);
 	// Update_DVDF_Barh_UW_Limiter(lev);
-
 	Update_MacroVars_hDt (lev, 0.5*hTime);
 	Update_DVDFnF_Tau (lev);
-	Update_DVDF_Eq_hDt (lev);
-	Update_DVDF_Flux (lev, hTime);
+	if constexpr (ENABLESOURCE) { Update_DVDF_EqSo_hDt (lev); } 
+	else { Update_DVDF_Eq_hDt (lev); }
+	Update_DVDF_Flux<ENABLESOURCE> (lev, hTime);
 
 BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux);
 }
@@ -389,15 +398,13 @@ void DUGKSAmr::Update_DVDF_Wave_SS (int const lev, double const ssTime)
 	
 	Update_MacroSourceVars(ld.msv, ssTime);
 
-#ifdef ARK_USE_MOMENTUM	
-	DUGKSCore<Ark::DmVnMomentum>::Update_Eq_Momentum(ld.fDVDF[Ark::EQ], ld.fDVDF[Ark::SO], ld.msv);
+	Update_DVDF_EqSo (lev);
 
+#ifdef ARK_USE_MOMENTUM	
 	DUGKSCore<Ark::DmVnMomentum>::Update_Wave_SS(ld.fDVDF[Ark::WAVE],ld.fDVDF[Ark::SO], ssTime);
 #endif
 
 #ifdef ARK_USE_ENERGY	
-	DUGKSCore<Ark::DmVnEnergy>::Update_Eq_Energy(ld.gDVDF[Ark::EQ], ld.gDVDF[Ark::SO], ld.msv);
-
 	DUGKSCore<Ark::DmVnEnergy>::Update_Wave_SS(ld.gDVDF[Ark::WAVE],ld.gDVDF[Ark::SO], ssTime);
 #endif
 }
@@ -465,7 +472,7 @@ BL_PROFILE_VAR_STOP(Advance_CN_FillMacroVars);
 BL_PROFILE_VAR("DUGKSAmr::Advance_CN_DVDF()", Advance_CN_DVDF);
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Eq (lev);
+		Update_DVDF_EqSo (lev);
 	}
 
 	for (int lev = finest_level; lev > 0; --lev) {
@@ -481,7 +488,7 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_CN_DVDF()", Advance_CN_DVDF);
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
-		Update_DVDF_MesoFlux (lev, hDt(lev));
+		Update_DVDF_MesoFlux<> (lev, hDt(lev));
 	}
 
 	// CheckForPhysicalBoundary(0);
@@ -549,13 +556,13 @@ void DUGKSAmr::Advance_BackwardEuler()
 	FillPatchMacroVars();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Eq (lev);
+		Update_DVDF_EqSo (lev);
 
 		Update_DVDF_BarPlus (lev, 0);
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
 
-		Update_DVDF_MesoFlux (lev, 2*hDt(lev));
+		Update_DVDF_MesoFlux<true> (lev, 2*hDt(lev));
 	}
 
 	// CheckForPhysicalBoundary(0);
@@ -578,10 +585,6 @@ void DUGKSAmr::Advance_IMEX() {}
 
 void DUGKSAmr::Advance_SS()
 {
-	AverageDownMacroVars();
-
-	FillPatchMacroVars();
-
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
 		Update_DVDF_Wave_SS (lev, 0.5*Dt());
@@ -589,119 +592,11 @@ void DUGKSAmr::Advance_SS()
 		Nullify_Source (lev);
 	}
 
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Eq (lev);
-
-		Update_DVDF_Prime (lev, -Dt(), 0);
-	}
-
-	for (int lev = finest_level; lev > 0; --lev) {
-
-		int const crse_lev = lev-1;
-		
-		Update_DVDF_BarPlus (crse_lev, hDt(lev));
-		Update_DVDF_BarPlus (lev, hDt(lev));
-	}
-
-		Update_DVDF_BarPlus (0, hDt(0));
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-
-		(this->*Update_DVDF_Grad_BarPlus) (lev);
-
-		Update_DVDF_MesoFlux (lev, hDt(lev));
-	}
-
-	// CheckForPhysicalBoundary(0);
-
-	AverageDownDVDFFlux();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave (lev, hDt(lev));
-	}
-
-	AverageDownDVDFWave();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_MacroVars (lev);
-		Update_DVDF_Tau (lev);
-	}
-
-	//primitive DVDF, stored in xWave
-	for (int lev = 0; lev <= finest_level; ++lev) {
-
-		Update_DVDF_Eq (lev);
-
-		Update_DVDF_Prime (lev, Dt(), Dt());
-	}
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
-	}
-
-}
-
-void DUGKSAmr::Advance_FD()
-{
+//  regridding
 	AverageDownMacroVars();
 
-	FillPatchMacroVars();
-
 	for (int lev = 0; lev <= finest_level; ++lev) {
-
-		Update_DVDF_Eq (lev);
-
-		Update_FD_DVDF_BarPlus (lev, 0);
-		
-		Update_DVDF_MesoFlux (lev, Dt());
-	}
-
-	// CheckForPhysicalBoundary(0);
-
-	AverageDownDVDFFlux();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave (lev, 0);
-	}
-
-	AverageDownDVDFWave();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_MacroVars (lev);
-		Update_DVDF_Tau (lev);
-	}
-}
-
-void DUGKSAmr::Advance_DVM()
-{
-	FillPatchMacroVars();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-
-		Update_DVDF_Eq (lev);
-
-		Update_DVM_BarPlus (lev);
-
-		(this->*Update_DVDF_Grad_BarPlus) (lev);
-		
-#ifdef ARK_USE_MOMENTUM
-		Update_DVDF_MesoFlux (lev, hDt(lev));
-#endif
-		Update_DVM_Wave (lev);
-
-		Update_MacroVars (lev);
-		Update_DVDF_Tau (lev);
-
-	}
-}
-void DUGKSAmr::Advance_NEQ()
-{
-BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_Regird()", Advance_CN_Regrid);
-	
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Eq (lev);
-		Update_DVDF_NonEq (lev, Dt());
+		Construct_DVDF_NonEq<false> (lev, 0);
 	}
 
 	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
@@ -718,6 +613,78 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_Regird()", Advance_CN_Regrid);
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Tau (lev);
 		Update_DVDF_Eq (lev);
+		Construct_DVDF_Wave<false> (lev, Dt());
+	}
+
+	for (int lev = finest_level; lev > 0; --lev) {
+
+		int const crse_lev = lev-1;
+		
+		Update_DVDF_BarPlus (crse_lev, hDt(lev));
+		Update_DVDF_BarPlus (lev, hDt(lev));
+	}
+
+		Update_DVDF_BarPlus (0, hDt(0));
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+
+		(this->*Update_DVDF_Grad_BarPlus) (lev);
+
+		Update_DVDF_MesoFlux<false> (lev, hDt(lev));
+	}
+
+	// CheckForPhysicalBoundary(0);
+
+	AverageDownDVDFFlux();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave (lev, hDt(lev));
+	}
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+		// FreeEnergySource(lev);
+	}
+
+	// FillPatchMacroVars();
+
+	//Primitive distribution, stored in xWave
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Eq (lev);
+		Construct_DVDF_Prime<false> (lev, Dt());
+	}
+
+	// AverageDownMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+	}
+}
+
+void DUGKSAmr::Advance_NEQ()
+{
+BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_Regird()", Advance_CN_Regrid);
+	
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_EqSo (lev);
+		Construct_DVDF_NonEq(lev, Dt());
+	}
+
+	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+    {
+        if (m_verbose > 100) {
+        	amrex::Print() << "Regridding...\n";
+      	}
+
+        regrid(0, cur_time);
+    }
+
+	FillPatchMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Tau (lev);
+		Update_DVDF_EqSo (lev);
 		Construct_DVDF_Wave(lev, Dt());
 	}
 
@@ -734,11 +701,11 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_DVDF()", Advance_CN_DVDF);
 	}
 		Update_DVDF_BarPlus (0, hDt(0));
 
-
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
-		Update_DVDF_MesoFlux (lev, hDt(lev));
+
+		Update_DVDF_MesoFlux<true> (lev, hDt(lev));
 	}
 
 	// CheckForPhysicalBoundary(0);
@@ -760,4 +727,128 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_DVDF()", Advance_CN_DVDF);
 
 BL_PROFILE_VAR_STOP(Advance_NEQ_DVDF);
 
+}
+
+void DUGKSAmr::Advance_FD()
+{
+	AverageDownMacroVars();
+
+	FillPatchMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+
+		Update_DVDF_EqSo (lev);
+
+		Update_FD_DVDF_BarPlus (lev, 0);
+		
+		Update_DVDF_MesoFlux<true> (lev, Dt());
+	}
+
+	// CheckForPhysicalBoundary(0);
+
+	AverageDownDVDFFlux();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave (lev, 0);
+	}
+
+	AverageDownDVDFWave();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+	}
+}
+
+// void DUGKSAmr::Advance_SNEQ_S()
+// {
+// BL_PROFILE_VAR("DUGKSAmr::Advance_SNEQ_Regird()", Advance_CN_Regrid);
+	
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Eq (lev);
+// 		Construct_DVDF_NonEq (lev, Dt());
+// 	}
+
+// 	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+//     {
+//         if (m_verbose > 100) {
+//         	amrex::Print() << "Regridding...\n";
+//       	}
+
+//         regrid(0, cur_time);
+//     }
+
+// 	FillPatchMacroVars();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Tau (lev);
+// 		Update_DVDF_Eq (lev);
+// 		Construct_DVDF_Wave(lev, Dt(), true);
+// 	}
+
+// BL_PROFILE_VAR_STOP(Advance_SNEQ_Regird);
+
+// BL_PROFILE_VAR("DUGKSAmr::Advance_SNEQ_DVDF()", Advance_CN_DVDF);
+
+// 	for (int lev = finest_level; lev > 0; --lev) {
+
+// 		int const crse_lev = lev-1;
+		
+// 		Update_DVDF_BarPlus (crse_lev, hDt(lev));
+// 		Update_DVDF_BarPlus (lev, hDt(lev));
+// 	}
+// 		Update_DVDF_BarPlus (0, hDt(0));
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+
+// 		(this->*Update_DVDF_Grad_BarPlus) (lev);
+
+// 		Update_DVDF_MesoFlux (lev, hDt(lev));
+// 	}
+
+// 	// CheckForPhysicalBoundary(0);
+
+// 	AverageDownDVDFFlux();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Wave (lev,hDt(lev));
+// 	}
+
+// 	AverageDownDVDFWave();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_MacroVars (lev);
+// 		Update_DVDF_Tau (lev);
+// 	}
+
+// 	AverageDownMacroVars();
+
+// BL_PROFILE_VAR_STOP(Advance_SNEQ_DVDF);
+
+// }
+
+void DUGKSAmr::Advance_DVM()
+{
+	FillPatchMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+
+		Update_DVDF_EqSo (lev);
+
+		Update_DVM_BarPlus (lev);
+
+		if(!Ark::tinyEqual(Dt(), MinL())) { (this->*Update_DVDF_Grad_BarPlus) (lev); }		
+		
+#ifdef ARK_USE_MOMENTUM
+		// Update_DVDF_MesoFlux (lev, hDt(lev));
+#endif
+		Update_DVM_Wave (lev);
+
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+
+		//source terms
+		auto &ld = Data(lev);
+		Update_MacroSourceVars (ld.msv, 0.5*Dt());
+	}
 }

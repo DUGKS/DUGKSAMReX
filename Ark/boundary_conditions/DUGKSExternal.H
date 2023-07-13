@@ -3,14 +3,13 @@
 
 #include <DUGKSAmr.H>
 
-using amrex::FillExternalCore;
-
 struct FillExternalPhase;
 struct FillExternalDensity;
 struct FillExternalVelocity;
 struct FillExternalPressure;
 struct FillExternalTemperature;
 struct FillExternalForce;
+struct FillExternalChemiP;
 struct FillExternalDVDFWave;
 struct FillExternalDVDFBarPlus;
 
@@ -24,7 +23,7 @@ struct FillExternalPhase {
                      const BCRec* bcr, const int bcomp,
                      const int orig_comp) const
     {
-        amrex::FillExternalCore(iv,dest,dcomp,numcomp,geom,time,bcr,bcomp,orig_comp);
+        Ark::FillExternalNeumann(iv,dest,dcomp,numcomp,geom,time,bcr,bcomp,orig_comp);
     }
 };
 
@@ -36,7 +35,7 @@ struct FillExternalDensity {
                      const BCRec* bcr, const int bcomp,
                      const int orig_comp) const
     {
-        
+        Ark::FillExternalNeumann(iv,dest,dcomp,numcomp,geom,time,bcr,bcomp,orig_comp);
     }
 };
 
@@ -85,6 +84,19 @@ struct FillExternalForce {
                      const int orig_comp) const
     {
         
+    }
+};
+
+struct FillExternalChemicalP {
+    AMREX_GPU_DEVICE
+    void operator() (const IntVect& iv, Array4<Real> const& dest,
+                     const int dcomp, const int numcomp,
+                     GeometryData const& geom, const Real time,
+                     const BCRec* bcr, const int bcomp,
+                     const int orig_comp) const
+    {
+        // Ark::FillExternalDirichlet(iv,dest,dcomp,numcomp,geom,time,bcr,bcomp,orig_comp);
+        // Ark::FillExternalNeumann(iv,dest,dcomp,numcomp,geom,time,bcr,bcomp,orig_comp);
     }
 };
 

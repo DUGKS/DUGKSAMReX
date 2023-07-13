@@ -1,6 +1,6 @@
 #include <DUGKSAmr.H>
 
-const std::string DUGKSAmr::DmVnModel = "DmVnAC";
+const std::string DUGKSAmr::DmVnModel = "DmVnCH";
 
 template <typename DVM>
 template <long unsigned NUM>
@@ -13,9 +13,10 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
     {
         const amrex::Box& tbx = mfi.tilebox();
 
-        Array4<Real const> const &phi_array     = msv[Ark::PHI].const_array(mfi);
-        Array4<Real const> const &vel_array     = msv[Ark::VEL].const_array(mfi);
+        Array4<Real const> const &phi_array = msv[Ark::PHI].const_array(mfi);
+        Array4<Real const> const &vel_array = msv[Ark::VEL].const_array(mfi);
         Array4<Real const> const &gradphi_array = msv[Ark::GradPHI].const_array(mfi);
+        Array4<Real const> const &chemi_potential = msv[Ark::CHEMIP].const_array(mfi);
 
         Array4<Real> const &hEq = xEq.array(mfi);
         Array4<Real> const &hSo = xSo.array(mfi);
@@ -23,6 +24,7 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
         ParallelFor(tbx, DVM::Q, [=] AMREX_GPU_DEVICE (int i,int j,int k,int n) noexcept
         {
             const double phi  = phi_array(i,j,k);
+            const double chemiP = chemi_potential(i,j,k);
             const double u    = vel_array(i,j,k, Ark::X);
             const double v    = vel_array(i,j,k, Ark::Y);
             const double phix = gradphi_array(i,j,k, Ark::X);
@@ -30,14 +32,19 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
 #if(AMREX_SPACEDIM == 3)
             const double w    = vel_array(i,j,k, Ark::Z);
             const double phiz = gradphi_array(i,j,k, Ark::Z);
+            const double uu   = Ark::Square(u,v,w);
             const double u1 = (DVM::xi_u[n]*u + DVM::xi_v[n]*v + DVM::xi_w[n]*w)/DVM::RT;
             const double so = DVM::xi_u[n]*phix + DVM::xi_v[n]*phiy + DVM::xi_w[n]*phiz;
 #elif(AMREX_SPACEDIM == 2)
+            const double uu = Ark::Square(u,v);
             const double u1 = (DVM::xi_u[n]*u + DVM::xi_v[n]*v)/DVM::RT;
             const double so = DVM::xi_u[n]*phix + DVM::xi_v[n]*phiy;
 #endif
-            hEq(i,j,k,n) = DVM::omega[n]*phi*(1.0 + u1);
-            hSo(i,j,k,n) = DVM::omega[n]*so;
+            const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
+
+            hEq(i,j,k,n) = DVM::omega[n]*(chemiP + Gamma*phi) + static_cast<int>(n == 0)*(phi-chemiP);
+            // hSo(i,j,k,n) = DVM::omega[n]*so;
+            hSo(i,j,k,n) = 0;
         });
     }
 }
@@ -109,8 +116,7 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
 #endif
               )*u1
             )
-            +
-            DVM::omega[n]*uGradrho*0.5*
+            + DVM::omega[n]*uGradrho*0.5*
             (
 #if(AMREX_SPACEDIM == 3)
                 Ark::Square(DVM::xi_u[n],DVM::xi_v[n],DVM::xi_w[n])/DVM::RT-(AMREX_SPACEDIM)-2
@@ -263,7 +269,7 @@ void DUGKSAmr::Update_MacroVars(int const lev)
     DUGKSCore<Ark::DmVnPhase>::Integral_MacroBaseVars_Phase(ld.msv, ld.hDVDF[Ark::WAVE]);
     if(lev != finest_level) 
     {
-        BoundPhase(ld.msv[Ark::PHI]);
+        // BoundPhase(ld.msv[Ark::PHI]);
     }
 #endif
 
@@ -289,11 +295,11 @@ void DUGKSAmr::Update_MacroVars(int const lev)
     
     FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
-    AllenCahnSource(lev);
+    CahnHilliardSource(lev);
 
     Update_MacroSourceVars(ld.msv, 0.5*Dt());
 
-    AllenCahnTemporalPhiU(ld);
+    // AllenCahnTemporalPhiU(ld);
 }
 void DUGKSAmr::Update_MacroVars_hDt(int const lev, double const hTime)
 {
@@ -338,10 +344,10 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, double const hTime)
     // ReversedVortexVelocityField(ld.msv_xF[Ark::VEL], Geom(lev).CellSize(),cur_time+hDt(lev), Ark::X);
     // ReversedVortexVelocityField(ld.msv_yF[Ark::VEL], Geom(lev).CellSize(),cur_time+hDt(lev), Ark::Y);
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    AllenCahnSource_hDt(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
-    AllenCahnSource_hDt(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
+    InterpolateFaceSource(ld.msv_xF, ld.msv, IntVect::TheDimensionVector(Ark::X));
+    InterpolateFaceSource(ld.msv_yF, ld.msv, IntVect::TheDimensionVector(Ark::Y));
 #if(AMREX_SPACEDIM == 3)
-    AllenCahnSource_hDt(ld.msv_zF, ld.msv, IntVect::TheDimensionVector(Ark::Z));
+    InterpolateFaceSource(ld.msv_zF, ld.msv, IntVect::TheDimensionVector(Ark::Z));
 #endif
 
     Update_MacroSourceVars(ld.msv_xF, hTime);
@@ -428,4 +434,4 @@ void DUGKSAmr::Update_Tau_Momentum (MultiFab &tauFab, Array<MultiFab, Ark::MSVNU
     // tauFab.setVal(TauMomentum());
 }
 
-#include <DmVnEq.H>
+#include <DUGKSDmVnEq.H>

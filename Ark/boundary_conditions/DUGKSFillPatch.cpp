@@ -17,6 +17,7 @@ namespace {
     Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
                         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
+// Interpolater* mapper = &amrex::pc_interp;
 // Interpolater* mapper = &amrex::cell_cons_interp;
 // Interpolater* mapper = &amrex::cell_bilinear_interp;
 Interpolater* mapper = &amrex::quadratic_interp;
@@ -101,6 +102,7 @@ void DUGKSAmr::FillPatchPhase(int const lev, Real const time, MultiFab& phase)
  //                           refRatio(lev-1), mapper, bcrec, 0);
  // }
     int const crse_lev = (lev == 0 ? lev : lev-1);
+    
     // FillPatchCore(lev, time, phase,
     //               {&(m_leveldata[crse_lev]->msv[Ark::PHI])}, {time},
     //               {&(m_leveldata[lev]->msv[Ark::PHI])}, {time},
@@ -160,13 +162,13 @@ void DUGKSAmr::FillPatchTemperature(int const lev, Real const time, MultiFab& te
                   {&(m_leveldata[lev]->msv[Ark::T])}, {time},
                   get_temperature_bcrec());
 }
-void DUGKSAmr::FillPatchChemiP(int const lev, Real const time, MultiFab& chemiP)
+void DUGKSAmr::FillPatchChemicalP(int const lev, Real const time, MultiFab& chemiP)
 {
     int const crse_lev = (lev == 0 ? lev : lev-1);
-    FillPatchCore<FillExternalEmpty>(lev, time, chemiP,
-                  {&(m_leveldata[crse_lev]->chemiP)}, {time},
-                  {&(m_leveldata[lev]->chemiP)}, {time},
-                  get_force_bcrec());
+    FillPatchCore<FillExternalChemicalP>(lev, time, chemiP,
+                  {&(m_leveldata[crse_lev]->msv[Ark::CHEMIP])}, {time},
+                  {&(m_leveldata[lev]->msv[Ark::CHEMIP])}, {time},
+                  get_chemicalP_bcrec());
 }
 void DUGKSAmr::FillPatchGradPhase(int const lev, Real const time, MultiFab& grad_phi)
 {
@@ -234,6 +236,7 @@ BL_PROFILE_VAR("DUGKSAmr::FillPatchMacroVars()", FillPatchMacroVars);
         FillPatchTemperature(lev, cur_time, ld.msv[Ark::T]);
         FillPatchGradDensity(lev, cur_time, ld.msv[Ark::GradRHO]);
         FillPatchForce      (lev, cur_time, ld.msv[Ark::FORCE]);
+        FillPatchChemicalP  (lev, cur_time, ld.msv[Ark::CHEMIP]);
 #endif
     }
 }

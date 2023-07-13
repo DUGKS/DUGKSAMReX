@@ -39,6 +39,7 @@ void Ark::FlowParm::InitFlowParmBase()
 	ppBase.get("Mu0",_Mu0);
 	ppBase.get("Nu0",_Nu0);	
 	ppBase.get("TauMomentum",_TauMomentum);
+	ppBase.query("Alpha",_Alpha);
 	}
 
 	{

@@ -90,6 +90,7 @@ public:
 	double RePF() const {return _ReynoldsPF;}
 
 	//other member funcs defined by users
+	double Alpha() const {return _Alpha;}
 	
 private:
 	std::string case_name;
@@ -150,6 +151,7 @@ protected:
 	double adapt_tolerance = 0;
 
 	//other parameters defined by users
+	double _Alpha = 1.0;
 
 private:
 	//initial basic parameters
