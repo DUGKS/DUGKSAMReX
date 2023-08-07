@@ -59,13 +59,12 @@ void DUGKSAmr::FillPatchCore(int const lev, Real const time, MultiFab &mf,
     amrex::GpuBndryFuncFab<FillExternal> bfunc(FillExternal{});
 
     if (lev == 0) {
-
         PhysBCFunct<amrex::GpuBndryFuncFab<FillExternal>> physbc(geom[lev],bcs,bfunc);
         FillPatchSingleLevel(mf, time, fmf, ftime, 0, 0, mf.nComp(), geom[lev], physbc, 0);
     } else {
 
         PhysBCFunct<amrex::GpuBndryFuncFab<FillExternal>> cphysbc(geom[lev-1], bcs, bfunc);
-        PhysBCFunct<amrex::GpuBndryFuncFab<FillExternal>> fphysbc(geom[lev], bcs, bfunc);
+        PhysBCFunct<amrex::GpuBndryFuncFab<FillExternal>> fphysbc(geom[lev  ], bcs, bfunc);
 
         amrex::FillPatchTwoLevels(mf, time,
                                   cmf, ctime,

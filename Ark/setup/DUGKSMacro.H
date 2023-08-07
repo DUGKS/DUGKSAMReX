@@ -26,6 +26,6 @@ for(int j = A.y;j <= B.y;++j)
 for(int k = A.z;k <= B.z;++k) \
 for(int i = A.x;i <= B.x;++i)
 
-#define LoopVS(NUM) for(int n = 0;n < NUM;++n)
+#define LoopVS(NUM) for(size_t n = 0;n < NUM;++n)
 
 #endif

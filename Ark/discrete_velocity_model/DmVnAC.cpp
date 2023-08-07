@@ -3,8 +3,8 @@
 const std::string DUGKSAmr::DmVnModel = "DmVnAC";
 
 template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
+template <bool ENABLESO>
+void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -43,8 +43,8 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
 }
 
 template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
+template <bool ENABLESO>
+void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel

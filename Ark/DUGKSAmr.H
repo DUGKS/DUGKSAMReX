@@ -951,6 +951,10 @@ public:
     void Verify(int const lev);
     void SetUnit(int const lev);
     void Test();
+    void TestRegrid(int const crse_lev);
+    void TestFillCoarsePatch(int const fine_lev);
+    double BiquadraticValue(double x, double y, double z) { return x*y + y*y + z*x; }
+    double BilinearValue(double x, double y, double z) { return 2*x + x*y + y*z; }
 #endif
 
 };

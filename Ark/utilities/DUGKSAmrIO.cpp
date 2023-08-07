@@ -102,7 +102,7 @@ void DUGKSAmr::WriteCheckPointFile() const
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "PhaseOld"));
         }
 
-        for(int nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("hWave", nV);
 
@@ -139,7 +139,7 @@ void DUGKSAmr::WriteCheckPointFile() const
         VisMF::Write(m_leveldata[lev]->fDVDF[Ark::TAU],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "TauMomentum"));
 
-        for(int nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("fWave", nV);
 
@@ -155,7 +155,7 @@ void DUGKSAmr::WriteCheckPointFile() const
         VisMF::Write(m_leveldata[lev]->gDVDF[Ark::TAU],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "TauEnergy"));
 
-        for(int nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("gWave", nV);
 
@@ -288,7 +288,7 @@ void DUGKSAmr::ReadCheckpointFile()
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "PhaseOld"));
         }
 
-        for(int nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnPhase::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("hWave", nV);
 
@@ -325,7 +325,7 @@ void DUGKSAmr::ReadCheckpointFile()
         VisMF::Read(m_leveldata[lev]->fDVDF[Ark::TAU],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "TauMomentum"));
 
-        for(int nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnMomentum::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("fWave", nV);
 
@@ -341,7 +341,7 @@ void DUGKSAmr::ReadCheckpointFile()
         VisMF::Read(m_leveldata[lev]->gDVDF[Ark::TAU],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "TauEnergy"));
 
-        for(int nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
+        for(size_t nV = 0; nV < Ark::DmVnEnergy::Q; ++nV)
         {
             const std::string& xWaveName = amrex::Concatenate("gWave", nV);
 

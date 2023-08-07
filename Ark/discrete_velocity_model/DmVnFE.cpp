@@ -62,29 +62,8 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
 			const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
 
 // // * * * * * * * * * * * * * * * primitive model * * * * * * * * * * * * * * * * * * * * 
-			fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);	
+// 			fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);	
 		
-		if constexpr (ENABLESO) {
-			fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
-			(
-				(DVM::xi_u[n] - u)*fx 
-			  + (DVM::xi_v[n] - v)*fy
-#if(AMREX_SPACEDIM == 3) 
-			  + (DVM::xi_w[n] - w)*fz
-#endif
-			  + (
-				  DVM::xi_u[n]*fx 
-			    + DVM::xi_v[n]*fy
-#if(AMREX_SPACEDIM == 3) 
-			    + DVM::xi_w[n]*fz
-#endif
-			  	)*u1
-			);
-		}
-
-// * * * * * * * * * * * * * * * well-balanced model * * * * * * * * * * * * * * * * * * * * 
-// 		fEq(i,j,k,n) = DVM::omega[n]*rho*Gamma + static_cast<int>(n == 0)*rho;
-
 // 		if constexpr (ENABLESO) {
 // 			fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
 // 			(
@@ -94,21 +73,42 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
 // 			  + (DVM::xi_w[n] - w)*fz
 // #endif
 // 			  + (
-// 				  DVM::xi_u[n]*(fx + rhox*DVM::RT) 
-// 			    + DVM::xi_v[n]*(fy + rhoy*DVM::RT)
+// 				  DVM::xi_u[n]*fx 
+// 			    + DVM::xi_v[n]*fy
 // #if(AMREX_SPACEDIM == 3) 
-// 			    + DVM::xi_w[n]*(fz + rhoz*DVM::RT)
+// 			    + DVM::xi_w[n]*fz
 // #endif
 // 			  	)*u1
-// 			)
-// 			+ DVM::omega[n]*uGradrho*0.5*(
-// #if(AMREX_SPACEDIM == 3)
-//                 Ark::Square(DVM::xi_u[n],DVM::xi_v[n],DVM::xi_w[n])/DVM::RT-(AMREX_SPACEDIM)-2
-// #elif(AMREX_SPACEDIM == 2)
-//                 Ark::Square(DVM::xi_u[n],DVM::xi_v[n])/DVM::RT-(AMREX_SPACEDIM)-2
-// #endif 
 // 			);
 // 		}
+
+// * * * * * * * * * * * * * * * well-balanced model * * * * * * * * * * * * * * * * * * * * 
+		fEq(i,j,k,n) = DVM::omega[n]*rho*Gamma + static_cast<int>(n == 0)*rho;
+
+		if constexpr (ENABLESO) {
+			fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
+			(
+				(DVM::xi_u[n] - u)*fx 
+			  + (DVM::xi_v[n] - v)*fy
+#if(AMREX_SPACEDIM == 3) 
+			  + (DVM::xi_w[n] - w)*fz
+#endif
+			  + (
+				  DVM::xi_u[n]*(fx + rhox*DVM::RT) 
+			    + DVM::xi_v[n]*(fy + rhoy*DVM::RT)
+#if(AMREX_SPACEDIM == 3) 
+			    + DVM::xi_w[n]*(fz + rhoz*DVM::RT)
+#endif
+			  	)*u1
+			)
+			+ DVM::omega[n]*uGradrho*0.5*(
+#if(AMREX_SPACEDIM == 3)
+                Ark::Square(DVM::xi_u[n],DVM::xi_v[n],DVM::xi_w[n])/DVM::RT-(AMREX_SPACEDIM)-2
+#elif(AMREX_SPACEDIM == 2)
+                Ark::Square(DVM::xi_u[n],DVM::xi_v[n])/DVM::RT-(AMREX_SPACEDIM)-2
+#endif 
+			);
+		}
 
 // * * * * * * * * * * * * * * * Lee2006PRE Deprecated* * * * * * * * * * * * * * * * * * * *
 // 		fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);	

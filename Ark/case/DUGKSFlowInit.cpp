@@ -12,8 +12,9 @@ void DUGKSAmr::BasicCase(int const lev)
 
     for(amrex::MFIter mfi(ld.msv[Ark::RHO], true);mfi.isValid();++mfi)
     {
-        const Box& tbx = mfi.tilebox();
-        // const Box& tbx = mfi.growntilebox(1);
+        // const Box& tbx = mfi.tilebox();
+        const Box& tbx = mfi.growntilebox(2);
+        // amrex::Print() << tbx << std::endl;
         // const Box& tbx = mfi.fabbox();
         //
         Array4<Real> const &phi  = ld.msv[Ark::PHI].array(mfi);
@@ -40,11 +41,19 @@ void DUGKSAmr::BasicCase(int const lev)
 #else
             const double z = 0;
 #endif
-            phi(i,j,k) = 2*x*x + y*y;
-            rho(i,j,k) = 2*x + x*y + y*z;
-
-            vel(i,j,k,0) = 0.1*x + x*y;
-            vel(i,j,k,1) = 1.1*x + x*y;
+            phi(i,j,k) = x + y;
+            if(lev == 0 ) {
+                rho(i,j,k) = BilinearValue(x,y,z);
+                // rho(i,j,k) = BiquadraticValue(x,y,z);
+            } else {
+                // - to be interpolated
+                // rho(i,j,k) = std::numeric_limits<Real>::quiet_NaN();
+                rho(i,j,k) = BilinearValue(x,y,z);
+                // rho(i,j,k) = BiquadraticValue(x,y,z);
+            }
+            // - The ghost layer of velocity is fixed at 1.
+            // vel(i,j,k,0) = 0.1*x + x*y;
+            // vel(i,j,k,1) = 1.1*x + x*y;
 
             pres(i,j,k) = 2*x + 3*y;
             temp(i,j,k) = 2*x + 4*y;

@@ -9,10 +9,11 @@ if [ "$1" = "hn" ];
 then
 	hostIP=10.168.36.131
 	rootdir=home
-elif [ "$1" = "mh" ];
+elif [ "$1" = "amd" ];
 then
-	hostIP=10.168.6.48
-	rootdir=data
+	hostIP=10.168.47.197
+	hostName=amd
+	rootdir=home
 else
 	echo "unknown host name"
 	exit 1
@@ -34,9 +35,11 @@ fi
 echo "working directory : ${workingdir}"
 echo "remote host name : $1"
 echo "remote directory : ${remotedir}"
-scp JOB.sh yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Test >/dev/null
+scp GNUmakefile yangzr@${hostName}:/${rootdir}/yangzr/code/${remotedir}/Test
+scp JOB.sh yangzr@${hostName}:/${rootdir}/yangzr/code/${remotedir}/Test
+scp run.sh yangzr@${hostName}:/${rootdir}/yangzr/code/${remotedir}/Test
 echo "uploading Test folder to $1 ${remotedir}"
-scp -r ./Benchmark/* yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Test/Benchmark >/dev/null
+scp -r ./Benchmark/* yangzr@${hostName}:/${rootdir}/yangzr/code/${remotedir}/Test/Benchmark >/dev/null
 echo "uploading Ark folder to $1 ${remotedir}"
-scp -r ../Ark/* yangzr@${hostIP}:/${rootdir}/yangzr/Code/${remotedir}/Ark >/dev/null
+scp -r ../Ark/* yangzr@${hostName}:/${rootdir}/yangzr/code/${remotedir}/Ark >/dev/null
 echo "upload done!"

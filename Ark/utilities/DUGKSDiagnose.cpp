@@ -419,18 +419,36 @@ void DUGKSAmr::SetUnit(int const lev)
     // ld.velocity_old.setVal(5,1,1);
     // ld.phase_old.setVal(9,0,1);
 }
+void DUGKSAmr::TestRegrid(int const lev)
+{
+    // amrex::Box testbox(IntVect(0,0),IntVect(127,127)); 
+    // amrex::BoxArray newba(testbox);
+    // amrex::DistributionMapping newdm(newba);
+    // RemakeLevel(lev,cur_time,newba,newdm);
+   phi_error[lev] = 32; 
+   regrid(lev, cur_time);
+}
+void DUGKSAmr::TestFillCoarsePatch(int const lev)
+{
+    auto &ld = Data(lev);
+    FillCoarsePatchDensity(lev,cur_time,ld.msv[Ark::RHO]);
+}
 void DUGKSAmr::Test()
 {
-    int const lev = 0;
+    int const lev = 1;
     auto &ld = Data(lev);
+    
+    TestRegrid(0);
+    // TestFillCoarsePatch(1);
     // SetUnit(lev);
     // ld.msv[Ark::RHO].FillBoundary(0, 1, IntVect(2), Geom(lev).periodicity());
-    FillPatchNew(lev,cur_time,ld);
-    // FillCoarsePatchDensity(lev,cur_time,ld.density_old);
+    // FillCoarsePatchDensity(lev,cur_time,ld.msv[Ark::RHO]);
     // ld.density_old.FillBoundary(0,1,IntVect(1), Geom(lev).periodicity());
     // amrex::Print()<<ld.msv[Ark::PHI].norm2();
     // L2NormPhase(0);
-    Verify(lev);
+    Verify(1);
+    amrex::Print() << DistributionMap(0) << std::endl;
+    amrex::Print() << DistributionMap(1) << std::endl;
     WritePlotFile();
 }
 
@@ -449,19 +467,19 @@ void DUGKSAmr::Verify(int const lev)
 
     for(amrex::MFIter mfi(ld.msv[Ark::PHI]);mfi.isValid();++mfi)
     {
-        // const Box& bx = mfi.validbox();
-        const Box& bx = mfi.growntilebox(3);
+        const Box& bx = mfi.validbox();
+        // const Box& bx = mfi.growntilebox(2);
         // const Box& bx = mfi.fabbox();
         //
         Array4<Real> const &phi  = ld.msv[Ark::PHI].array(mfi);
         Array4<Real> const &rho  = ld.msv[Ark::RHO].array(mfi);
-        Array4<Real> const &vel  = ld.msv[Ark::VEL].array(mfi);
+        // Array4<Real> const &vel  = ld.msv[Ark::VEL].array(mfi);
         Array4<Real> const &pres = ld.msv[Ark::P].array(mfi);
         Array4<Real> const &temp = ld.msv[Ark::T].array(mfi);
         Array4<Real> const &grad_phi = ld.msv[Ark::GradPHI].array(mfi);
 
         // Array4<Real> const &phi_old  = ld.phase_old.array(mfi);
-        // Array4<Real> const &rho_old  = ld.density_old.array(mfi);
+        Array4<Real> const &rho_old  = ld.density_old.array(mfi);
         // Array4<Real> const &vel_old  = ld.velocity_old.array(mfi);
 
         Array4<Real> const &hWave = ld.hDVDF[Ark::WAVE].array(mfi);
@@ -485,7 +503,8 @@ void DUGKSAmr::Verify(int const lev)
             const double z = 0;
 #endif
 
-            Real value_real = 2*x + x*y + y*z;
+            Real value_real = BilinearValue(x,y,z);
+            // Real value_real = BiquadraticValue(x,y,z);
             Real value_average = rho(i,j,k);
 
             if(fabs(value_average - value_real) > 1E-12)
@@ -495,8 +514,8 @@ void DUGKSAmr::Verify(int const lev)
                 {
                 amrex::AllPrint().SetPrecision(17)<<"i : "<<i<<"    "<<"j : "<<j<<"    "
                                     <<"k : "<<k<<"    "
-                                    <<"phi : "<<value_average<<"    "
-                                    <<"Real phi : "<<value_real
+                                    <<"rho : "<<value_average<<"    "
+                                    <<"Real rho : "<<value_real
                                     <<" nn : "<<++(*nn)<<std::endl;
                 }
             }

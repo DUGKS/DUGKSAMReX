@@ -71,7 +71,7 @@ print:
 
 DUGKSFILE_LOCATIONS = tmp_build_dir
 
-cleanDUGKSBuild:
+cleanDUGKS:
 	@echo "Cleaning DUGKS Files..."
 	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec rm -f {} \;
 	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec rm -f {} \;

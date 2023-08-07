@@ -243,10 +243,10 @@ void DUGKSAmr::FreeEnergySource (int const lev)
 		AMREX_SPACEDIM, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 		{
 			// well-balanced force for chemical potential model
-			// force(i,j,k,n) = rho(i,j,k)*(Gravity(n) - force(i,j,k,n));
+			force(i,j,k,n) = rho(i,j,k)*(Gravity(n) - force(i,j,k,n));
 
 			// original force for chemical potential model
-			force(i,j,k,n) =  Ark::DmVnMomentum::RT*grad_rho(i,j,k,n) - rho(i,j,k)*force(i,j,k,n);
+			// force(i,j,k,n) =  Ark::DmVnMomentum::RT*grad_rho(i,j,k,n) - rho(i,j,k)*force(i,j,k,n);
 		});
 	}
 }

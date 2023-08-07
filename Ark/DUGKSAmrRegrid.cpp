@@ -3,8 +3,7 @@
 // Make a new level using provided BoxArray and DistributionMapping and
 // fill with interpolated coarse level data.
 // overrides the pure virtual function in AmrCore
-void DUGKSAmr::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba,
-			   const DistributionMapping& dm)
+void DUGKSAmr::MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba, const DistributionMapping& dm)
 {
 	BL_PROFILE("DUGKSAmr::MakeNewLevelFromCoarse()");
 

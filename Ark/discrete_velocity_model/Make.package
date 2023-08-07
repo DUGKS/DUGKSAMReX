@@ -1,8 +1,9 @@
 CEXE_headers += DUGKSDmVn.H
 CEXE_headers += DUGKSDmVnEq.H
 CEXE_sources += DUGKSDmVnImp.cpp
+CEXE_sources += DmVnAC.cpp
 # CEXE_sources += DmVnCH.cpp
-CEXE_sources += DmVnFE.cpp
+# CEXE_sources += DmVnFE.cpp
 # CEXE_sources += D2MnPP.cpp
 # CEXE_sources += D$(DIM)Vn.cpp
 # CEXE_sources += D$(DIM)VnACSS.cpp
