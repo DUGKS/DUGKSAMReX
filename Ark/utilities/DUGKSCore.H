@@ -18,10 +18,10 @@ public:
 	static void Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
 	// - construct \bar{f}^{+}
-	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime);
+	static void Collision_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime);
 
 	// - construct \bar{f}^{+} from f^{NEQ}
-	static void Update_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime);
+	static void Collision_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime);
 
 	static void Update_Grad_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
 
@@ -88,7 +88,7 @@ public:
 								  	 	 amrex::Direction FaceID);
 	
 	template<bool ENABLESOURCE>
-	static void Update_xFluxX (Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime);
+	static void Collision_xFluxX (Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime);
 	
 	static void Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 							 const Vector<MultiFab const *> &xFluxFabnF,

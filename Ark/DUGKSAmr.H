@@ -172,10 +172,6 @@ public:
 #endif
 
 private:
-    //
-    // member variables
-    //
-
     // Be verbose?
     int m_verbose = 0;
 
@@ -719,11 +715,11 @@ private:
     template<bool ENABLESOURCE=true>
     void Construct_DVDF_NonEq (int const lev, double const dTime);
 
-    void Update_DVM_BarPlus(int const lev);
+    void Collision_DVM_BarPlus(int const lev);
 
-    void Update_DVDF_BarPlus (int const lev, double const hTime);
+    void Collision_DVDF_BarPlus (int const lev, double const hTime);
 
-    void Update_DVDF_BarPlus_NonEq(int const lev, double const hTime);
+    void Collision_DVDF_BarPlus_NonEq(int const lev, double const hTime);
 
     void Update_FD_DVDF_BarPlus (int const lev, double const hTime);
 
@@ -770,7 +766,7 @@ private:
     void Update_FD_DVDF_Barh_WENO_Fifth (int const lev);
 
     template <bool ENABLESOURCE=true>
-    void Update_DVDF_Flux (int const lev, double const hTime);
+    void Collision_DVDF_Flux (int const lev, double const hTime);
 
     template <bool ENABLESOURCE=true>
     void Update_DVDF_MesoFlux (int const lev, double const hTime);

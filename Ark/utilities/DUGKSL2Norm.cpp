@@ -1,7 +1,6 @@
 #include <DUGKSAmr.H>
 
-double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, 
-							  int const comp)
+double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, int const comp)
 {
     AMREX_ASSERT(xFabA.boxArray() == xFabB.boxArray());
     AMREX_ASSERT(xFabA.DistributionMap() == xFabB.DistributionMap());
@@ -10,9 +9,9 @@ double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB,
 
     diff_xFab.reset(new MultiFab(xFabA.boxArray(), xFabA.DistributionMap(), 1, 0, MFInfo()));
 
-    MultiFab::LinComb(*diff_xFab, 
-                       1.0, xFabA, comp, 
-                      -1.0, xFabB, comp, 
+    MultiFab::LinComb(*diff_xFab,
+                       1.0, xFabA, comp,
+                      -1.0, xFabB, comp,
                       0, 1, 0);
 
     return diff_xFab->norm2();
@@ -46,9 +45,9 @@ double DUGKSAmr::L2NormSubtractZalesakDisk (const MultiFab& xFabA, const MultiFa
 
 
 
-    MultiFab::LinComb(*diff_xFab, 
-                      1.0, xFabA, 0, 
-                      -1.0, *xFabAmend, 0, 
+    MultiFab::LinComb(*diff_xFab,
+                      1.0, xFabA, 0,
+                      -1.0, *xFabAmend, 0,
                       0, 1, 0);
 
     return diff_xFab->norm2();
@@ -70,18 +69,18 @@ double DUGKSAmr::L2NormVelocity(int lev)
 	norm_vel[ Ark::X] = velFabNew.norm2(Ark::X);
 	norm_vel[ Ark::Y] = velFabNew.norm2(Ark::Y);
 
-#if(AMREX_SPACEDIM == 3)	
+#if(AMREX_SPACEDIM == 3)
 	norm_diff[Ark::Z] = L2NormSubtract(velFabNew, velFabOld, Ark::Z);
 	norm_vel[ Ark::Z] = velFabNew.norm2(Ark::Z);
 
     MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
 
-    WriteL2NormVelocity (lev, 
+    WriteL2NormVelocity (lev,
         std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
         std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
 
 	return 	std::sqrt(
-			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z]) 
+			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])
 			/Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z]));
 #else
 
@@ -89,7 +88,7 @@ double DUGKSAmr::L2NormVelocity(int lev)
 //
     WriteL2NormVelocity (lev, std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])),
                          std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y])));
-    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y]) 
+    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])
 			         /Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y]));
 
 #endif
@@ -179,17 +178,17 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
     //* * * * * * * * * * * * * * * * Drop * * * * * * * * * * * * * * * * * * * *
     // do nothing
 
-    //* * * * * * * * * * * * * * * * Zalesak Disk * * * * * * * * * * * * * * * * 
+    //* * * * * * * * * * * * * * * * Zalesak Disk * * * * * * * * * * * * * * * *
     // for(int lev = finest_level; lev >=0; --lev)
     // {
     //     MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
     //     StaircasePhase(Data(lev).phase_old);
     // }
 
-    //* * * * * * * * * * * * * * * * Unsteady TGV * * * * * * * * * * * * * * * * 
-    // for(int lev = finest_level; lev >=0; --lev) {
-    //     FillLevelUnsteadyTaylorGreenVortex(lev, Data(lev).velocity_prev, Data(lev).phase_prev);
-    // }
+    // * * * * * * * * * * * * * * * * Unsteady TGV * * * * * * * * * * * * * * * *
+    for(int lev = finest_level; lev >= 0; --lev) {
+        FillLevelUnsteadyTaylorGreenVortex(lev, Data(lev).velocity_prev, Data(lev).phase_prev);
+    }
 
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // //* * * * * * * * * * * * Scalar L2-norm Phase Field  * * * * * * * * * * * * *
@@ -197,44 +196,44 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
     // {
     //     // - General
     //     Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-        
+
     //     // - Zalesak Disk
     //     // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-        
-    //     Real const norm_phase = Data(lev).density_old.norm2();        
+
+    //     Real const norm_phase = Data(lev).density_old.norm2();
     //     cur_L2_norm.push_back(norm_diff/norm_phase);
     // }
 
     //* * * * * * * * * * * * Scalar L2-norm Density Field  * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >=0; --lev)
-    {
-        // - General
-        Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::RHO]);
-               
-        Real const norm_phase = Data(lev).density_old.norm2();        
-        cur_L2_norm.push_back(norm_diff/norm_phase);
-    }
+    // for(int lev = finest_level; lev >=0; --lev)
+    // {
+    //     // - General
+    //     Real const norm_diff = L2NormSubtract(Data(lev).phase_prev, Data(lev).msv[Ark::P]);
 
-    //* * * * * * * * * * * * * * * * Vector L2-norm * * * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev) {   
-    //     Real const norm_diff_x = 
-    //     L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
-
-    //     Real const norm_diff_y = 
-    //     L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
-
-    //     Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
-    //     Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
-
-    //     cur_L2_norm.push_back(
-    //     std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
-    //     );          
+    //     Real const norm_scalar = Data(lev).density_old.norm2();
+    //     cur_L2_norm.push_back(norm_diff/norm_scalar);
     // }
+
+    //* * * * * * * * * * * * * * * * Vector L2-norm Velocity Field * * * * * * * * * * * * * * *
+    for(int lev = finest_level; lev >=0; --lev) {
+        Real const norm_diff_x =
+        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
+
+        Real const norm_diff_y =
+        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
+
+        Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
+        Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
+
+        cur_L2_norm.push_back(
+        std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
+        );
+    }
 
     return cur_L2_norm;
 }
 double DUGKSAmr::InterfacePosition (const MultiFab& PhaseFab, const double probDomain_lo_y,
-                                    const Real* dx, 
+                                    const Real* dx,
                                     int const indexI, int const indexJ, int const indexK)
 {
     const double phiMid = (PhiL() + PhiV())/2;
@@ -248,21 +247,21 @@ double DUGKSAmr::InterfacePosition (const MultiFab& PhaseFab, const double probD
         //
         Array4<Real const> const &phi  = PhaseFab.const_array(mfi);
 
-        amrex::ParallelFor(bx, 
+        amrex::ParallelFor(bx,
         [=, &position, &deltaPhi] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             if(j > indexJ and i == indexI and k == indexK)
             {
-                if (std::fabs(phi(i,j,k) - phiMid) < deltaPhi) 
+                if (std::fabs(phi(i,j,k) - phiMid) < deltaPhi)
                 {
                     deltaPhi = std::fabs(phi(i,j,k) - phiMid);
                     position = ((j + 0.5)*dx[Ark::Y] + probDomain_lo_y)/ChLength();
                 }
             }
-        }); 
+        });
     }
-    
-    std::vector<double> dphiv = amrex::ParallelDescriptor::Gather(deltaPhi, 
+
+    std::vector<double> dphiv = amrex::ParallelDescriptor::Gather(deltaPhi,
                                 amrex::ParallelDescriptor::IOProcessorNumber());
     if (amrex::ParallelDescriptor::IOProcessor()) {
         min_proc = std::min_element(dphiv.begin(), dphiv.end()) - dphiv.begin();
@@ -293,7 +292,7 @@ double DUGKSAmr::InterfacePositionHighest (const MultiFab& PhaseFab, const doubl
         //
         Array4<Real const> const &phi  = PhaseFab.const_array(mfi);
 
-        amrex::ParallelFor(bx, 
+        amrex::ParallelFor(bx,
         [=, &position, &temp_position] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             if (i == index && std::fabs(phi(i,j,k) - phiMid) < deltaPhi) {
@@ -303,12 +302,12 @@ double DUGKSAmr::InterfacePositionHighest (const MultiFab& PhaseFab, const doubl
                if(temp_position > position) {
                     position = temp_position;
                }
-            }           
-        }); 
+            }
+        });
     }
 
     amrex::ParallelDescriptor::ReduceRealMax(position);
-    
+
     return position;
 }
 
@@ -331,10 +330,10 @@ double DUGKSAmr::InterfacePositionLowest (const MultiFab& PhaseFab, const double
         //
         Array4<Real const> const &phi  = PhaseFab.const_array(mfi);
 
-        amrex::ParallelFor(bx, 
+        amrex::ParallelFor(bx,
         [=, &position, &temp_position] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            if (i == index and std::fabs(phi(i,j,k) - phiMid) < deltaPhi) 
+            if (i == index and std::fabs(phi(i,j,k) - phiMid) < deltaPhi)
             {
                 temp_position = ((j + 0.5)*dx[Ark::Y] + probDomain_lo_y)/ChLength();
 
@@ -342,11 +341,11 @@ double DUGKSAmr::InterfacePositionLowest (const MultiFab& PhaseFab, const double
                     position = temp_position;
                }
             }
-        }); 
+        });
     }
-    
+
     amrex::ParallelDescriptor::ReduceRealMin(position);
-    
+
     return position;
 }
 
@@ -364,10 +363,10 @@ double DUGKSAmr::InterfacePositionLowest (const MultiFab& PhaseFab, const double
 //         //
 //         Array4<Real const> const &phi = PhaseFab.const_array(mfi);
 
-//         amrex::ParallelFor(bx, 
+//         amrex::ParallelFor(bx,
 //         [=, &position, &temp_position] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 //         {
-//             if (std::fabs(phi(i,j,k) - phiMid) < deltaPhi) 
+//             if (std::fabs(phi(i,j,k) - phiMid) < deltaPhi)
 //             {
 //                 temp_position = ((j + 0.5)*dx[Ark::Y] + probDomain_lo_y)/ChLength();
 
@@ -375,11 +374,11 @@ double DUGKSAmr::InterfacePositionLowest (const MultiFab& PhaseFab, const double
 //                     position = temp_position;
 //                }
 //             }
-//         }); 
+//         });
 //     }
-    
+
 //     amrex::ParallelDescriptor::ReduceRealMin(position);
-    
+
 //     return position;
 // }
 
@@ -391,12 +390,12 @@ Vector<double> DUGKSAmr::InterfacePositionRayleighTaylor(int lev)
     const auto &ld = Data(lev);
 
     const double prob_lo_y = rb.lo(Ark::Y);
-    const int midX = domain.length(Ark::X)/2; 
+    const int midX = domain.length(Ark::X)/2;
     const int boundY = 0;
 
     const MultiFab &PhaseFab = ld.msv[Ark::PHI];
 
-#if(AMREX_SPACEDIM == 3)   
+#if(AMREX_SPACEDIM == 3)
     const int midZ = domain.length(Ark::Z)/2;
     const double bubble = InterfacePosition(PhaseFab, prob_lo_y, dx, 0, boundY, 0);
     const double saddle = InterfacePosition(PhaseFab, prob_lo_y, dx, 0, boundY, midZ);
@@ -405,10 +404,10 @@ Vector<double> DUGKSAmr::InterfacePositionRayleighTaylor(int lev)
     return {bubble,saddle,spike};
 #else
     const double bubble = InterfacePosition(PhaseFab, prob_lo_y, dx, 0, boundY, 0);
-    const double spike  = InterfacePosition(PhaseFab, prob_lo_y, dx, midX, boundY, 0);  
+    const double spike  = InterfacePosition(PhaseFab, prob_lo_y, dx, midX, boundY, 0);
 
     return {bubble,spike};
-#endif 
+#endif
 }
 
 Vector<double> DUGKSAmr::InterfacePositionTaylorBubble(int lev)
@@ -424,11 +423,11 @@ Vector<double> DUGKSAmr::InterfacePositionTaylorBubble(int lev)
 
     const MultiFab &PhaseFab = ld.msv[Ark::PHI];
 
-#if(AMREX_SPACEDIM == 3)   
+#if(AMREX_SPACEDIM == 3)
     const int midZ = domain.length(Ark::Z)/2;
     const double spike  = InterfacePosition(PhaseFab, prob_lo_y, dx, midX, boundY, midZ);
 #else
-    const double spike  = InterfacePosition(PhaseFab, prob_lo_y, dx, midX, boundY, 0); 
+    const double spike  = InterfacePosition(PhaseFab, prob_lo_y, dx, midX, boundY, 0);
 #endif
 
     return {spike};

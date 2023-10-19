@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
     Real init_time = amrex::ParallelDescriptor::second() - start_time;
 
 
-	// dugks_amr.Evolve();
+	dugks_amr.Evolve();
 
-		dugks_amr.Test();
+		// dugks_amr.Test();
 
 	// Time spent in total
 	Real end_time = amrex::ParallelDescriptor::second() - start_time;

@@ -103,7 +103,7 @@ void DUGKSAmr::CaseInitFluid(int const lev)
         }
     	default :
     	{
-    		std::ostringstream ss;   
+    		std::ostringstream ss;
             ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
             ss  <<"Invalid Case ID\n";
             amrex::Abort(ss.str());
@@ -124,16 +124,16 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
 
     ld.phase_prev.setVal(0);
     ld.velocity_prev.setVal(0);
-   
+
     for(auto &mf : ld.msv){
         mf.setVal(0.0);
     }
 
     // ld.msv[Ark::PHI].setVal(Rho0());
-    // ld.msv[Ark::RHO].setVal(Rho0()); 
+    // ld.msv[Ark::RHO].setVal(Rho0());
     // ld.msv[Ark::VEL].setVal(U0());
     // ld.msv[Ark::P].setVal(P0());
-    // ld.msv[Ark::T].setVal(T0()); 
+    // ld.msv[Ark::T].setVal(T0());
 
     for(auto &mf : ld.msv_xF) {
         mf.setVal(0.0);
@@ -182,7 +182,7 @@ void DUGKSAmr::case_init_macroscopic_variables(int const lev)
     for(int n = Ark::BPx;n < Ark::DVDFNUM;++n) {
 		ld.gDVDF[n].setVal(0);
 	}
-#endif	
+#endif
 }
 
 void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
@@ -193,23 +193,23 @@ void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
     Update_DVDF_Eq(lev);
 
 #ifdef ARK_USE_PHASE
-	ld.hDVDF[Ark::WAVE].ParallelCopy(ld.hDVDF[Ark::EQ], 0, 0, Ark::DVM_PHASE, 
+	ld.hDVDF[Ark::WAVE].ParallelCopy(ld.hDVDF[Ark::EQ], 0, 0, Ark::DVM_PHASE,
 		IntVect{0}, IntVect{0}, amrex::Periodicity::NonPeriodic());
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	ld.fDVDF[Ark::WAVE].ParallelCopy(ld.fDVDF[Ark::EQ], 0, 0, Ark::DVM_MOMENTUM, 
+	ld.fDVDF[Ark::WAVE].ParallelCopy(ld.fDVDF[Ark::EQ], 0, 0, Ark::DVM_MOMENTUM,
 		IntVect{0}, IntVect{0}, amrex::Periodicity::NonPeriodic());
 #endif
 }
 void DUGKSAmr::post_case_init(int const lev)
 {
     auto& ld = Data(lev);
-    
+
     //The following would result in a slight increase in L-2 norm error;
     MultiFab::Copy(ld.phase_prev, ld.msv[Ark::PHI], 0, 0, 1, unit_ghost());
     MultiFab::Copy(ld.velocity_prev, ld.msv[Ark::VEL], 0, 0, AMREX_SPACEDIM, unit_ghost());
-    
+
 #ifdef ARK_USE_PHASE
     FillPatchPhase(lev, cur_time, ld.msv[Ark::PHI]);
 
@@ -244,7 +244,7 @@ void DUGKSAmr::post_case_init(int const lev)
 
 
 #ifdef ARK_USE_MOMENTUM
-    if(CaseIndex() == 1) 
+    if(CaseIndex() == 1)
     {
         using Ark::PI;
         const Real *dl = Geom(lev).CellSize();
@@ -288,7 +288,7 @@ void DUGKSAmr::post_case_init(int const lev)
                     const double fEq_t = A * (A_u*grad_ut + A_v*grad_vt);
                     const double fEq_x = A * (A_u*grad_ux + A_v*grad_vx)*xiU;
                     const double fEq_y = A * (A_u*grad_uy + A_v*grad_vy)*xiV;
-                    fWave(i,j,k,n) -= TauMomentum()*(fEq_t + fEq_x + fEq_y);                  
+                    fWave(i,j,k,n) -= TauMomentum()*(fEq_t + fEq_x + fEq_y);
                 }
             });
         }

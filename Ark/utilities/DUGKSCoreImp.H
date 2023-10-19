@@ -2,7 +2,7 @@
 #define ARK_DUGKS_CORE_IMPLEMENTATION_H
 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime)
+void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -43,7 +43,7 @@ void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real c
 }
 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hhTime)
+void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hhTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
@@ -2229,7 +2229,7 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 
 template<typename DVM>
 template<bool ENABLESOURCE>
-void DUGKSCore<DVM>::Update_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime)
+void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime)
 {
 	#ifdef _OPENMP
 	#pragma omp parallel

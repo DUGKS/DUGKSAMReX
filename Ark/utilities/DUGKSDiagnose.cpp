@@ -467,8 +467,8 @@ void DUGKSAmr::Verify(int const lev)
 
     for(amrex::MFIter mfi(ld.msv[Ark::PHI]);mfi.isValid();++mfi)
     {
-        const Box& bx = mfi.validbox();
-        // const Box& bx = mfi.growntilebox(2);
+        // const Box& bx = mfi.validbox();
+        const Box& bx = mfi.growntilebox(2);
         // const Box& bx = mfi.fabbox();
         //
         Array4<Real> const &phi  = ld.msv[Ark::PHI].array(mfi);

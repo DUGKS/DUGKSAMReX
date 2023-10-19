@@ -1,7 +1,7 @@
 #include <DUGKSAmr.H>
 
 // Resize all arrays when instance of DUGKSAmr class is constructed.
-// This is only done at the very start of the simulation. 
+// This is only done at the very start of the simulation.
 void DUGKSAmr::ResizeArrays ()
 {
     // Time holders for fillpatch stuff
@@ -43,17 +43,17 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
     ppTime.query("trace_time_step", hTime);
 
     if(use_mutable_trace) {
-        SetMutableTraceTimeStep(hTime);      
+        SetMutableTraceTimeStep(hTime);
     }
     else {
-        for(auto &d : trace_time_step) { d = hTime; }       
+        for(auto &d : trace_time_step) { d = hTime; }
     }
 
     }
 
     { // Prefix DUGKSAmr
 	ParmParse pp("DUGKSAmr");
-    
+
     pp.get("verbose", m_verbose);
     pp.get("n_ghost", n_ghost);
 
@@ -138,7 +138,7 @@ void DUGKSAmr::ReadIOParameters()
         //control parameters
     pp.get("end_step", end_step);
     pp.get("steady_state", steady_state);
-    if(steady_state) { pp.get("residual_tolerance", residual_tolerance); }    
+    if(steady_state) { pp.get("residual_tolerance", residual_tolerance); }
     pp.get("adapt_tolerance", adapt_tolerance);
 
     pp.query("check_file", name_check_file);
@@ -161,8 +161,7 @@ void DUGKSAmr::ReadIOParameters()
     pp.get("ccse_regtest", plot_ccse_regtest);
 
     // Which variables to write to plotfile
-    if (plot_ccse_regtest)
-    {
+    if (plot_ccse_regtest) {
         pp.get("phi"       , m_plt_phi);
         pp.get("rho"       , m_plt_rho);
         pp.get("velx"      , m_plt_velx);
@@ -185,8 +184,8 @@ void DUGKSAmr::ReadIOParameters()
         pp.get("hDVDF"     , m_plt_hDVDF);
         pp.get("fDVDF"     , m_plt_fDVDF);
         pp.get("gDVDF"     , m_plt_gDVDF);
-    } 
-    }   
+    }
+    }
 }
 
 void DUGKSAmr::SetMutableTraceTimeStep(const double hTime)
@@ -199,7 +198,7 @@ void DUGKSAmr::SetMutableTraceTimeStep(const double hTime)
     }
     for(int lev = max_level;lev >=0;--lev)
     {
-        amrex::Print()  <<"tracing time for level " <<lev<<" : "                         
+        amrex::Print()  <<"tracing time for level " <<lev<<" : "
                         << trace_time_step[lev] << std::endl;
     }
 }
@@ -307,7 +306,7 @@ void DUGKSAmr::SetFluxScheme()
     }
     else
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
         ss  <<"FulxScheme must be one of :\n"
             << "0. UW\n"
@@ -321,7 +320,7 @@ void DUGKSAmr::SetFluxScheme()
             << "8. WENO-5\n"
             << "9. FD-WENO-3\n"
             << "10. FD-WENO-5\n";
-        amrex::Abort(ss.str()); 
+        amrex::Abort(ss.str());
     }
 }
 
@@ -357,7 +356,7 @@ void DUGKSAmr::SetAdvanceScheme()
     }
     else
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
         ss  <<"AdvanceScheme must be one of :\n"
             << "0. CN\n"
@@ -366,6 +365,6 @@ void DUGKSAmr::SetAdvanceScheme()
             << "3. SS\n"
             << "4. FD\n"
             << "5. DVM\n";
-        amrex::Abort(ss.str()); 
+        amrex::Abort(ss.str());
     }
 }

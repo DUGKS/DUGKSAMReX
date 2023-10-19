@@ -7,17 +7,17 @@
 const std::string DUGKSAmr::DmVnModel = "DmVn";
 
 template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
+template <bool ENABLESO>
+void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
 {
-    amrex::Abort("Free Energy model involves no PHASE distribution.");
+    amrex::Abort("Plain flow involves no PHASE distribution.");
 }
 
 
 //Rho_0 == 0
 template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
+template <bool ENABLESO>
+void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
 {
     #ifdef _OPENMP
     #pragma omp parallel
@@ -58,41 +58,41 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
 #endif
             const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
 
-            fEq(i,j,k,n) = DVM::omega[n]*rho*(1+Gamma);
+            // fEq(i,j,k,n) = DVM::omega[n]*rho*(1+Gamma);
 
             // Taylor-Green Vortex rho_0 = 1.0
-            // fEq(i,j,k,n) = DVM::omega[n]*(rho + Gamma);
+            fEq(i,j,k,n) = DVM::omega[n]*(rho + Gamma);
 
 
             // fEq(i,j,k,n) = DVM::omega[n]*rho*Gamma + static_cast<int>(n == 0)*rho;
 
             fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
             (
-                (DVM::xi_u[n] - u)*fx 
+                (DVM::xi_u[n] - u)*fx
               + (DVM::xi_v[n] - v)*fy
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
               + (DVM::xi_w[n] - w)*fz
 #endif
-              + ( DVM::xi_u[n]*fx 
+              + ( DVM::xi_u[n]*fx
                 + DVM::xi_v[n]*fy
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
                 + DVM::xi_w[n]*fz
 #endif
                 )*u1
             );
         });
-    }   
+    }
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv,
                                                 const MultiFab &xDVDF)
 {
 
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv,
                                                    const MultiFab &xDVDF)
 {
     msv[Ark::RHO].setVal(0.0);
@@ -117,7 +117,7 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
             rho(i,j,k)    += fdvdf(i,j,k,n);
             vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
             vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
             vel(i,j,k,Ark::Z) += fdvdf(i,j,k,n)*DVM::xi_w[n];
 #endif
         });
@@ -126,9 +126,11 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
 void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
 {
 #ifdef ARK_USE_MOMENTUM
-    const MultiFab &RhoFab   = msv[Ark::RHO];
+    const double rho0 = 1.0;
+    const MultiFab &RhoFab = msv[Ark::RHO];
 
-    MultiFab &VelFab   = msv[Ark::VEL];
+    MultiFab &VelFab  = msv[Ark::VEL];
+    MultiFab &PresFab = msv[Ark::P];
 
     for(amrex::MFIter mfi(RhoFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
     {
@@ -136,12 +138,15 @@ void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
 
         Array4<Real const> const &rho = RhoFab.array(mfi);
 
-        Array4<Real> const &vel   = VelFab.array(mfi);
+        Array4<Real> const &vel  = VelFab.array(mfi);
+        Array4<Real> const &pres = PresFab.array(mfi);
 
         amrex::ParallelFor(bx, AMREX_SPACEDIM,
         [=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
         {
-            vel(i,j,k,n) /= rho(i,j,k);
+            // vel(i,j,k,n) /= rho(i,j,k);
+            vel(i,j,k,n) /= 1.0; // rho0 = 1.0;
+            pres(i,j,k,n) = (rho(i,j,k) - rho0)*Ark::DmVnMomentum::RT;
         });
     }
 #endif
@@ -167,7 +172,7 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
         amrex::ParallelFor(bx, AMREX_SPACEDIM,[=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
         {
             vel(i,j,k,n) += interval*force(i,j,k,n)/rho(i,j,k);
-        }); 
+        });
     }
 #endif
 }
@@ -177,12 +182,6 @@ void DUGKSAmr::Update_MacroVars(int const lev)
     auto &ld = Data(lev);
 
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum(ld.msv, ld.fDVDF[Ark::WAVE]);
-
-    FillPatchDensity(lev, cur_time, ld.msv[Ark::RHO]);
-
-    FreeEnergySource(lev);
-    // PseudoPotential(lev);
-
     Update_MacroBaseVars(ld.msv);
 }
 void DUGKSAmr::Update_MacroVars_hDt(int const lev, const double hTime)
@@ -191,13 +190,13 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, const double hTime)
 
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_zF, ld.fDVDFzF[Ark::FLUX]);
 #endif
 
     Update_MacroBaseVars(ld.msv_xF);
     Update_MacroBaseVars(ld.msv_yF);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
     Update_MacroBaseVars(ld.msv_zF);
 #endif
 

@@ -240,69 +240,69 @@ void DUGKSAmr::Construct_DVDF_Wave (int const lev, const Real dTime)
 #endif
 }
 
-void DUGKSAmr::Update_DVDF_BarPlus (int const lev, const double hTime)
+void DUGKSAmr::Collision_DVDF_BarPlus (int const lev, const double hTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_BarPlus()", Update_DVDF_BarPlus);
+	BL_PROFILE_VAR("DUGKSAmr::Collision_DVDF_BarPlus()", Collision_DVDF_BarPlus);
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnPhase>::Collision_BarPlus(ld.hDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.hDVDF[Ark::BP], &LevelData::hDVDF);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	// Update_Tau_Momentum (ld.fDVDF[Ark::TAU], ld.msv);
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnMomentum>::Collision_BarPlus(ld.fDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnEnergy>::Collision_BarPlus(ld.gDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif
 }
 
-void DUGKSAmr::Update_DVDF_BarPlus_NonEq (int const lev, const double hTime)
+void DUGKSAmr::Collision_DVDF_BarPlus_NonEq (int const lev, const double hTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_BarPlus_NonEq()", Update_DVDF_BarPlus_NonEq);
+	BL_PROFILE_VAR("DUGKSAmr::Collision_DVDF_BarPlus_NonEq()", Collision_DVDF_BarPlus_NonEq);
 
 	auto &ld = Data(lev);
 	const double hhTime = hTime/2.0;
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, hhTime);
+	DUGKSCore<Ark::DmVnPhase>::Collision_BarPlus(ld.hDVDF, hhTime);
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.hDVDF[Ark::BP], &LevelData::hDVDF);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	// Update_Tau_Momentum (ld.fDVDF[Ark::TAU], ld.msv);
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, hhTime);
+	DUGKSCore<Ark::DmVnMomentum>::Collision_BarPlus(ld.fDVDF, hhTime);
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, hhTime);
+	DUGKSCore<Ark::DmVnEnergy>::Collision_BarPlus(ld.gDVDF, hhTime);
 	DUGKSAmr::FillPatchDVDFBarPlus(lev, cur_time, ld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif
 }
 
-void DUGKSAmr::Update_DVM_BarPlus(int const lev)
+void DUGKSAmr::Collision_DVM_BarPlus(int const lev)
 {
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, Dt(), Dt());
+	DUGKSCore<Ark::DmVnPhase>::Collision_BarPlus(ld.hDVDF, Dt(), Dt());
 	FillPatchDVDFBarPlus(lev, cur_time, ld.hDVDF[Ark::BP], &LevelData::hDVDF);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, Dt(), Dt());
+	DUGKSCore<Ark::DmVnMomentum>::Collision_BarPlus(ld.fDVDF, Dt(), Dt());
 	FillPatchDVDFBarPlus(lev, cur_time, ld.fDVDF[Ark::BP], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, Dt(), Dt());
+	DUGKSCore<Ark::DmVnEnergy>::Collision_BarPlus(ld.gDVDF, Dt(), Dt());
 	FillPatchDVDFBarPlus(lev, cur_time, ld.gDVDF[Ark::BP], &LevelData::gDVDF);
 #endif
 }
@@ -314,54 +314,54 @@ void DUGKSAmr::Update_FD_DVDF_BarPlus (int const lev, double const hTime)
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_BarPlus(ld.hDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnPhase>::Collision_BarPlus(ld.hDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFWave(lev, cur_time, ld.hDVDF[Ark::WAVE], &LevelData::hDVDF);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	// Update_Tau_Momentum(ld.fDVDF[Ark::TAU], ld.msv[Ark::PHI], ld.msv[Ark::RHO]);
-	DUGKSCore<Ark::DmVnMomentum>::Update_BarPlus(ld.fDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnMomentum>::Collision_BarPlus(ld.fDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFWave(lev, cur_time, ld.fDVDF[Ark::WAVE], &LevelData::fDVDF);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_BarPlus(ld.gDVDF, hTime, Dt());
+	DUGKSCore<Ark::DmVnEnergy>::Collision_BarPlus(ld.gDVDF, hTime, Dt());
 	DUGKSAmr::FillPatchDVDFWave(lev, cur_time, ld.gDVDF[Ark::WAVE], &LevelData::gDVDF);
 #endif
 }
 
 template <bool ENABLESOURCE>
-void DUGKSAmr::Update_DVDF_Flux (int const lev, double const hTime)
+void DUGKSAmr::Collision_DVDF_Flux (int const lev, double const hTime)
 {
 
-BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Flux()", Update_DVDF_Flux);
+BL_PROFILE_VAR("DUGKSAmr::Collision_DVDF_Flux()", Collision_DVDF_Flux);
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Collision_xFluxX<ENABLESOURCE>(ld.hDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Collision_xFluxX<ENABLESOURCE>(ld.hDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnPhase>::Update_xFluxX<ENABLESOURCE>(ld.hDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnPhase>::Collision_xFluxX<ENABLESOURCE>(ld.hDVDFzF, hTime);
 #endif
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Collision_xFluxX<ENABLESOURCE>(ld.fDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Collision_xFluxX<ENABLESOURCE>(ld.fDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnMomentum>::Update_xFluxX<ENABLESOURCE>(ld.fDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnMomentum>::Collision_xFluxX<ENABLESOURCE>(ld.fDVDFzF, hTime);
 #endif
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFxF, hTime);
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFyF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Collision_xFluxX<ENABLESOURCE>(ld.gDVDFxF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Collision_xFluxX<ENABLESOURCE>(ld.gDVDFyF, hTime);
 #if(AMREX_SPACEDIM == 3)
-	DUGKSCore<Ark::DmVnEnergy>::Update_xFluxX<ENABLESOURCE>(ld.gDVDFzF, hTime);
+	DUGKSCore<Ark::DmVnEnergy>::Collision_xFluxX<ENABLESOURCE>(ld.gDVDFzF, hTime);
 #endif
 #endif
-BL_PROFILE_VAR_STOP(Update_DVDF_Flux);
+BL_PROFILE_VAR_STOP(Collision_DVDF_Flux);
 
 BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Flux_Boundary()", Update_DVDF_Flux_Boundary);
 
@@ -382,7 +382,7 @@ BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_MesoFlux()", Update_DVDF_MesoFlux);
 	Update_DVDFnF_Tau (lev);
 	if constexpr (ENABLESOURCE) { Update_DVDF_EqSo_hDt (lev); } 
 	else { Update_DVDF_Eq_hDt (lev); }
-	Update_DVDF_Flux<ENABLESOURCE> (lev, hTime);
+	Collision_DVDF_Flux<ENABLESOURCE> (lev, hTime);
 
 BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux);
 }
@@ -479,10 +479,10 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_CN_DVDF()", Advance_CN_DVDF);
 
 		int const crse_lev = lev-1;
 		
-		Update_DVDF_BarPlus (crse_lev, hDt(lev));
-		Update_DVDF_BarPlus (lev, hDt(lev));
+		Collision_DVDF_BarPlus (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus (lev, hDt(lev));
 	}
-		Update_DVDF_BarPlus (0, hDt(0));
+		Collision_DVDF_BarPlus (0, hDt(0));
 
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
@@ -558,7 +558,7 @@ void DUGKSAmr::Advance_BackwardEuler()
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_EqSo (lev);
 
-		Update_DVDF_BarPlus (lev, 0);
+		Collision_DVDF_BarPlus (lev, 0);
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
 
@@ -620,11 +620,11 @@ void DUGKSAmr::Advance_SS()
 
 		int const crse_lev = lev-1;
 		
-		Update_DVDF_BarPlus (crse_lev, hDt(lev));
-		Update_DVDF_BarPlus (lev, hDt(lev));
+		Collision_DVDF_BarPlus (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus (lev, hDt(lev));
 	}
 
-		Update_DVDF_BarPlus (0, hDt(0));
+		Collision_DVDF_BarPlus (0, hDt(0));
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
@@ -696,10 +696,10 @@ BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_DVDF()", Advance_CN_DVDF);
 
 		int const crse_lev = lev-1;
 		
-		Update_DVDF_BarPlus (crse_lev, hDt(lev));
-		Update_DVDF_BarPlus (lev, hDt(lev));
+		Collision_DVDF_BarPlus (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus (lev, hDt(lev));
 	}
-		Update_DVDF_BarPlus (0, hDt(0));
+		Collision_DVDF_BarPlus (0, hDt(0));
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
@@ -835,7 +835,7 @@ void DUGKSAmr::Advance_DVM()
 
 		Update_DVDF_EqSo (lev);
 
-		Update_DVM_BarPlus (lev);
+		Collision_DVM_BarPlus (lev);
 
 		if(!Ark::tinyEqual(Dt(), MinL())) { (this->*Update_DVDF_Grad_BarPlus) (lev); }		
 		
