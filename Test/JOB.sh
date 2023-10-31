@@ -12,7 +12,7 @@ ModifyLineSingleAppend() {
     local line=$(sed -n '/'$1'/=' ${BenchmarkFile})
     test -z $line && exit -1
     sed -i 's/^\('$1'[[:blank:]]*=[[:blank:]]*\).*/\1'$2'/' ${BenchmarkFile}
-} 
+}
 ModifyBenchmark() {
     local TauM=$(awk "BEGIN {print ${M}*3}")
     local MinL=$(awk "BEGIN {printf \"%.16f\",${ChL}/${ChNum}}")
@@ -21,7 +21,7 @@ ModifyBenchmark() {
     local EndStep=$(awk "BEGIN {print ${Period}*${ChL}*${ChNum}/${Pe}/${M}/${CFL}}")
 #modify time
     ModifyLineSingleAppend 'time.CFL' ${CFL}
-    ModifyLineSingleAppend 'time.advance_time_step' ${Dt}   
+    ModifyLineSingleAppend 'time.advance_time_step' ${Dt}
 #modify geometry
     ModifyLineTripleAppend 'amr.n_cell' ${ChNum}
     ModifyLineTripleAppend 'geometry.prob_hi' ${ChL}
@@ -87,7 +87,7 @@ ModifyBenchmarkPseudoPotential() {
 #         make cleanOF > /dev/null
 #         sh run.sh
 #         # until [ -f "$L2File" ]
-#         for iii in {1..400}  
+#         for iii in {1..400}
 #         do
 #             echo "The $iii-th sleep in $var"
 #             sleep 30
@@ -95,7 +95,7 @@ ModifyBenchmarkPseudoPotential() {
 #             [ -f "$L2File" ] || continue
 #             EndLine=$(awk '{print NR}' $L2File)
 #             [ $EndLine -eq 1 ] && break
-#             # LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File) 
+#             # LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File)
 #             # [ $TIME_STAMP -eq $LAST_MODIFY_TIMESTAMP ] && break
 #             # TIME_STAMP=$LAST_MODIFY_TIMESTAMP
 #         done
@@ -110,13 +110,13 @@ ModifyBenchmarkPseudoPotential() {
 
 #pseudo-potential
 #set parameters
-ChL=256
-ChNum=256
-TauF=0.3
-CFL=0.8
+ChL=1
+ChNum=16
+TauF=0.0003
+CFL=0.0048
 T=0.9
-FluxScheme="WENO-5"
-CaseName="QuiescentDrop"
+FluxScheme="CD"
+CaseName="UnsteadyTGV"
 BenchmarkFile="./Benchmark/${CaseName}.benchmark"
 #loop over Peclet number or Mobility coefficients
 for TauF in 0.3
@@ -140,7 +140,7 @@ do
         make cleanOF > /dev/null
         sh run.sh
         # until [ -f "$L2File" ]
-        for iii in {1..400}  
+        for iii in {1..400}
         do
             echo "The $iii-th sleep in $var"
             sleep 30
@@ -148,7 +148,7 @@ do
             [ -f "$VelFile" ] || continue
             Endword=$(awk 'END {print $NF}' nohup.out)
             [[ $Endword == "finalized" ]] && break
-            # LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File) 
+            # LAST_MODIFY_TIMESTAMP=$(stat -c %Y $L2File)
             # [ $TIME_STAMP -eq $LAST_MODIFY_TIMESTAMP ] && break
             # TIME_STAMP=$LAST_MODIFY_TIMESTAMP
         done
