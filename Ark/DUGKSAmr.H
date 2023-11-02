@@ -80,11 +80,11 @@ public:
     void InitData ();
 
     // Tag cells for refinement
-	virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, 
+	virtual void ErrorEst (int lev, amrex::TagBoxArray& tags,
                            amrex::Real time, int ngrow) override;
 
     //! Manually tag.  Note that tags is built on level lev grids coarsened by bf_lev[lev].
-    virtual void ManualTagsPlacement (int lev, TagBoxArray& tags, 
+    virtual void ManualTagsPlacement (int lev, TagBoxArray& tags,
                                       const Vector<IntVect>& bf_lev) override;
 
 	// Make a new level from scratch using provided BoxArray and DistributionMapping
@@ -122,11 +122,11 @@ public:
     //Mixed
     void Advance_IMEX();
 
-    //Strang-Splitting 
+    //Strang-Splitting
     void Advance_SS();
 
     // Finite difference scheme
-    void Advance_FD(); 
+    void Advance_FD();
 
     //DVM
     void Advance_DVM();
@@ -134,7 +134,7 @@ public:
     void Evolve();
 
     //
-    double CFL() const { return Courant_Friedrichs_Lewy; } 
+    double CFL() const { return Courant_Friedrichs_Lewy; }
     double Dt() const { return advance_time_step; }
     double hDt(int const lev) const { return trace_time_step[lev]; }
 
@@ -185,7 +185,7 @@ private:
     amrex::Real cur_time     = 0.0;
 
     // Time step
-    bool use_mutable_trace = true;
+    bool use_mutable_trace = false;
     int nstep         = -1;
     amrex::Real Courant_Friedrichs_Lewy;
     amrex::Real advance_time_step;
@@ -253,7 +253,7 @@ private:
         LevelData () = default;
         LevelData (amrex::BoxArray const& ba,
                    amrex::DistributionMapping const& dm,
-                   amrex::FabFactory<amrex::FArrayBox> const& fact, 
+                   amrex::FabFactory<amrex::FArrayBox> const& fact,
                    int nghost);
 
         LevelData(const LevelData& ld) = delete;
@@ -277,8 +277,8 @@ private:
         Vector<MultiFab const*> get_face_pressure_const() const noexcept;
         Vector<MultiFab const*> get_face_temperature_const() const noexcept;
 
-        // macroscopic multifabs : cell-centered 
-       
+        // macroscopic multifabs : cell-centered
+
         // MultiFab pressure;
         // MultiFab temperature;
         // MultiFab force;
@@ -301,7 +301,7 @@ private:
 
         //mesoscopic multifabs for MASS
 
-        //cell centered	
+        //cell centered
         Array<MultiFab, Ark::DVDFNUM> hDVDF;
         //face centered
         Array<MultiFab, Ark::FACEDVDFNUM> hDVDFxF;
@@ -311,7 +311,7 @@ private:
 #endif
         //mesoscopic multifabs for MOMENTUM
 
-        //cell centered 
+        //cell centered
         Array<MultiFab, Ark::DVDFNUM> fDVDF;
         //face centered
         Array<MultiFab, Ark::FACEDVDFNUM> fDVDFxF;
@@ -320,12 +320,12 @@ private:
         Array<MultiFab, Ark::FACEDVDFNUM> fDVDFzF;
 #endif
         //mesoscopic multifabs for ENERGY
-        
-        //cell centered 
+
+        //cell centered
         Array<MultiFab, Ark::DVDFNUM> gDVDF;
         //face centered
         Array<MultiFab, Ark::FACEDVDFNUM> gDVDFxF;
-        Array<MultiFab, Ark::FACEDVDFNUM> gDVDFyF;  
+        Array<MultiFab, Ark::FACEDVDFNUM> gDVDFyF;
 #if(AMREX_SPACEDIM == 3)
         Array<MultiFab, Ark::FACEDVDFNUM> gDVDFzF;
 #endif
@@ -346,7 +346,7 @@ private:
                                         amrex::DistributionMapping const& dm,
                                         amrex::FabFactory<FArrayBox> const& fact,
                                         int const Q, int const ng);
-      
+
     };
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
@@ -393,7 +393,7 @@ private:
     BCValue m_dirichlet_pressure;
     BCValue m_dirichlet_temperature;
 
-    Vector<BCRec> const& get_physical_bcrec () const noexcept { return m_bcrec_physical;} 
+    Vector<BCRec> const& get_physical_bcrec () const noexcept { return m_bcrec_physical;}
     Vector<BCRec> const& get_phase_bcrec () const noexcept { return m_bcrec_phase;}
     Vector<BCRec> const& get_density_bcrec () const noexcept { return m_bcrec_density; }
     Vector<BCRec> const& get_velocity_bcrec () const noexcept { return m_bcrec_velocity; }
@@ -404,36 +404,36 @@ private:
     Vector<BCRec> const& get_DVDF_wave_bcrec () const noexcept { return m_bcrec_DVDF_wave;}
     Vector<BCRec> const& get_DVDF_barplus_bcrec () const noexcept { return m_bcrec_DVDF_barplus;}
 
-    BCValue const& get_dirichlet_phase() const noexcept 
+    BCValue const& get_dirichlet_phase() const noexcept
     {
-        return m_dirichlet_phase; 
+        return m_dirichlet_phase;
     }
-    BCValue const& get_dirichlet_density() const noexcept 
+    BCValue const& get_dirichlet_density() const noexcept
     {
-        return m_dirichlet_density; 
+        return m_dirichlet_density;
     }
-    BCValue const& get_dirichlet_velocity_x() const noexcept 
+    BCValue const& get_dirichlet_velocity_x() const noexcept
     {
-        return m_dirichlet_velocity_x; 
+        return m_dirichlet_velocity_x;
     }
-    BCValue const& get_dirichlet_velocity_y() const noexcept 
+    BCValue const& get_dirichlet_velocity_y() const noexcept
     {
-        return m_dirichlet_velocity_y; 
+        return m_dirichlet_velocity_y;
     }
-    BCValue const& get_dirichlet_velocity_z() const noexcept 
+    BCValue const& get_dirichlet_velocity_z() const noexcept
     {
-        return m_dirichlet_velocity_z; 
+        return m_dirichlet_velocity_z;
     }
-    BCValue const& get_dirichlet_pressure() const noexcept 
+    BCValue const& get_dirichlet_pressure() const noexcept
     {
-        return m_dirichlet_pressure; 
+        return m_dirichlet_pressure;
     }
-    BCValue const& get_dirichlet_temperature() const noexcept 
+    BCValue const& get_dirichlet_temperature() const noexcept
     {
-        return m_dirichlet_temperature; 
+        return m_dirichlet_temperature;
     }
 //
-    int nghost_state () const 
+    int nghost_state () const
     {
     #ifdef AMREX_USE_EB
             return n_ghost + 1;
@@ -459,9 +459,9 @@ private:
 
     void TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, const Real &tagError);
 
-    void TagMultiVectorField (TagBoxArray& Tab, Vector<MultiFab const*> &VectorFabPtr, 
+    void TagMultiVectorField (TagBoxArray& Tab, Vector<MultiFab const*> &VectorFabPtr,
                               const Vector<double> &tagError);
-    
+
     void TagDesignatedRegion(TagBoxArray& Tab, const Real *prob_lo, const Real *dx);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -474,8 +474,8 @@ private:
     void InitBoundaryConditions();
 
     void ReadPhysicalBoundaryCondition();
-    
-    void ReadBoundaryCondition(std::string const &var, Vector<BCRec> &m_bcrec, 
+
+    void ReadBoundaryCondition(std::string const &var, Vector<BCRec> &m_bcrec,
                                int const ncomp = 1);
 
     void SetPeriodicityOverwrite(int const dir);
@@ -497,7 +497,7 @@ private:
     void FillPhysicalBoundaryDVDF(int const lev);
     void FillPhysicalBoundaryDVDF(int const lev, int const bcid, int const dir);
 
-    
+
     //family of average down
     void AverageDownAll();
     void AverageDownMacroVars();
@@ -506,7 +506,7 @@ private:
     void AverageDownVelocity();
     void AverageDownPressure();
     void AverageDownTemperature();
-    
+
     void AverageDownDVDFWave();
     void AverageDownDVDFBarPlus();
     void AverageDownDVDFFlux();
@@ -531,8 +531,8 @@ private:
     void FillPatchNew (int const lev, Real const time, DUGKSAmr::LevelData &newld);
     void FillPatchMacroVars ();
     void PostFillPatchNew (int const lev, DUGKSAmr::LevelData &newld);
-    
-    
+
+
     void FillPatchPhase       (int const lev, Real const time, MultiFab& phase);
     void FillPatchPhasePrev   (int const lev, Real const time, MultiFab& phasePrev);
     void FillPatchDensity     (int const lev, Real const time, MultiFab& density);
@@ -545,13 +545,13 @@ private:
     void FillPatchGradDensity (int const lev, Real const time, MultiFab& grad_rho);
     void FillPatchForce       (int const lev, Real const time, MultiFab& force);
 
-    void FillPatchDVDFWave (int const lev, Real const time, MultiFab& xWave, 
+    void FillPatchDVDFWave (int const lev, Real const time, MultiFab& xWave,
                             Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
 
-    void FillPatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP, 
+    void FillPatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP,
                                Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
     template<typename F>
-    void FillPatchCore (int const lev, Real const time, MultiFab &mf, 
+    void FillPatchCore (int const lev, Real const time, MultiFab &mf,
                         const Vector<MultiFab*>& cmf, const Vector<Real>& ctime,
                         const Vector<MultiFab*>& fmf, const Vector<Real>& ftime,
                         const Vector<BCRec>& bcs);
@@ -565,63 +565,63 @@ private:
     void FillCoarsePatchPressure    (int const lev, Real const time, MultiFab& pres);
     void FillCoarsePatchTemperature (int const lev, Real const time, MultiFab& temp);
 
-    void FillCoarsePatchDVDFWave (int const lev, Real const time, MultiFab& xWave, 
+    void FillCoarsePatchDVDFWave (int const lev, Real const time, MultiFab& xWave,
                                   Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
 
-    void FillCoarsePatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP, 
+    void FillCoarsePatchDVDFBarPlus (int const lev, Real const time, MultiFab& xBP,
                                      Array<MultiFab, Ark::DVDFNUM> LevelData::*xDVDF);
     template<typename F>
-    void FillCoarsePatchCore(int const lev, Real const time, 
+    void FillCoarsePatchCore(int const lev, Real const time,
                              MultiFab &mf, MultiFab const &cmf,
                              const Vector<BCRec> &bcrec);
 
     //DUGKSSetBC.cpp
-    void average_scalar_x (Array4<Real> const &dst, Array4<Real const> const &src, 
+    void average_scalar_x (Array4<Real> const &dst, Array4<Real const> const &src,
                            const Dim3 &lo, const Dim3 &hi, int const /*fixed index*/, int const ncomp = 0);
 
-    void average_scalar_y (Array4<Real> const &dst, Array4<Real const> const &src, 
+    void average_scalar_y (Array4<Real> const &dst, Array4<Real const> const &src,
                            const Dim3 &lo, const Dim3 &hi, int const /*fixed index*/, int const ncomp = 0);
 
-    void average_scalar_z (Array4<Real> const &dst, Array4<Real const> const &src, 
+    void average_scalar_z (Array4<Real> const &dst, Array4<Real const> const &src,
                            const Dim3 &lo, const Dim3 &hi, int const /*fixed index*/, int const ncomp = 0);
 
-    void average_vector_y (Array4<Real> const &dst, Array4<Real const> const &src, 
+    void average_vector_y (Array4<Real> const &dst, Array4<Real const> const &src,
                            const Dim3 &lo, const Dim3 &hi, int const /*fixed index*/);
 
-    void set_dirichlet_velocity_xF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_velocity_xF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_velocity_yF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_velocity_yF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_velocity_zF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_velocity_zF (Array4<Real> const &vel, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_pressure_xF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_pressure_xF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_pressure_yF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_pressure_yF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_pressure_zF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_pressure_zF (Array4<Real> const &pres, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_phase_xF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_phase_xF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_phase_yF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_phase_yF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_phase_zF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_phase_zF (Array4<Real> const &phi, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_density_xF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_density_xF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_density_yF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_density_yF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
-    void set_dirichlet_density_zF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi, 
+    void set_dirichlet_density_zF (Array4<Real> const &rho, const Dim3 &lo, const Dim3 &hi,
                                     int const /*fixed index*/, Orientation face);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -666,7 +666,7 @@ private:
     void FlatInterface(int const lev);
 
     void DropletImpact(int const lev);
-    
+
     void TaylorBubble(int const lev);
 
     void RisingBubble(int const lev);
@@ -742,7 +742,7 @@ private:
     void Update_DVDF_Barh_UW_Default (int const lev);
 
     void Update_DVDF_Barh_UW_First (int const lev);
-    
+
     void Update_DVDF_Barh_UW_Third (int const lev);
 
     void Update_DVDF_Barh_UW_Fourth (int const lev);
@@ -849,16 +849,16 @@ private:
 
     void BoundGradient(MultiFab &GradPhaseFab);
 
-    void ElongationVelocityField (MultiFab &VelFab, const Real *dx, 
+    void ElongationVelocityField (MultiFab &VelFab, const Real *dx,
                                   const RealBox &rb, int const token);
 
-    void ElongationVelocityField3D (MultiFab &VelFab, const Real *dx, 
+    void ElongationVelocityField3D (MultiFab &VelFab, const Real *dx,
                                     const RealBox &rb, int const token);
 
-    void DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
+    void DeformationVelocityField (MultiFab &VelFab, const Real *dx,
                                    const Real Time, int const token);
 
-    void ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx, 
+    void ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx,
                                       const Real time, int const token);
 
     ///////////////////////////////////////////////////////////////////////////

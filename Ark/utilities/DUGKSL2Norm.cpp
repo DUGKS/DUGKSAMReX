@@ -222,8 +222,10 @@ Vector<double> DUGKSAmr::MultiLevelL2Norm()
         Real const norm_diff_y =
         L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
 
-        Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
-        Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
+        // Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
+        // Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
+        Real const norm_vel_x = Data(lev).velocity_prev.norm2(Ark::X);
+        Real const norm_vel_y = Data(lev).velocity_prev.norm2(Ark::Y);
 
         cur_L2_norm.push_back(
         std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))

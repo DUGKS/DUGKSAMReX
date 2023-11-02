@@ -17,7 +17,7 @@ Test/d/
 Test/f/
 Test/o/
 Test/t/
-Test/*.sh
+# Test/*.sh
 Test/*/
 TAGS
 
@@ -39,5 +39,5 @@ Docs/sphinx/build
 *.sw[a-z]
 
 #
-!JOB.sh
-!uploadToCluster.sh
+# JOB.sh
+# uploadToCluster.sh

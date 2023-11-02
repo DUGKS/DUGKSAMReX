@@ -7,8 +7,8 @@ using std::ofstream;
 
 namespace { const std::string level_prefix{"Level_"}; }
 
-void Ark::PrintSplitLine(const char c) 
-{ 
+void Ark::PrintSplitLine(const char c)
+{
     amrex::Print()<<"----------------------------------"<<c<<std::endl;
 }
 void GotoNextLine(std::istream& is)
@@ -96,7 +96,7 @@ void DUGKSAmr::WriteCheckPointFile() const
 
         VisMF::Write(m_leveldata[lev]->velocity_prev,
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "VelocityPrev"));
-        
+
         if(steady_state) {
             VisMF::Write(m_leveldata[lev]->phase_old,
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "PhaseOld"));
@@ -109,7 +109,7 @@ void DUGKSAmr::WriteCheckPointFile() const
             VisMF::Write(m_leveldata[lev]->hDVDF[Ark::WAVE],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, xWaveName));
         }
-#endif   
+#endif
 
 #ifdef ARK_USE_MOMENTUM
         VisMF::Write(m_leveldata[lev]->msv[Ark::RHO],
@@ -146,7 +146,7 @@ void DUGKSAmr::WriteCheckPointFile() const
             VisMF::Write(m_leveldata[lev]->fDVDF[Ark::WAVE],
             amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, xWaveName));
         }
-#endif 
+#endif
 
 #ifdef ARK_USE_ENERGY
         VisMF::Write(m_leveldata[lev]->msv[Ark::T],
@@ -192,8 +192,8 @@ void DUGKSAmr::ReadCheckpointFile()
 
     std::string line, word;
 
-    // Start reading from checkpoint file 
-    
+    // Start reading from checkpoint file
+
     // Title line
     std::getline(is, line);
 
@@ -282,7 +282,7 @@ void DUGKSAmr::ReadCheckpointFile()
 
         VisMF::Read(m_leveldata[lev]->velocity_prev,
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "VelocityPrev"));
-        
+
         if(steady_state) {
             VisMF::Read(m_leveldata[lev]->phase_old,
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "PhaseOld"));
@@ -295,7 +295,7 @@ void DUGKSAmr::ReadCheckpointFile()
             VisMF::Read(m_leveldata[lev]->hDVDF[Ark::WAVE],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, xWaveName));
         }
-#endif   
+#endif
 
 #ifdef ARK_USE_MOMENTUM
         VisMF::Read(m_leveldata[lev]->msv[Ark::RHO],
@@ -332,12 +332,12 @@ void DUGKSAmr::ReadCheckpointFile()
             VisMF::Read(m_leveldata[lev]->fDVDF[Ark::WAVE],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, xWaveName));
         }
-#endif 
+#endif
 
 #ifdef ARK_USE_ENERGY
         VisMF::Read(m_leveldata[lev]->msv[Ark::T],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "T"));
-            
+
         VisMF::Read(m_leveldata[lev]->gDVDF[Ark::TAU],
             amrex::MultiFabFileFullPrefix(lev, name_restart_file, level_prefix, "TauEnergy"));
 
@@ -455,7 +455,7 @@ void DUGKSAmr::WriteJobInfo(const std::string& path) const
     }
 }
 
-void DUGKSAmr::WritePlotFile() 
+void DUGKSAmr::WritePlotFile()
 {
     BL_PROFILE("DUGKSAmr::WritePlotFile()");
     VisMF::SetNOutFiles(128);
@@ -474,7 +474,7 @@ void DUGKSAmr::WritePlotFile()
 
     const std::string& plotfilename = amrex::Concatenate(name_plot_file, nstep);
 
-    amrex::Print()  << "  Writing plotfile " << plotfilename 
+    amrex::Print()  << "  Writing plotfile " << plotfilename
                     << " at time " << cur_time << std::endl;
 
     int ncomp = 0;
@@ -521,7 +521,7 @@ void DUGKSAmr::WritePlotFile()
     // Vorticity
     if(m_plt_vort) ++ncomp;
 
-    // Magnitude of the rate-of-strain tensor 
+    // Magnitude of the rate-of-strain tensor
     if(m_plt_strainrate) ++ncomp;
 
     // Divergence of velocity field
@@ -534,7 +534,7 @@ void DUGKSAmr::WritePlotFile()
 
 #if ARK_USE_PHASE
     if(m_plt_hDVDF) ncomp += Ark::DmVnPhase::Q;
-#endif 
+#endif
 
 #if ARK_USE_MOMENTUM
     if(m_plt_fDVDF) ncomp += Ark::DmVnMomentum::Q;
@@ -686,7 +686,7 @@ void DUGKSAmr::WritePlotFile()
             pltscaVarsName.push_back("fWave" + std::to_string(nDVM));
             ++icomp;
         }
-    } 
+    }
 #endif
 
 #if ARK_USE_ENERGY
@@ -699,7 +699,7 @@ void DUGKSAmr::WritePlotFile()
             ++icomp;
         }
     }
-#endif     
+#endif
     // if (m_plt_p) {
     //     for (int lev = 0; lev <= finest_level; ++lev) {
     //         amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
@@ -729,7 +729,7 @@ void DUGKSAmr::WritePlotFile()
         ++icomp;
     }
     if (m_plt_strainrate) {
-        
+
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab strainrate(mf[lev], amrex::make_alias, icomp, 1);
             ComputeStrainrateAtLevel(lev,
@@ -766,13 +766,13 @@ void DUGKSAmr::WritePlotFile()
 
     AMREX_ALWAYS_ASSERT(ncomp == static_cast<int>(pltscaVarsName.size()));
 
-    // This needs to be defined in order to use amrex::WriteMultiLevelPlotfile, 
-    // but will never change unless we use subcycling. 
-    // If we do use subcycling, this should be a incflo class member. 
+    // This needs to be defined in order to use amrex::WriteMultiLevelPlotfile,
+    // but will never change unless we use subcycling.
+    // If we do use subcycling, this should be a incflo class member.
     Vector<int> istep(finest_level + 1, nstep);
 
     // Write the plotfile
-    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level + 1, GetVecOfConstPtrs(mf), 
+    amrex::WriteMultiLevelPlotfile(plotfilename, finest_level + 1, GetVecOfConstPtrs(mf),
                                    pltscaVarsName, Geom(), cur_time, istep, refRatio());
     WriteJobInfo(plotfilename);
 }
@@ -780,7 +780,7 @@ std::string DUGKSAmr::FileNameSuffix()
 {
     std::ostringstream oss;
 
-#ifdef ARK_USE_PHASE   
+#ifdef ARK_USE_PHASE
     oss <<"_Pe"<<Pe()
         <<"_M"<<MPhi()
         <<"_wI"<<WidthI()
@@ -800,7 +800,7 @@ std::string DUGKSAmr::FileNameSuffix()
 }
 void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
 {
-    if(ParallelDescriptor::IOProcessor()) 
+    if(ParallelDescriptor::IOProcessor())
     {
         const std::string L2NormFileName = "L2_norm" + FileNameSuffix();
 
@@ -808,7 +808,7 @@ void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
         L2NormFile  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
 
         L2NormFile << cur_time <<"    ";
-        for(auto d : cur_L2_norm) 
+        for(auto d : cur_L2_norm)
         {
             L2NormFile << d <<"    ";
         }
@@ -822,14 +822,14 @@ void DUGKSAmr::WriteL2NormFile(const Vector<double> &cur_L2_norm)
 }
 void DUGKSAmr::WriteResidualFile(const Vector<double> &cur_residual)
 {
-    if(ParallelDescriptor::IOProcessor()) 
-    {       
+    if(ParallelDescriptor::IOProcessor())
+    {
         const std::string ResidualFileName = "Residual" + FileNameSuffix();
 
         std::ofstream ResidualFile(ResidualFileName.c_str(), std::ios::app);
         ResidualFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         ResidualFile << cur_time <<"    ";
-        for(auto d : cur_residual) 
+        for(auto d : cur_residual)
         {
             ResidualFile << d <<"    ";
         }
@@ -840,10 +840,10 @@ void DUGKSAmr::WriteResidualFile(const Vector<double> &cur_residual)
 }
 void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double const vel_norm)
 {
-    if(ParallelDescriptor::IOProcessor()) 
+    if(ParallelDescriptor::IOProcessor())
     {
         std::ostringstream oss_velocity;
-        oss_velocity <<"Level"<<lev<<"_velocity_norm";
+        oss_velocity <<"Level"<<lev<<"_velocity_residual";
         const std::string &L2NormVelocityName = oss_velocity.str() + FileNameSuffix();
 
         std::ofstream L2NormVelocity(L2NormVelocityName.c_str(), std::ios::app);
@@ -855,14 +855,14 @@ void DUGKSAmr::WriteL2NormVelocity(int const lev, double const vel_diff, double 
 }
 void DUGKSAmr::WriteSumPhaseFile(const Vector<double> &cur_sum)
 {
-    if(ParallelDescriptor::IOProcessor()) 
-    {      
+    if(ParallelDescriptor::IOProcessor())
+    {
         const std::string SumPhaseFileName = "SumPhase" + FileNameSuffix();
 
         std::ofstream SumPhaseFile(SumPhaseFileName.c_str(), std::ios::app);
         SumPhaseFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         SumPhaseFile << cur_time <<"    ";
-        for(auto d : cur_sum) 
+        for(auto d : cur_sum)
         {
             SumPhaseFile << d <<"    ";
         }
@@ -873,14 +873,14 @@ void DUGKSAmr::WriteSumPhaseFile(const Vector<double> &cur_sum)
 }
 void DUGKSAmr::WriteSumDensityFile(const Vector<double> &cur_sum)
 {
-    if(ParallelDescriptor::IOProcessor()) 
+    if(ParallelDescriptor::IOProcessor())
     {
         const std::string SumDensityFileName = "SumDensity" + FileNameSuffix();
 
         std::ofstream SumDensityFile(SumDensityFileName.c_str(), std::ios::app);
         SumDensityFile << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         SumDensityFile << cur_time <<"    ";
-        for(auto d : cur_sum) 
+        for(auto d : cur_sum)
         {
             SumDensityFile << d <<"    ";
         }
@@ -891,7 +891,7 @@ void DUGKSAmr::WriteSumDensityFile(const Vector<double> &cur_sum)
 }
 void DUGKSAmr::WriteInterfacePosition(const Vector<double> &interfacePosition)
 {
-    if(ParallelDescriptor::IOProcessor()) 
+    if(ParallelDescriptor::IOProcessor())
     {
         const std::string positionName = "interface_position" + FileNameSuffix();
 
@@ -907,10 +907,10 @@ void DUGKSAmr::WriteInterfacePosition(const Vector<double> &interfacePosition)
 }
 void DUGKSAmr::WriteComputingTime(const double elapsed_time)
 {
-    if(ParallelDescriptor::IOProcessor()) 
+    if(ParallelDescriptor::IOProcessor())
     {
         const std::string TimeFileName = "elapsed_time" + FileNameSuffix();
-    
+
         std::ofstream TimeFile(TimeFileName.c_str(), std::ios::app);
         TimeFile  << std::setiosflags(std::ios::scientific) << std::setprecision(Ark::digitsNum);
         TimeFile  << cur_time <<"    " << elapsed_time <<"\n";
