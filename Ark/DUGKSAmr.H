@@ -889,7 +889,7 @@ private:
     void ReadCheckpointFile ();
 
     Vector<double> MultiLevelResidual();
-    Vector<double> MultiLevelL2Norm();
+    Vector<double> (DUGKSAmr::*MultiLevelL2Norm) () = nullptr;
     Vector<double> MultiLevelSum();
     Vector<double> MultiLevelSumDensity();
 

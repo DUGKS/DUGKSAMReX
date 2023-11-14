@@ -107,7 +107,7 @@ void DUGKSAmr::UnsteadyTaylorGreenVortex(int const lev)
     ld.msv[Ark::RHO].setVal(Rho0());
 
     FillLevelUnsteadyTaylorGreenVortex(lev, ld.msv[Ark::VEL], ld.msv[Ark::P]);
-    
+
     amrex::MultiFab::Saxpy(ld.msv[Ark::RHO], 2*Ark::DmVnMomentum::Lambda, ld.msv[Ark::P], 0, 0, 1, 0);
 }
 void DUGKSAmr::ForceTaylorGreenVortex(int const lev)
@@ -120,9 +120,9 @@ void DUGKSAmr::ForceTaylorGreenVortex(int const lev)
 
     FillLevelForceTaylorGreenVortex(lev, ld.msv[Ark::VEL], ld.msv[Ark::P], ld.msv[Ark::FORCE],-1);
 
-    FillLevelForceTaylorGreenVortex(lev, ld.msv_xF[Ark::VEL], ld.msv_xF[Ark::P], 
+    FillLevelForceTaylorGreenVortex(lev, ld.msv_xF[Ark::VEL], ld.msv_xF[Ark::P],
                                     ld.msv_xF[Ark::FORCE], Ark::X);
-                                    
+
     FillLevelForceTaylorGreenVortex(lev, ld.msv_yF[Ark::VEL], ld.msv_yF[Ark::P],
                                     ld.msv_yF[Ark::FORCE], Ark::Y);
 
@@ -165,7 +165,7 @@ void DUGKSAmr::ReversedSingleVortex(int const lev)
             const double y = dx[1]*(j+0.5)/ChLength();
 
             vel(i,j,k,Ark::X) =  U0()*sin(PI*x)*sin(PI*x)*sin(2.0*PI*y);
-            vel(i,j,k,Ark::Y) = -U0()*sin(PI*y)*sin(PI*y)*sin(2.0*PI*x);           
+            vel(i,j,k,Ark::Y) = -U0()*sin(PI*y)*sin(PI*y)*sin(2.0*PI*x);
         });
     }}
 }
@@ -178,7 +178,7 @@ void DUGKSAmr::QuiescentDrop(int const lev)
 
 	FillLevelScalarFieldSphere(ld.msv[Ark::PHI], PhiL(), PhiV(), dl, LV::drop);
     // FillLevelScalarFieldSphere(ld.density_old, PhiL(), PhiV(), dl, LV::drop);
-    
+
     FillLevelScalarFieldSphere(ld.density_old, RhoL(), RhoV(), dl, LV::drop);
 
 	MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
@@ -231,7 +231,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
     const Real *dx = Geom(lev).CellSize();
 
     FillLevelPhaseZalesakDisk(ld.msv[Ark::PHI], dx);
-    FillLevelPhaseZalesakDisk(ld.density_old, dx);
+    FillLevelPhaseZalesakDisk(ld.density_old, dx); // for L2-norm calculation
 
     MultiFab::Copy(ld.msv[Ark::RHO], ld.msv[Ark::PHI], 0, 0, 1, zero_ghost());
     ld.msv[Ark::RHO].mult(APhi(), 0);
@@ -256,7 +256,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
             const double y = dx[1]*(j+0.5);
 
             vel(i,j,k,Ark::X) = -U0()*pi*(y-CenterPF(Ark::Y))/ChLength();
-            vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();           
+            vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();
         });
     }}
     {
@@ -274,7 +274,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
 
             vel(i,j,k,Ark::X) = -U0()*pi*(y-CenterPF(Ark::Y))/ChLength();
             vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();
-            
+
         });
     }}
     {
@@ -291,7 +291,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
                 const double y = dx[1]*(j);
 
                 vel(i,j,k,Ark::X) = -U0()*pi*(y-CenterPF(Ark::Y))/ChLength();
-                vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();            
+                vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();
             });
     }}
 #if(AMREX_SPACEDIM == 3)
@@ -309,7 +309,7 @@ void DUGKSAmr::ZalesakDisk(int const lev)
                 const double y = dx[1]*(j+0.5);
 
                 vel(i,j,k,Ark::X) = -U0()*pi*(y-CenterPF(Ark::Y))/ChLength();
-                vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();         
+                vel(i,j,k,Ark::Y) =  U0()*pi*(x-CenterPF(Ark::X))/ChLength();
             });
     }}
 #endif
@@ -379,7 +379,7 @@ void DUGKSAmr::SmoothDeformation(int const lev)
             const double y = dx[1]*(j+0.5)/ChLength();
 
             vel(i,j,k,Ark::X) = -U0()*sin(4.0*PI*x)*sin(4.0*PI*y);
-            vel(i,j,k,Ark::Y) = -U0()*cos(4.0*PI*x)*cos(4.0*PI*y);            
+            vel(i,j,k,Ark::Y) = -U0()*cos(4.0*PI*x)*cos(4.0*PI*y);
         });
     }}
 }
@@ -387,7 +387,7 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 225 && CaseName() == "LayeredPoiseuille")); 
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 225 && CaseName() == "LayeredPoiseuille"));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -415,7 +415,7 @@ void DUGKSAmr::LayeredPoiseuille (int const lev)
             phi(i,j,k) = 0.5*(PhiL() + PhiV()) + 0.5*(PhiL() - PhiV())
                          *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());
             rho(i,j,k) = 0.5*(RhoL() + RhoV()) + 0.5*(RhoL() - RhoV())
-                         *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());          
+                         *tanh((CenterPF(Ark::Y) - 2.*y)/WidthI());
         });
     }
 }
@@ -423,7 +423,7 @@ void DUGKSAmr::SpinodalDecomposition(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 226 && CaseName() == __func__)); 
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 226 && CaseName() == __func__));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -453,7 +453,7 @@ void DUGKSAmr::SpinodalDecomposition(int const lev)
             rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
 #else
             rho(i,j,k) = (RhoL()+RhoV())/3.0 + (amrex::Random())*0.01;
-#endif          
+#endif
         });
     }
 }
@@ -462,7 +462,7 @@ void DUGKSAmr::RayleighTaylorInstability(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 227 && CaseName() == "RayleighTaylorInstability")); 
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 227 && CaseName() == "RayleighTaylorInstability"));
 
     _Peclet = std::sqrt(std::fabs(Gravity(Ark::Y))*ChLength())*ChLength()/MPhi();
 
@@ -491,14 +491,14 @@ void DUGKSAmr::RayleighTaylorInstability(int const lev)
             const double y = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
             const double z = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
-            const double midY = CenterPF(Ark::Y) 
+            const double midY = CenterPF(Ark::Y)
             + 0.05*ChLength()*(cos(2.*PI*x/ChLength()) + cos(2.*PI*z/ChLength()));
 #else
             const double midY = CenterPF(Ark::Y) + 0.05*ChLength()*cos(2.*PI*x/ChLength());
 #endif
             phi(i,j,k) = 0.5*(PhiL() + PhiV()) + 0.5*(PhiL() - PhiV())
                          *tanh((y - midY)*2/WidthI());
-            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();          
+            rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
         });
     }
 }
@@ -541,7 +541,7 @@ void DUGKSAmr::FlatInterface(int const lev)
                        *(tanh(2.*(y-yA)/WidthI()) - tanh(2.*(y-yB)/WidthI()));
             rho(i,j,k) = RhoV() + 0.5*(RhoL() - RhoV())
                        *(tanh(2.*(y-yA)/WidthI()) - tanh(2.*(y-yB)/WidthI()));
-            rho_old(i,j,k) = rho(i,j,k);          
+            rho_old(i,j,k) = rho(i,j,k);
         });
     }
 }
@@ -599,7 +599,7 @@ void DUGKSAmr::DropletImpact(int const lev)
 
             phi(i,j,k) = phiA > phiB ? phiA : phiB;
 
-            if(y > Hw) { 
+            if(y > Hw) {
                 vel(i,j,k,Ark::Y) = -phi(i,j,k)*U0();
             }
             else {
@@ -610,7 +610,7 @@ void DUGKSAmr::DropletImpact(int const lev)
             //     phi(i,j,k) = HyperbolicTangentProfile (y-Hw, PhiL(), PhiV(), LV::drop);
             //     vel(i,j,k,Ark::Y) = 0;
             // }
-            
+
             rho(i,j,k) = APhi()*phi(i,j,k) + BPhi();
 #else
             const double rhoA = HyperbolicTangentProfile (distance, RhoL(), RhoV(), LV::drop);
@@ -618,7 +618,7 @@ void DUGKSAmr::DropletImpact(int const lev)
 
             rho(i,j,k) = rhoA > rhoB ? rhoA : rhoB;
 
-            if(y > Hw) { 
+            if(y > Hw) {
                 vel(i,j,k,Ark::Y) = -(rho(i,j,k)-RhoV())*U0()/(RhoL()-RhoV());
             }
             else {
@@ -687,9 +687,9 @@ void DUGKSAmr::TaylorBubble(int const lev)
 
                 double distanceMin = 0;
 
-                if(distanceCylinder <= 0 && distanceTail <= 0) 
+                if(distanceCylinder <= 0 && distanceTail <= 0)
                 {
-                    distanceMin = 
+                    distanceMin =
                     distanceCylinder > distanceTail ? distanceCylinder : distanceTail;
                 }
                 else if(distanceCylinder > 0 && distanceTail <= 0)
@@ -812,7 +812,7 @@ void DUGKSAmr::DropletCoalescence(int const lev)
 {
     using namespace Ark;
 
-    AMREX_ALWAYS_ASSERT((CaseIndex() == 233 && CaseName() == __func__)); 
+    AMREX_ALWAYS_ASSERT((CaseIndex() == 233 && CaseName() == __func__));
 
     LevelData &ld = Data(lev);
     const Real *dx = Geom(lev).CellSize();
@@ -857,7 +857,7 @@ void DUGKSAmr::DropletCoalescence(int const lev)
             rho(i,j,k) = (RhoL()+RhoV())/2.0 + (RhoL()-RhoV())/2.0*weight;
 #else
             rho(i,j,k) = (RhoL()+RhoV())/2.0 + (RhoL()-RhoV())/2.0*weight;
-#endif          
+#endif
         });
     }
 }
