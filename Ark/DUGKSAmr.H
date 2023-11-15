@@ -913,11 +913,9 @@ private:
     void PublicFillPatchNew(int const lev);
 
     double L2NormSubtract (const MultiFab& xFabA, const MultiFab& xFabB, int const comp = 0);
-    double L2NormSubtractZalesakDisk (const MultiFab& xFabA, const MultiFab& xFabB);
     double L2NormVelocity(int lev);
     double L2NormPhase(int lev);
     double L2NormDensity(int lev);
-    double SumPhase(int lev);
     double InterfacePosition (const MultiFab& phi, const double rb_lo_y, const Real* dl,
                               int const indexI, int const indexJ, int const indexK);
 

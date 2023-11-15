@@ -16,137 +16,89 @@ double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, in
 
     return diff_xFab->norm2();
 }
-
-double DUGKSAmr::L2NormVelocity(int lev)
+double DUGKSAmr::L2NormScalar(MultiFab &scalarFabOld, const MultiFab &scalarFabNew, const bool updateOld)
 {
-	auto &ld = Data(lev);
+    const Real norm_diff   = L2NormSubtract(scalarFabOld, scalarFabNew);
+    const Real norm_scalar = scalarFabNew.norm2();
 
-	Real norm_diff[AMREX_SPACEDIM];
-	Real norm_vel[ AMREX_SPACEDIM];
-
-	const MultiFab &velFabNew = ld.msv[Ark::VEL];
-	MultiFab &velFabOld = ld.velocity_old;
-
-	norm_diff[Ark::X] = L2NormSubtract(velFabNew, velFabOld, Ark::X);
-	norm_diff[Ark::Y] = L2NormSubtract(velFabNew, velFabOld, Ark::Y);
-
-	norm_vel[ Ark::X] = velFabNew.norm2(Ark::X);
-	norm_vel[ Ark::Y] = velFabNew.norm2(Ark::Y);
-
-#if(AMREX_SPACEDIM == 3)
-	norm_diff[Ark::Z] = L2NormSubtract(velFabNew, velFabOld, Ark::Z);
-	norm_vel[ Ark::Z] = velFabNew.norm2(Ark::Z);
-
-    MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
-
-    WriteL2NormVelocity (lev,
-        std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
-        std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
-
-	return 	std::sqrt(
-			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])
-			/Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z]));
-#else
-
-    MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
-//
-    WriteL2NormVelocity (lev, std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])),
-                         std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y])));
-    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])
-			         /Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y]));
-
-#endif
+    if(updateOld) {
+        MultiFab::Copy(scalarFabOld, scalarFabNew, 0, 0, 1, 0)
+    }
+    return norm_diff / (norm_scalar + Ark::tiny);
 }
-
-double DUGKSAmr::L2NormVelocity(int lev)
+double DUGKSAmr::ResidualPhase(int lev)
 {
 	auto &ld = Data(lev);
 
-	Real norm_diff[AMREX_SPACEDIM];
-	Real norm_vel[ AMREX_SPACEDIM];
-
-	const MultiFab &velFabNew = ld.msv[Ark::VEL];
-	MultiFab &velFabOld = ld.velocity_old;
-
-	norm_diff[Ark::X] = L2NormSubtract(velFabNew, velFabOld, Ark::X);
-	norm_diff[Ark::Y] = L2NormSubtract(velFabNew, velFabOld, Ark::Y);
-
-	norm_vel[ Ark::X] = velFabNew.norm2(Ark::X);
-	norm_vel[ Ark::Y] = velFabNew.norm2(Ark::Y);
-
-#if(AMREX_SPACEDIM == 3)
-	norm_diff[Ark::Z] = L2NormSubtract(velFabNew, velFabOld, Ark::Z);
-	norm_vel[ Ark::Z] = velFabNew.norm2(Ark::Z);
-
-    MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
-
-    WriteL2NormVelocity (lev,
-        std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
-        std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
-
-	return 	std::sqrt(
-			Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])
-			/Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z]));
-#else
-
-    MultiFab::Copy(velFabOld, velFabNew, 0, 0, AMREX_SPACEDIM, 0);
-//
-    WriteL2NormVelocity (lev, std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])),
-                         std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y])));
-    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])
-			         /Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y]));
-
-#endif
-}
-double DUGKSAmr::L2NormPhase(int lev)
-{
-	auto &ld = Data(lev);
-
-	Real norm_diff   = 0;
-	Real norm_phase  = 0;
-
-	const MultiFab &phiFabNew = ld.msv[Ark::PHI];
 	MultiFab &phiFabOld = ld.phase_old;
+	const MultiFab &phiFabNew = ld.msv[Ark::PHI];
 
-	norm_diff = L2NormSubtract(phiFabNew, phiFabOld, 0);
-
-	norm_phase = phiFabNew.norm2();
-
-    MultiFab::Copy(phiFabOld, phiFabNew, 0, 0, 1, 0);
-
-	return norm_diff/(norm_phase);
+    return L2NormScalar(phiFabOld, phiFabNew, true);
 }
 
-double DUGKSAmr::L2NormDensity(int lev)
+double DUGKSAmr::ResidualDensity(int lev)
 {
 	auto &ld = Data(lev);
 
-	Real norm_diff     = 0;
-	Real norm_density  = 0;
-
-	const MultiFab &rhoFabNew = ld.msv[Ark::RHO];
 	MultiFab &rhoFabOld = ld.density_old;
+	const MultiFab &rhoFabNew = ld.msv[Ark::RHO];
 
-	norm_diff = L2NormSubtract(rhoFabNew, rhoFabOld, 0);
-
-	norm_density = rhoFabNew.norm2();
-
-    MultiFab::Copy(rhoFabOld, rhoFabNew, 0, 0, 1, 0);
-
-	return norm_diff/(norm_density + Ark::tiny);
+	return L2NormScalar(rhoFabOld, rhoFabNew, true);
 }
-double DUGKSAmr::SumPhase(int lev)
+double DUGKAmr::L2NormVector(MultiFab &vectorFabOld, const MultiFab &vectorFabNew, bool updateOld)
 {
-    return Data(lev).msv[Ark::PHI].sum();
+    Real norm_diff[AMREX_SPACEDIM];
+	Real norm_vector[ AMREX_SPACEDIM];
+
+	norm_diff[Ark::X] = L2NormSubtract(vectorFabOld, vectorFabNew, Ark::X);
+	norm_diff[Ark::Y] = L2NormSubtract(vectorFabOld, vectorFabNew, Ark::Y);
+
+	norm_vector[Ark::X]  = vectorFabNew.norm2(Ark::X);
+	norm_vector[ Ark::Y] = vectorFabNew.norm2(Ark::Y);
+
+#if(AMREX_SPACEDIM == 3)
+	norm_diff[Ark::Z]   = L2NormSubtract(vectorFabOld, vectorFabNew, Ark::Z);
+	norm_vector[Ark::Z] = vectorFabNew.norm2(Ark::Z);
+
+    if(updateOld) {
+        MultiFab::Copy(vectorFabOld, vectorFabNew, 0, 0, AMREX_SPACEDIM, 0);
+    }
+
+    WriteL2NormVelocity (lev,
+        std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
+        std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
+
+	return 	std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])
+                      /Ark::Square(norm_vector[Ark::X], norm_vector[Ark::Y], norm_vector[Ark::Z]));
+#else
+    if(updateOld) {
+        MultiFab::Copy(vectorFabOld, vectorFabNew, 0, 0, AMREX_SPACEDIM, 0);
+    }
+
+    return std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y])
+			         /Ark::Square(norm_vector[Ark::X], norm_vector[Ark::Y]));
+#endif
+}
+double DUGKSAmr::ResidualVelocity(int lev)
+{
+	auto &ld = Data(lev);
+
+	const MultiFab &velFabNew = ld.msv[Ark::VEL];
+	MultiFab &velFabOld = ld.velocity_old;
+
+    return L2NormVector(velFabOld, velFabNew, true);
+    // WriteL2NormVelocity (lev,
+    //     std::sqrt(Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])),
+    //     std::sqrt(Ark::Square(norm_vel[Ark::X], norm_vel[Ark::Y], norm_vel[Ark::Z])));
 }
 
-Vector<double> DUGKSAmr::MultiLevelSum()
+Vector<double> DUGKSAmr::MultiLevelSumPhase()
 {
     Vector<double> cur_sum;
 
-    for(int lev = finest_level; lev >=0; --lev)
+    for(int lev = finest_level; lev >= 0; --lev)
     {
-        cur_sum.push_back(SumPhase(lev));
+        cur_sum.push_back(Data(lev).msv[Ark::PHI].sum());
     }
     return cur_sum;
 }
@@ -154,7 +106,7 @@ Vector<double> DUGKSAmr::MultiLevelSumDensity()
 {
     Vector<double> cur_sum;
 
-    for(int lev = finest_level; lev >=0; --lev)
+    for(int lev = finest_level; lev >= 0; --lev)
     {
         cur_sum.push_back(Data(lev).msv[Ark::RHO].sum());
     }
@@ -167,10 +119,10 @@ Vector<double> DUGKSAmr::MultiLevelResidual()
     for(int lev = finest_level; lev >=0; --lev)
     {
 #ifdef ARK_USE_MOMENTUM
-        cur_residual.push_back(L2NormVelocity(lev));
-        // cur_residual.push_back(L2NormDensity(lev));
+        cur_residual.push_back(ResidualVelocity(lev));
+        // cur_residual.push_back(ResidualDensity(lev));
 #elif defined ARK_USE_PHASE
-        cur_residual.push_back(L2NormPhase(lev));
+        cur_residual.push_back(ResidualPhase(lev));
 #endif
     }
     return cur_residual;
@@ -242,28 +194,17 @@ Vector<double> DUGKSAmr::L2NormUnsteadyTaylorGreenVortex()
 {
     Vector<double> cur_L2_norm;
 
-    // * * * * * * * * * * * * Unsteady TGV analytical solution * * * * * * * * * * * * *
     // analytical velocity : velocity_prev    analytical pressure : phase_prev
     for(int lev = finest_level; lev >= 0; --lev) {
         FillLevelUnsteadyTaylorGreenVortex(lev, Data(lev).velocity_prev, Data(lev).phase_prev);
     }
 
-    // * * * * * * * * * * * * Vector L2-norm Velocity Field * * * * * * * * * * * * * * *
     for(int lev = finest_level; lev >=0; --lev) {
-        Real const norm_diff_x =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
+        const MultiFab &velFabAnalytic = Data(lev).velocity_prev;
+        MultiFab &velFabNumeric = Data(lev).msv[Ark::VEL];
 
-        Real const norm_diff_y =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
-
-        Real const norm_vel_x = Data(lev).velocity_prev.norm2(Ark::X);
-        Real const norm_vel_y = Data(lev).velocity_prev.norm2(Ark::Y);
-
-        cur_L2_norm.push_back(
-        std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
-        );
+        cur_L2_norm.push_back(L2NormVector(velFabNumeric, velFabAnalytic));
     }
-
     return cur_L2_norm;
 }
 
@@ -272,17 +213,18 @@ Vector<double> DUGKSAmr::L2NormZalesakDisk()
     Vector<double> cur_L2_norm;
 
     // analytical solution -> density_old    computational solution -> phase_old
-    for(int lev = finest_level; lev >=0; --lev)
+    for(int lev = finest_level; lev >= 0; --lev)
     {
         MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
         StaircasePhase(Data(lev).phase_old);
     }
 
-    for(int lev = finest_level; lev >=0; --lev)
+    for(int lev = finest_level; lev >= 0; --lev)
     {
-        Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-        Real const norm_phase = Data(lev).density_old.norm2();
-        cur_L2_norm.push_back(norm_diff/norm_phase);
+        const MultiFab &phaseFabAnalytic = Data(lev).density_old;
+        MultiFab &phaseFabNumeric  = Data(lev).phase_old;
+
+        cur_L2_norm.push_back(L2NormScalar(phaseFabNumeric, phaseFabAnalytic));
     }
 
     return cur_L2_norm;
@@ -290,85 +232,21 @@ Vector<double> DUGKSAmr::L2NormZalesakDisk()
 Vector<double> DUGKSAmr::L2NormPhase()
 {
     Vector<double> cur_L2_norm;
-
-    //* * * * * * * * * * * * Scalar L2-norm Phase Field  * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-
-    //     // - Zalesak Disk
-    //     // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-
-    //     Real const norm_phase = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_phase);
-    // }
-
-    //* * * * * * * * * * * * Scalar L2-norm Density Field  * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).phase_prev, Data(lev).msv[Ark::P]);
-
-    //     Real const norm_scalar = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_scalar);
-    // }
-
-    //* * * * * * * * * * * * * * * * Vector L2-norm Velocity Field * * * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >=0; --lev) {
-        Real const norm_diff_x =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
-
-        Real const norm_diff_y =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
-
-        // Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
-        // Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
-        Real const norm_vel_x = Data(lev).velocity_prev.norm2(Ark::X);
-        Real const norm_vel_y = Data(lev).velocity_prev.norm2(Ark::Y);
-
-        cur_L2_norm.push_back(
-        std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
-        );
+    // analytical solution -> density_old
+    for(int lev = finest_level; lev >=0; --lev)
+    {
+        const MultiFab &phaseFabAnalytic = Data(lev).msv[Ark::PHI];
+        MultiFab &phaseFabNumeric = Data(lev).density_old;
+        cur_L2_norm.push_back(L2NormScalar(phaseFabNumeric, phaseFabAnalytic));
     }
-
     return cur_L2_norm;
 }
 
-Vector<double> DUGKSAmr::MultiLevelL2Norm()
+Vector<double> DUGKSAmr::L2NormPressure()
 {
     Vector<double> cur_L2_norm;
 
-    //* * * * * * * * * * * * * * * * Drop * * * * * * * * * * * * * * * * * * * *
-    // do nothing
-
-    //* * * * * * * * * * * * * * * * Zalesak Disk * * * * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
-    //     StaircasePhase(Data(lev).phase_old);
-    // }
-
-    // * * * * * * * * * * * * * * * * Unsteady TGV * * * * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >= 0; --lev) {
-        FillLevelUnsteadyTaylorGreenVortex(lev, Data(lev).velocity_prev, Data(lev).phase_prev);
-    }
-
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // //* * * * * * * * * * * * Scalar L2-norm Phase Field  * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-
-    //     // - Zalesak Disk
-    //     // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-
-    //     Real const norm_phase = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_phase);
-    // }
-
-    //* * * * * * * * * * * * Scalar L2-norm Density Field  * * * * * * * * * * * * *
+    // analytical solution ->
     // for(int lev = finest_level; lev >=0; --lev)
     // {
     //     // - General
