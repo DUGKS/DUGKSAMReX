@@ -212,7 +212,8 @@ Vector<double> DUGKSAmr::L2NormZalesakDisk()
 {
     Vector<double> cur_L2_norm;
 
-    // analytical solution -> density_old    computational solution -> phase_old
+    // analytical solution stored in density_old
+    // computational solution stored in phase_old
     for(int lev = finest_level; lev >= 0; --lev)
     {
         MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
@@ -232,50 +233,16 @@ Vector<double> DUGKSAmr::L2NormZalesakDisk()
 Vector<double> DUGKSAmr::L2NormPhase()
 {
     Vector<double> cur_L2_norm;
-    // analytical solution -> density_old
+    // analytical solution stored in density_old
     for(int lev = finest_level; lev >=0; --lev)
     {
-        const MultiFab &phaseFabAnalytic = Data(lev).msv[Ark::PHI];
-        MultiFab &phaseFabNumeric = Data(lev).density_old;
+        const MultiFab &phaseFabAnalytic = Data(lev).density_old;
+        MultiFab &phaseFabNumeric = Data(lev).msv[Ark::PHI];
         cur_L2_norm.push_back(L2NormScalar(phaseFabNumeric, phaseFabAnalytic));
     }
     return cur_L2_norm;
 }
 
-Vector<double> DUGKSAmr::L2NormPressure()
-{
-    Vector<double> cur_L2_norm;
-
-    // analytical solution ->
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).phase_prev, Data(lev).msv[Ark::P]);
-
-    //     Real const norm_scalar = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_scalar);
-    // }
-
-    //* * * * * * * * * * * * * * * * Vector L2-norm Velocity Field * * * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >=0; --lev) {
-        Real const norm_diff_x =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
-
-        Real const norm_diff_y =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
-
-        // Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
-        // Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
-        Real const norm_vel_x = Data(lev).velocity_prev.norm2(Ark::X);
-        Real const norm_vel_y = Data(lev).velocity_prev.norm2(Ark::Y);
-
-        cur_L2_norm.push_back(
-        std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
-        );
-    }
-
-    return cur_L2_norm;
-}
 double DUGKSAmr::InterfacePosition (const MultiFab& PhaseFab, const double probDomain_lo_y,
                                     const Real* dx,
                                     int const indexI, int const indexJ, int const indexK)
