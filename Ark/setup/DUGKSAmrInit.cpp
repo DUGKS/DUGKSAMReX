@@ -368,3 +368,22 @@ void DUGKSAmr::SetAdvanceScheme()
         amrex::Abort(ss.str());
     }
 }
+void DUGKSAmr::SetL2NormCase()
+{
+    if(CaseIndex() == 1 and CaseName() == "UnsteadyTaylorGreenVortex") {
+        MultiLevelL2Norm = &DUGKSAmr::L2NormUnsteadyTaylorGreenVortex;
+    }
+    else if(CaseIndex() == 222 and CaseName() == "ZalesakDisk")
+    {
+        MultiLevelL2Norm = &DUGKSAmr::L2NormZalesakDisk;
+    }
+    else if(CaseIndex() == 221 and CaseName() == "TransDrop" or
+            CaseIndex() == 223 and CaseName() == "ElongatedInterface" or
+            CaseIndex() == 224 and CaseName() == "SmoothDeformation")
+    {
+        MultiLevelL2Norm = &DUGKSAmr::L2NormPhase;
+    }
+    else {
+        std::cout << "L2-Norm inactivated" << std::endl;
+    }
+}

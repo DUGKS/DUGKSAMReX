@@ -2,9 +2,6 @@
 build/
 .build/
 .vscode/
-/*/
-!/Test/
-!/Ark/
 Test/nohup.out
 Test/*.[oa]
 Test/*.ex
@@ -13,12 +10,7 @@ Test/*.exe
 Test/*.exe.dSYM
 Test/build/
 Test/tmp_build_dir/
-Test/d/
-Test/f/
-Test/o/
-Test/t/
 # Test/*.sh
-Test/*/
 TAGS
 
 # latex

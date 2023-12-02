@@ -873,6 +873,7 @@ private:
     void SetMutableTraceTimeStep(const double hTime);
     void SetFluxScheme();
     void SetAdvanceScheme();
+    void SetL2NormCase();
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -890,7 +891,7 @@ private:
 
     Vector<double> MultiLevelResidual();
     Vector<double> (DUGKSAmr::*MultiLevelL2Norm) () = nullptr;
-    Vector<double> MultiLevelSum();
+    Vector<double> MultiLevelSumPhase();
     Vector<double> MultiLevelSumDensity();
 
     std::string FileNameSuffix();
@@ -913,9 +914,14 @@ private:
     void PublicFillPatchNew(int const lev);
 
     double L2NormSubtract (const MultiFab& xFabA, const MultiFab& xFabB, int const comp = 0);
-    double L2NormVelocity(int lev);
-    double L2NormPhase(int lev);
-    double L2NormDensity(int lev);
+    double L2NormScalar(MultiFab& scalarFabOld, const MultiFab& scalarFabNew, bool update = false);
+    double L2NormVector(MultiFab& vectorFabOld, const MultiFab& scalarFabNew, bool update = false);
+    Vector<double> L2NormPhase();
+    Vector<double> L2NormUnsteadyTaylorGreenVortex();
+    Vector<double> L2NormZalesakDisk();
+    double ResidualPhase(int lev);
+    double ResidualDensity(int lev);
+    double ResidualVelocity(int lev);
     double InterfacePosition (const MultiFab& phi, const double rb_lo_y, const Real* dl,
                               int const indexI, int const indexJ, int const indexK);
 

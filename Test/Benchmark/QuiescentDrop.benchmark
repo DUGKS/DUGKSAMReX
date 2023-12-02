@@ -1,0 +1,179 @@
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              GEOMETRY                 #
+#.......................................#
+geometry.prob_lo        =  0   0   0     # Lo corner coordinates
+geometry.prob_hi        =  256 256 256     # Hi corner coordinates
+
+geometry.is_periodic    =   1 1 1   # Periodicity x y z (0/1)
+
+geometry.ch_num         = 256
+geometry.ch_length      = 256.0
+geometry.min_length     = 1.0
+
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#        ADAPTIVE MESH REFINEMENT       #
+#.......................................#
+amr.n_cell              = 256 256 256   # Grid cells at coarsest AMRlevel
+amr.max_level           =   0           # Max AMR level in hierarchy 
+amr.regrid_int          =   0
+amr.v                   =	10
+amr.check_input         =   1
+amr.blocking_factor     =   8
+amr.max_grid_size       =  64
+amr.grid_eff           =   0.8
+amr.n_error_buf        =   4
+#amr.n_proper           =   1          #default set by InitAmrMesh() in AmrMesh.cpp
+#amr.ref_ratio          =   2
+#amr.refine_grid_layout =   0
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              DUGKSAmr                 #
+#.......................................#
+DUGKSAmr.verbose         =  200              #
+DUGKSAmr.n_ghost		 =  2
+DUGKSAmr.phi_error       =   0.8 0.8 0.8 0.8 0.8
+DUGKSAmr.grad_phi_error  =   1e-6 1e-6 1e-6 1e-6 1e-6
+DUGKSAmr.tag_region      =   0 
+DUGKSAmr.tag_region_lo   =   40 0 0
+DUGKSAmr.tag_region_hi   =   128 48 0
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            CASE & SOLVER              #
+#.......................................#
+case.case_index		=    220          # case index
+case.case_name      =    "QuiescentDrop"  # case name
+case.DmVn_name		= "DmVnFE"
+case.flux_scheme    = UW
+case.scheme_index   = -32
+case.solver_name	=	"DUGKSAMReX"			# solver name
+case.advance_scheme	=	"SS"			# momentum model
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#         TIME STEP COMPUTATION         #
+#.......................................#
+time.mutable_trace      =   false      # Use mutable trace time step?
+time.CFL	            =   0.8        # Use this constant CFL
+time.advance_time_step 	=   0.8        # time step size
+time.trace_time_step    =   0.4        # default vaule equals half advance_time_step
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#             PHYSICS BASE              #
+#.......................................#
+base.Rho0 = 1.0
+base.U0   = 0.0
+base.T0   = 0.9
+base.R0   = 1.0
+base.P0   = 0.3333333333333333333
+base.Mu0  = 0.1
+base.Nu0  = 0.1
+base.TauMomentum = 0.3
+base.Alpha = 1.0
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#             PHASE FIELD               #
+#.......................................#
+PF.mobility_phi  =     0.02
+PF.tau_phi       =     0.06
+PF.widthI        =     5
+PF.sigma         =     2.6666666666666666E-03
+PF.phiL          =     1
+PF.phiV          =     0
+PF.rhoL          =     5.800445742308678
+PF.rhoV          =     1.490095732942963
+PF.muL           =     0.1
+PF.muV           =     0.1
+PF.gravity       =     0.  0.  0.                 # Gravitational force
+PF.centerPF      =     0.5  0.5  0.5 			  # center/ChLength
+PF.radiusPF      =     0.2
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#         					BOUNDARY CONDITIONS          				 #
+#........................................................................#
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+# INTERIOR 0, INFLOW 1, OUTFLOW 2, SYMMETRY 3, SLIPWALL 4, NONSLIPWALL 5 #
+#........................................................................#
+#
+bc.physical_lo = 0 0 0
+bc.physical_hi = 0 0 0
+#
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+# REFLECT_ODD -1, INTERIOR 0, REFLECT_EVEN 1, FOEXTRAP 2, EXTERNAL 3, #
+# HOEXTRAP 4, HOEXTRAPCC 5  										  #
+#.....................................................................#
+bc.phase_lo   = 5 3 5
+bc.phase_hi   = 5 5 5
+
+bc.density_lo   = 5 3 5
+bc.density_hi   = 5 5 5 
+
+bc.velocity_lo   = 0 0 0
+bc.velocity_hi   = 0 0 0
+
+bc.pressure_lo   = 5 2 5
+bc.pressure_hi   = 5 2 5
+
+bc.temperature_lo   = 5 5 5
+bc.temperature_hi   = 5 5 5
+
+bc.force_lo   = 5 2 5
+bc.force_hi   = 5 2 5
+
+bc.DVDF_wave_lo   = 5 5 5
+bc.DVDF_wave_hi   = 5 5 5
+
+bc.DVDF_barplus_lo   = 5 5 5
+bc.DVDF_barplus_hi   = 5 5 5
+
+bc.dirichlet_velocity_x_lo = 0 0 0 
+bc.dirichlet_velocity_x_hi = 0 0 0
+
+bc.dirichlet_velocity_y_lo = 0 0 0 
+bc.dirichlet_velocity_y_hi = 0 0 0
+
+#bc.dirichlet_velocity_z_lo = 0 0 0 
+#bc.dirichlet_velocity_z_hi = 0 0 0
+
+#bc.dirichlet_pressure_lo = 0 0 0
+#bc.dirichlet_pressure_hi = 0 0 0
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            INPUT AND OUTPUT           #
+#.......................................#
+control.steady_state            = true
+control.end_step                =  -1         # Max number of time steps
+control.residual_tolerance      =  1E-10           # 
+control.adapt_tolerance			=	0.0001
+control.plot_file               = "plt"
+control.check_file              = "chk"
+control.restart_file            = ""        # Checkpoint to restart from
+control.conv_interval	    =	1000 		#norm, sum_density, etc...
+control.residual_interval   = 	1000        
+control.plot_interval		=   1000        # Steps between plot files
+control.check_interval    		=   -1           # Steps between checkpoint files
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            PLOT VARIABLES             #
+#.......................................#
+plot.ccse_regtest        = 1           #0 : default plot 
+plot.phi         =   0
+plot.rho         =   1
+plot.velx        =   1
+plot.vely        =   1
+plot.velz        =   1
+plot.pres        =   1
+plot.temp        =   1
+plot.gphix       =   1
+plot.gphiy       =   1
+plot.gphiz       =   1
+plot.forcex      =   1
+plot.forcey      =   1
+plot.forcez      =   1
+plot.chemip      =   1
+plot.tau         =   0
+plot.vort        =   0
+plot.strainrate  =   0
+plot.divu        =   0
+plot.volfrac     =   0
+plot.hDVDF       =   0
+plot.fDVDF       =   0
+plot.gDVDF       =   0

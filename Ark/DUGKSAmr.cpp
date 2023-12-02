@@ -38,6 +38,8 @@ DUGKSAmr::DUGKSAmr():FlowParm(),AmrCore()
 
     SetAdvanceScheme();
 
+    SetL2NormCase();
+
     CheckDUGKSAmr();
 }
 
@@ -67,8 +69,8 @@ void DUGKSAmr::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_
 
 #ifdef AMREX_USE_EB
     m_factory[lev] = makeEBFabFactory(geom[lev], new_grids, new_dmap,
-                                      {m_eb_basic_grow_cells, 
-                                       m_eb_volume_grow_cells, 
+                                      {m_eb_basic_grow_cells,
+                                       m_eb_volume_grow_cells,
                                        m_eb_full_grow_cells},
                                  	    m_eb_support_level);
 #else

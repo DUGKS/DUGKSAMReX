@@ -16,13 +16,13 @@ double DUGKSAmr::L2NormSubtract(const MultiFab& xFabA, const MultiFab& xFabB, in
 
     return diff_xFab->norm2();
 }
-double DUGKSAmr::L2NormScalar(MultiFab &scalarFabOld, const MultiFab &scalarFabNew, const bool updateOld)
+double DUGKSAmr::L2NormScalar(MultiFab &scalarFabOld, const MultiFab &scalarFabNew, bool update)
 {
     const Real norm_diff   = L2NormSubtract(scalarFabOld, scalarFabNew);
     const Real norm_scalar = scalarFabNew.norm2();
 
-    if(updateOld) {
-        MultiFab::Copy(scalarFabOld, scalarFabNew, 0, 0, 1, 0)
+    if(update) {
+        MultiFab::Copy(scalarFabOld, scalarFabNew, 0, 0, 1, 0);
     }
     return norm_diff / (norm_scalar + Ark::tiny);
 }
@@ -45,7 +45,7 @@ double DUGKSAmr::ResidualDensity(int lev)
 
 	return L2NormScalar(rhoFabOld, rhoFabNew, true);
 }
-double DUGKAmr::L2NormVector(MultiFab &vectorFabOld, const MultiFab &vectorFabNew, bool updateOld)
+double DUGKSAmr::L2NormVector(MultiFab &vectorFabOld, const MultiFab &vectorFabNew, bool update)
 {
     Real norm_diff[AMREX_SPACEDIM];
 	Real norm_vector[ AMREX_SPACEDIM];
@@ -60,7 +60,7 @@ double DUGKAmr::L2NormVector(MultiFab &vectorFabOld, const MultiFab &vectorFabNe
 	norm_diff[Ark::Z]   = L2NormSubtract(vectorFabOld, vectorFabNew, Ark::Z);
 	norm_vector[Ark::Z] = vectorFabNew.norm2(Ark::Z);
 
-    if(updateOld) {
+    if(update) {
         MultiFab::Copy(vectorFabOld, vectorFabNew, 0, 0, AMREX_SPACEDIM, 0);
     }
 
@@ -71,7 +71,7 @@ double DUGKAmr::L2NormVector(MultiFab &vectorFabOld, const MultiFab &vectorFabNe
 	return 	std::sqrt( Ark::Square(norm_diff[Ark::X], norm_diff[Ark::Y], norm_diff[Ark::Z])
                       /Ark::Square(norm_vector[Ark::X], norm_vector[Ark::Y], norm_vector[Ark::Z]));
 #else
-    if(updateOld) {
+    if(update) {
         MultiFab::Copy(vectorFabOld, vectorFabNew, 0, 0, AMREX_SPACEDIM, 0);
     }
 
@@ -127,69 +127,7 @@ Vector<double> DUGKSAmr::MultiLevelResidual()
     }
     return cur_residual;
 }
-Vector<double> DUGKSAmr::MultiLevelL2Norm()
-{
-    Vector<double> cur_L2_norm;
 
-    //* * * * * * * * * * * * * * * * Drop * * * * * * * * * * * * * * * * * * * *
-    // do nothing
-
-    //* * * * * * * * * * * * * * * * Zalesak Disk * * * * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     MultiFab::Copy(Data(lev).phase_old, Data(lev).msv[Ark::PHI],0,0,1,zero_ghost());
-    //     StaircasePhase(Data(lev).phase_old);
-    // }
-
-    // * * * * * * * * * * * * * * * * Unsteady TGV * * * * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >= 0; --lev) {
-        FillLevelUnsteadyTaylorGreenVortex(lev, Data(lev).velocity_prev, Data(lev).phase_prev);
-    }
-
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // //* * * * * * * * * * * * Scalar L2-norm Phase Field  * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).msv[Ark::PHI]);
-
-    //     // - Zalesak Disk
-    //     // Real const norm_diff = L2NormSubtract(Data(lev).density_old, Data(lev).phase_old);
-
-    //     Real const norm_phase = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_phase);
-    // }
-
-    //* * * * * * * * * * * * Scalar L2-norm Density Field  * * * * * * * * * * * * *
-    // for(int lev = finest_level; lev >=0; --lev)
-    // {
-    //     // - General
-    //     Real const norm_diff = L2NormSubtract(Data(lev).phase_prev, Data(lev).msv[Ark::P]);
-
-    //     Real const norm_scalar = Data(lev).density_old.norm2();
-    //     cur_L2_norm.push_back(norm_diff/norm_scalar);
-    // }
-
-    //* * * * * * * * * * * * * * * * Vector L2-norm Velocity Field * * * * * * * * * * * * * * *
-    for(int lev = finest_level; lev >=0; --lev) {
-        Real const norm_diff_x =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::X);
-
-        Real const norm_diff_y =
-        L2NormSubtract(Data(lev).velocity_prev, Data(lev).msv[Ark::VEL], Ark::Y);
-
-        // Real const norm_vel_x = Data(lev).msv[Ark::VEL].norm2(Ark::X);
-        // Real const norm_vel_y = Data(lev).msv[Ark::VEL].norm2(Ark::Y);
-        Real const norm_vel_x = Data(lev).velocity_prev.norm2(Ark::X);
-        Real const norm_vel_y = Data(lev).velocity_prev.norm2(Ark::Y);
-
-        cur_L2_norm.push_back(
-        std::sqrt(Ark::Square(norm_diff_x, norm_diff_y)/Ark::Square(norm_vel_x, norm_vel_y))
-        );
-    }
-
-    return cur_L2_norm;
-}
 Vector<double> DUGKSAmr::L2NormUnsteadyTaylorGreenVortex()
 {
     Vector<double> cur_L2_norm;

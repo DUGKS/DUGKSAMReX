@@ -38,7 +38,7 @@ void DUGKSAmr::Evolve()
 			begin = amrex::ParallelDescriptor::second();
 
 			WriteComputingTime(elapsed_time);
-			WriteL2NormFile(MultiLevelL2Norm());
+			WriteL2NormFile((this->*MultiLevelL2Norm)());
 			// WriteSumPhaseFile(MultiLevelSum());
 			WriteSumDensityFile(MultiLevelSumDensity());
 
