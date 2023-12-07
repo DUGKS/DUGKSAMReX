@@ -185,7 +185,7 @@ private:
     amrex::Real cur_time     = 0.0;
 
     // Time step
-    bool use_mutable_trace = false;
+    bool use_constant_trace = true;
     int nstep         = -1;
     amrex::Real Courant_Friedrichs_Lewy;
     amrex::Real advance_time_step;

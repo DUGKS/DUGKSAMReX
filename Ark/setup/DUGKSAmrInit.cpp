@@ -35,18 +35,18 @@ void DUGKSAmr::ReadParametersDUGKSAmr()
 
     {
     amrex::ParmParse ppTime("time");
-    ppTime.get("mutable_trace", use_mutable_trace);
+    ppTime.get("constant_trace", use_constant_trace);
     ppTime.get("CFL", Courant_Friedrichs_Lewy);
     ppTime.get("advance_time_step", advance_time_step);
 
     double hTime = 0.5*advance_time_step;
     ppTime.query("trace_time_step", hTime);
 
-    if(use_mutable_trace) {
-        SetMutableTraceTimeStep(hTime);
+    if(use_constant_trace) {
+        for(auto &d : trace_time_step) { d = hTime; }
     }
     else {
-        for(auto &d : trace_time_step) { d = hTime; }
+        SetMutableTraceTimeStep(hTime);
     }
 
     }

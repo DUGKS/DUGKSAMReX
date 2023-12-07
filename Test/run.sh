@@ -10,7 +10,7 @@
 # case=SpinodalDecomposition
 # case=DropletCoalescence
 # case=BasicCase
-case=UnsteadyTGV
+case=unsteadyTGV
 DIM=2
 N=4
 nohup mpiexec -n $N ./DUGKS.${DIM}d.gnu.MPI.ex ./Benchmark/${case}.benchmark &
