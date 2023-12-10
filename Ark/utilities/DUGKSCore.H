@@ -17,6 +17,8 @@ public:
 	template<bool ENABLESOURCE>
 	static void Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
+	static void Moment_Wave (MultiFab &xTilde, const MultiFab &xEq);
+
 	// - construct \bar{f}^{+}
 	static void Collision_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime);
 
@@ -35,40 +37,40 @@ public:
 
 	static void Update_Grad_BarPlus_VanLeer (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real *dx);
 
-	static void Update_Barh_UW_1st (MultiFab &xBarhFabnF, 
+	static void Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									const Real* dx, const Real hTime, 
+									const Real* dx, const Real hTime,
 									amrex::Direction FaceID);
 
-	static void Update_Barh_UW_2nd (MultiFab &xBarhFabnF, 
+	static void Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									const Real* dx, const Real hTime, 
+									const Real* dx, const Real hTime,
 									amrex::Direction FaceID);
 
-	static void Update_Barh_UW_3rd (MultiFab &xBarhFab, 
+	static void Update_Barh_UW_3rd (MultiFab &xBarhFab,
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 			const Real* dx, const Real hTime,
 						 			amrex::Direction FaceID);
 
-	static void Update_Barh_UW_4th (MultiFab &xBarhFab, 
+	static void Update_Barh_UW_4th (MultiFab &xBarhFab,
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 			const Real* dx, const Real hTime,
 						 			amrex::Direction FaceID);
 
-	static void Update_Barh_UW_4th_cross (MultiFab &xBarhFab, 
+	static void Update_Barh_UW_4th_cross (MultiFab &xBarhFab,
 										  Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 				  const Real* dx, const Real hTime,
 						 				  amrex::Direction FaceID);
 
-	static void Update_Barh_UW_5th (MultiFab &xBarhFab, 
+	static void Update_Barh_UW_5th (MultiFab &xBarhFab,
 									Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 			const Real* dx, const Real hTime,
 						 			amrex::Direction FaceID);
 
-	static void Update_Barh_UW_Limiter (MultiFab &xBarhFab, 
+	static void Update_Barh_UW_Limiter (MultiFab &xBarhFab,
 										Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 				amrex::Direction FaceID);
-	
+
 	static void Update_Barh_CD (MultiFab &xBarhFab, const MultiFab &xBarPlusFab,
 						 		const Real* dx, const Real hTime,
 						 		amrex::Direction FaceID);
@@ -83,13 +85,13 @@ public:
 
 	static void Update_FD_Barh_WENO_3rd (MultiFab &xBarhFab, const MultiFab &xBarPlusFab,
 								  	 	 amrex::Direction FaceID);
-	
+
 	static void Update_FD_Barh_WENO_5th (MultiFab &xBarhFab, const MultiFab &xBarPlusFab,
 								  	 	 amrex::Direction FaceID);
-	
+
 	template<bool ENABLESOURCE>
 	static void Collision_xFluxX (Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF, const Real hTime);
-	
+
 	static void Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 							 const Vector<MultiFab const *> &xFluxFabnF,
 							 const Real *dx, const Real hTime, const Real dTime);
@@ -98,7 +100,7 @@ public:
 	// 						 const Vector<MultiFab const *> &xFluxFabnF,
 	// 						 const Real *dx, const Real dTime);
 
-	static void Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab, 
+	static void Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab,
 							 	const Real hTime);
 
 	//../discrete_velocity_model/DUGKSDmVn***.cpp
@@ -116,13 +118,13 @@ public:
 	template<bool EnableSource=true>
 	static void Update_Eq_Energy (MultiFab &gEq, MultiFab &gSo, const Array<MultiFab, Ark::MSVNUM> &msv);
 
-	static void Integral_MacroBaseVars_Phase (Array<MultiFab, Ark::MSVNUM> &msv, 
+	static void Integral_MacroBaseVars_Phase (Array<MultiFab, Ark::MSVNUM> &msv,
 										      const MultiFab &xDVDF);
 
-	static void Integral_MacroBaseVars_Momentum (Array<MultiFab, Ark::MSVNUM> &msv, 
+	static void Integral_MacroBaseVars_Momentum (Array<MultiFab, Ark::MSVNUM> &msv,
 										   	     const MultiFab &xDVDF);
 
-	static void Integral_MacroBaseVars_Energy (Array<MultiFab, Ark::MSVNUM> &msv, 
+	static void Integral_MacroBaseVars_Energy (Array<MultiFab, Ark::MSVNUM> &msv,
 										   	   const MultiFab &xDVDF);
 };
 template<typename DVM>
@@ -144,14 +146,14 @@ public:
 												int const lo_min, int const hi_max,
 												Real const dTime, int const dir);
 
-	static void FillPhysicalBoundaryFlux_BB (const Vector<MultiFab*> &xFluxFabPtr, 
+	static void FillPhysicalBoundaryFlux_BB (const Vector<MultiFab*> &xFluxFabPtr,
 									  		 const Vector<const MultiFab*> &xVarFabPtr,
 									  		 const Vector<const MultiFab*> &VelFabPtr,
 									  		 int const lo_min, int const hi_max,
 									  		 int const dir);
 private:
 	//This function is only valid for the equilibrium function based upon Taylor expansion,
-	//which means the equilibrium distribution function should contain the typical 
+	//which means the equilibrium distribution function should contain the typical
 	//first order term of LaTex:\frac{(\xi\cdot{u})}{RT}
 	static void BounceBack (Array4<Real> const &xFlux,
                  			Array4<const Real> const &/*conservative variable : phi,rho,temp */,
@@ -163,7 +165,7 @@ template<typename DVM>
 class DVMCore
 {
 public:
-	static void Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real dTime, 
+	static void Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real dTime,
 							 const Real minL);
 };
 
@@ -171,9 +173,9 @@ template<typename DVM>
 class DVMBoundary
 {
 public:
-	
-	static void FillPhysicalBoundaryWave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
-										  const MultiFab& PhiFab, 
+
+	static void FillPhysicalBoundaryWave (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
+										  const MultiFab& PhiFab,
 										  double const dTime, double const minL,
 										  int const lo_min, int const hi_max,
 									  	  int const dir);

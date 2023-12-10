@@ -68,7 +68,7 @@ void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Rea
     }
 }
 
-// - Construct Prime from Wave 
+// - Construct Prime from Wave
 template<typename DVM>
 template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
@@ -86,7 +86,7 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
 
         Array4<Real>       const &xWave   = xDVDF[Ark::BP].array(mfi);
 
-        amrex::ParallelFor(bx, DVM::Q, 
+        amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real xtau = xTau(i,j,k);
@@ -126,7 +126,7 @@ void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
 
         Array4<Real>       const &xWave    = xDVDF[Ark::WAVE].array(mfi);
 
-        amrex::ParallelFor(bx, DVM::Q, 
+        amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real xtau = xTau(i,j,k);
@@ -167,7 +167,7 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         Array4<Real>       const &xBP   = xDVDF[Ark::BP].array(mfi);
         Array4<Real>       const &xWave = xDVDF[Ark::WAVE].array(mfi);
 
-        amrex::ParallelFor(bx, DVM::Q, 
+        amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	const Real xtau = xTau(i,j,k);
@@ -185,7 +185,31 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         });
     }
 }
+template<typename DVM>
+void DUGKSCore<DVM>::Transform (MultiFab &xTilde, const MultiFab &xEq,
+								const double (&M)[DVM::Q][DVM::Q])
+{
+	#ifdef _OPENMP
+	#pragma omp parallel
+	#endif
+	for(amrex::MFIter mfi(xEq, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
 
+        Array4<Real const> const &xEq    = xEq.const_array(mfi);
+        Array4<Real>       const &xWave = xTilde.array(mfi);
+
+        amrex::ParallelFor(bx, DVM::Q,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+			double sum = 0;
+			for(int m = 0; m < DVM::Q; m++) {
+				sum += xEq(i,j,k,m) * DVM::M[n][m];
+			}
+			xWave(i,j,k,n) = sum;
+        });
+    }
+}
 template<typename DVM>
 void DUGKSCore<DVM>::Update_Grad_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real* dx)
 {
@@ -208,7 +232,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
 		Array4<Real> const &xBPyz = xDVDF[Ark::BPyz].array(mfi);
 		Array4<Real> const &xBPzx = xDVDF[Ark::BPzx].array(mfi);
 #endif
-		
+
 		Array4<Real  const> const &xBP = xDVDF[Ark::BP].const_array(mfi);
 
 		GradFunc::Update_Grad_x(   bx, DVM::Q, dx, xBP, xBPx);
@@ -298,7 +322,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_3rd (Array<MultiFab, Ark::DVDFNUM> &xDV
 		Array4<Real> const &xBPyz = xDVDF[Ark::BPyz].array(mfi);
 		Array4<Real> const &xBPzx = xDVDF[Ark::BPzx].array(mfi);
 #endif
-		
+
 		Array4<Real  const> const &xBP = xDVDF[Ark::BP].const_array(mfi);
 
 		GradFunc::Update_Grad_x_5th(  bx, DVM::Q, dx, xBP, xBPx);
@@ -317,7 +341,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_3rd (Array<MultiFab, Ark::DVDFNUM> &xDV
 }
 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_Grad_BarPlus_4th (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
+void DUGKSCore<DVM>::Update_Grad_BarPlus_4th (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 											  const Real* dx)
 {
 
@@ -340,7 +364,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_4th (Array<MultiFab, Ark::DVDFNUM> &xDV
 		Array4<Real> const &xBPxyy  = xDVDF[Ark::BPxyy].array(mfi);
 		Array4<Real> const &xBPyyy  = xDVDF[Ark::BPyyy].array(mfi);
 		Array4<Real> const &xBPxxyy = xDVDF[Ark::BPxxyy].array(mfi);
-		
+
 		Array4<Real  const> const &xBP = xDVDF[Ark::BP].const_array(mfi);
 
 		GradFunc::Update_Grad_x_5th(   bx, DVM::Q, dx, xBP, xBPx);
@@ -360,7 +384,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_4th (Array<MultiFab, Ark::DVDFNUM> &xDV
 }
 
 template<typename DVM>
-void DUGKSCore<DVM>::Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
+void DUGKSCore<DVM>::Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 											  const Real* dx)
 {
 
@@ -383,7 +407,7 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDV
 		Array4<Real> const &xBPyyy  = xDVDF[Ark::BPyyy].array(mfi);
 		Array4<Real> const &xBPxxxx = xDVDF[Ark::BPxxxx].array(mfi);
 		Array4<Real> const &xBPyyyy = xDVDF[Ark::BPyyyy].array(mfi);
-		
+
 		Array4<Real  const> const &xBP = xDVDF[Ark::BP].const_array(mfi);
 
 		GradFunc::Update_Grad_x_5th(   bx, DVM::Q, dx, xBP, xBPx);
@@ -403,9 +427,9 @@ void DUGKSCore<DVM>::Update_Grad_BarPlus_5th (Array<MultiFab, Ark::DVDFNUM> &xDV
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 									 	 Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									 	 const Real* dx, const Real hTime, 
+									 	 const Real* dx, const Real hTime,
 									 	 amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -430,15 +454,15 @@ void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 			{
 				int const ii = i + di;
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n);						 
+				xBh(i,j,k,n) = xBP(ii,j,k,n);
 			});
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-			{					 
+			{
 				xBh(i,j,k,n) += xBP(i,j,k,n);
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -456,7 +480,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-			{					 
+			{
 				xBh(i,j,k,n) += xBP(i,j,k,n);
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -477,7 +501,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 			{
 				int const kk = k + dk;
 
-				xBh(i,j,k,n) = xBP(i,j,kk,n); 
+				xBh(i,j,k,n) = xBP(i,j,kk,n);
 			});
 
 			if(token == 0) {
@@ -488,19 +512,19 @@ void DUGKSCore<DVM>::Update_Barh_UW_1st (MultiFab &xBarhFabnF,
 			});
 			}
 		}
-		}			
+		}
 #endif
 		else {
 			amrex::Abort("UW-1st : How did we get here?");
 		}
-		
+
 	}
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 									 	 Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									 	 const Real* dx, const Real hTime, 
+									 	 const Real* dx, const Real hTime,
 									 	 amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -536,7 +560,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 #if(AMREX_SPACEDIM == 3)
 			const Real dlz  = -hTime*DVM::xi_w[n];
 #endif
-			
+
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				int const ii = i + di;
@@ -547,12 +571,12 @@ void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 
 #elif(AMREX_SPACEDIM == 3)
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx
 							 + xBPy(ii,j,k,n)*dly
-							 + xBPz(ii,j,k,n)*dlz;		
+							 + xBPz(ii,j,k,n)*dlz;
 
-#endif							 
+#endif
 
 			});
 			if(token == 0) {
@@ -564,16 +588,16 @@ void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 
 #elif(AMREX_SPACEDIM == 3)
 
-				Real tmp = xBP(i,j,k,n) 
-						 - xBPx(i,j,k,n)*dlx 
-						 + xBPy(i,j,k,n)*dly 
+				Real tmp = xBP(i,j,k,n)
+						 - xBPx(i,j,k,n)*dlx
+						 + xBPy(i,j,k,n)*dly
 						 + xBPz(i,j,k,n)*dlz;
 
-#endif						 
+#endif
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -603,28 +627,28 @@ void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 
 #elif(AMREX_SPACEDIM == 3)
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
-							 + xBPx(i,jj,k,n)*dlx 
-							 + xBPy(i,jj,k,n)*dly 
-							 + xBPz(i,jj,k,n)*dlz;			 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
+							 + xBPx(i,jj,k,n)*dlx
+							 + xBPy(i,jj,k,n)*dly
+							 + xBPz(i,jj,k,n)*dlz;
 #endif
 			});
 
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-#if(AMREX_SPACEDIM == 2)	
+#if(AMREX_SPACEDIM == 2)
 
 				Real tmp = xBP(i,j,k,n) + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly;
 
 #elif(AMREX_SPACEDIM == 3)
 
-				Real tmp = xBP(i,j,k,n) 
-						 + xBPx(i,j,k,n)*dlx 
+				Real tmp = xBP(i,j,k,n)
+						 + xBPx(i,j,k,n)*dlx
 						 - xBPy(i,j,k,n)*dly
-						 + xBPz(i,j,k,n)*dlz;	
-						 	 
-#endif							 
+						 + xBPz(i,j,k,n)*dlz;
+
+#endif
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -650,38 +674,38 @@ void DUGKSCore<DVM>::Update_Barh_UW_2nd (MultiFab &xBarhFabnF,
 			{
 				int const kk = k + dk;
 
-				xBh(i,j,k,n) = xBP(i,j,kk,n) 
-							 + xBPx(i,j,kk,n)*dlx 
-							 + xBPy(i,j,kk,n)*dly 
+				xBh(i,j,k,n) = xBP(i,j,kk,n)
+							 + xBPx(i,j,kk,n)*dlx
+							 + xBPy(i,j,kk,n)*dly
 							 + xBPz(i,j,kk,n)*dlz;
 			});
 
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				Real tmp = xBP(i,j,k,n) 
-						 + xBPx(i,j,k,n)*dlx 
+				Real tmp = xBP(i,j,k,n)
+						 + xBPx(i,j,k,n)*dlx
 						 + xBPy(i,j,k,n)*dly
-						 - xBPz(i,j,k,n)*dlz;		 
+						 - xBPz(i,j,k,n)*dlz;
 
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
 			}
 		}
-		}			
+		}
 #endif
 		else {
 			amrex::Abort("UW-2 : How did we get here?");
 		}
-		
+
 	}
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 									 	 Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									 	 const Real* dx, const Real hTime, 
+									 	 const Real* dx, const Real hTime,
 									 	 amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -718,12 +742,12 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			int const di = token < 0 ? 0 : -1;
 			//
 			const Real dlx  = 0.5*delta*multiplier - hTime*DVM::xi_u[n];
-			const Real dlx2 = dlx*dlx;	
+			const Real dlx2 = dlx*dlx;
 			//
 			const Real dly  = -hTime*DVM::xi_v[n];
-			const Real dly2 = dly*dly;	
+			const Real dly2 = dly*dly;
 
-			const Real dlxy = dlx*dly; 
+			const Real dlxy = dlx*dly;
 
 #if(AMREX_SPACEDIM == 3)
 			const Real dlz  = -hTime*DVM::xi_w[n];
@@ -731,30 +755,30 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			const Real dlyz = dly*dlz;
 			const Real dlzx = dlz*dlx;
 #endif
-			
+
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				int const ii = i + di;
 
 #if(AMREX_SPACEDIM == 2)
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx + xBPy(ii,j,k,n)*dly
 							 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5
 							 + xBPxy(ii,j,k,n)*dlxy;
 #elif(AMREX_SPACEDIM == 3)
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx
 							 + xBPy(ii,j,k,n)*dly
 							 + xBPz(ii,j,k,n)*dlz
-							 + (xBPxx(ii,j,k,n)*dlx2 
-							   +xBPyy(ii,j,k,n)*dly2 
-							   +xBPzz(ii,j,k,n)*dlz2)*0.5							 
+							 + (xBPxx(ii,j,k,n)*dlx2
+							   +xBPyy(ii,j,k,n)*dly2
+							   +xBPzz(ii,j,k,n)*dlz2)*0.5
 							 + xBPxy(ii,j,k,n)*dlxy
 							 + xBPyz(ii,j,k,n)*dlyz
-							 + xBPzx(ii,j,k,n)*dlzx;			 
-#endif							 
+							 + xBPzx(ii,j,k,n)*dlzx;
+#endif
 
 			});
 			if(token == 0) {
@@ -762,29 +786,29 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			{
 #if(AMREX_SPACEDIM == 2)
 
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 - xBPx(i,j,k,n)*dlx + xBPy(i,j,k,n)*dly
 						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 - xBPxy(i,j,k,n)*dlxy;
 
 #elif(AMREX_SPACEDIM == 3)
 
-				Real tmp = xBP(i,j,k,n) 
-						 - xBPx(i,j,k,n)*dlx 
-						 + xBPy(i,j,k,n)*dly 
+				Real tmp = xBP(i,j,k,n)
+						 - xBPx(i,j,k,n)*dlx
+						 + xBPy(i,j,k,n)*dly
 						 + xBPz(i,j,k,n)*dlz
 						 + (xBPxx(i,j,k,n)*dlx2
 						   +xBPyy(i,j,k,n)*dly2
 						   +xBPzz(i,j,k,n)*dlz2)*0.5
-						 - xBPxy(i,j,k,n)*dlxy 
-						 + xBPyz(i,j,k,n)*dlyz 
-						 - xBPzx(i,j,k,n)*dlzx;	
+						 - xBPxy(i,j,k,n)*dlxy
+						 + xBPyz(i,j,k,n)*dlyz
+						 - xBPzx(i,j,k,n)*dlzx;
 
-#endif						 
+#endif
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -801,7 +825,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			const Real dly2 = dly*dly;
 			//
 			const Real dlx  = -hTime*DVM::xi_u[n];
-			const Real dlx2 = dlx*dlx;	
+			const Real dlx2 = dlx*dlx;
 			//
 			const Real dlxy = dlx*dly;
 
@@ -818,49 +842,49 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 
 #if(AMREX_SPACEDIM == 2)
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
 							 + xBPx(i,jj,k,n)*dlx + xBPy(i,jj,k,n)*dly
 							 + (xBPxx(i,jj,k,n)*dlx2 + xBPyy(i,jj,k,n)*dly2)*0.5
 							 + xBPxy(i,jj,k,n)*dlxy;
 
 #elif(AMREX_SPACEDIM == 3)
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
-							 + xBPx(i,jj,k,n)*dlx 
-							 + xBPy(i,jj,k,n)*dly 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
+							 + xBPx(i,jj,k,n)*dlx
+							 + xBPy(i,jj,k,n)*dly
 							 + xBPz(i,jj,k,n)*dlz
-							 + (xBPxx(i,jj,k,n)*dlx2 
+							 + (xBPxx(i,jj,k,n)*dlx2
 							   +xBPyy(i,jj,k,n)*dly2
 							   +xBPzz(i,jj,k,n)*dlz2)*0.5
 							 + xBPxy(i,jj,k,n)*dlxy
 							 + xBPyz(i,jj,k,n)*dlyz
-							 + xBPzx(i,jj,k,n)*dlzx;			 
+							 + xBPzx(i,jj,k,n)*dlzx;
 #endif
 			});
 
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-#if(AMREX_SPACEDIM == 2)		
+#if(AMREX_SPACEDIM == 2)
 
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly
 						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 - xBPxy(i,j,k,n)*dlxy;
 
 #elif(AMREX_SPACEDIM == 3)
 
-				Real tmp = xBP(i,j,k,n) 
-						 + xBPx(i,j,k,n)*dlx 
+				Real tmp = xBP(i,j,k,n)
+						 + xBPx(i,j,k,n)*dlx
 						 - xBPy(i,j,k,n)*dly
 						 + xBPz(i,j,k,n)*dlz
-						 + (xBPxx(i,j,k,n)*dlx2 
+						 + (xBPxx(i,j,k,n)*dlx2
 						   +xBPyy(i,j,k,n)*dly2
 						   +xBPzz(i,j,k,n)*dlz2)*0.5
 						 - xBPxy(i,j,k,n)*dlxy
 						 - xBPyz(i,j,k,n)*dlyz
-						 + xBPzx(i,j,k,n)*dlzx;		 
-#endif							 
+						 + xBPzx(i,j,k,n)*dlzx;
+#endif
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -897,11 +921,11 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			{
 				int const kk = k + dk;
 
-				xBh(i,j,k,n) = xBP(i,j,kk,n) 
-							 + xBPx(i,j,kk,n)*dlx 
-							 + xBPy(i,j,kk,n)*dly 
+				xBh(i,j,k,n) = xBP(i,j,kk,n)
+							 + xBPx(i,j,kk,n)*dlx
+							 + xBPy(i,j,kk,n)*dly
 							 + xBPz(i,j,kk,n)*dlz
-							 + (xBPxx(i,j,kk,n)*dlx2 
+							 + (xBPxx(i,j,kk,n)*dlx2
 							   +xBPyy(i,j,kk,n)*dly2
 							   +xBPzz(i,j,kk,n)*dlz2)*0.5
 							 + xBPxy(i,j,kk,n)*dlxy
@@ -912,35 +936,35 @@ void DUGKSCore<DVM>::Update_Barh_UW_3rd (MultiFab &xBarhFabnF,
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				Real tmp = xBP(i,j,k,n) 
-						 + xBPx(i,j,k,n)*dlx 
+				Real tmp = xBP(i,j,k,n)
+						 + xBPx(i,j,k,n)*dlx
 						 + xBPy(i,j,k,n)*dly
 						 - xBPz(i,j,k,n)*dlz
-						 + (xBPxx(i,j,k,n)*dlx2 
+						 + (xBPxx(i,j,k,n)*dlx2
 						   +xBPyy(i,j,k,n)*dly2
 						   +xBPzz(i,j,k,n)*dlz2)*0.5
 						 + xBPxy(i,j,k,n)*dlxy
 						 - xBPyz(i,j,k,n)*dlyz
-						 - xBPzx(i,j,k,n)*dlzx;		 
+						 - xBPzx(i,j,k,n)*dlzx;
 
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
 			}
 		}
-		}			
+		}
 #endif
 		else {
 			amrex::Abort("UW-3 : How did we get here?");
 		}
-		
+
 	}
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 									     		Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									   	 		const Real* dx, const Real hTime, 
+									   	 		const Real* dx, const Real hTime,
 									 	 		amrex::Direction FaceID)
 {
 
@@ -980,13 +1004,13 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 			//
 			const Real dlx  = 0.5*delta*multiplier - hTime*DVM::xi_u[n];
 			const Real dlx2 = dlx*dlx;
-			const Real dlx3 = dlx*dlx2;				
+			const Real dlx3 = dlx*dlx2;
 			//
 			const Real dly  = -hTime*DVM::xi_v[n];
 			const Real dly2 = dly*dly;
-			const Real dly3 = dly*dly2;	
+			const Real dly3 = dly*dly2;
 
-			const Real dlxy   = dlx*dly; 
+			const Real dlxy   = dlx*dly;
 			const Real dlxxy  = dlx2*dly;
 			const Real dlxyy  = dlx*dly2;
 			const Real dlxxyy = dlx2*dly2;
@@ -995,49 +1019,49 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 			{
 				int const ii = i + di;
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx + xBPy(ii,j,k,n)*dly
 							 + xBPxy(ii,j,k,n)*dlxy
 							 + xBPxx(ii,j,k,n)*(0.5*dlx2 - deltaxy)
-							 + xBPyy(ii,j,k,n)*(0.5*dly2 - deltaxy)						 
+							 + xBPyy(ii,j,k,n)*(0.5*dly2 - deltaxy)
 							 + xBPxxy(ii,j,k,n)*(0.5*dlx2 - deltaxy)*dly
 							 + xBPxyy(ii,j,k,n)*(0.5*dly2 - deltaxy)*dlx
-							 + xBPxxyy(ii,j,k,n)*(0.25*dlxxyy + deltaxxyy 
+							 + xBPxxyy(ii,j,k,n)*(0.25*dlxxyy + deltaxxyy
 							 					 - 0.5*(dlx2 + dly2)*deltaxy);
 
-				// xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				// xBh(i,j,k,n) = xBP(ii,j,k,n)
 				// 			 + xBPx(ii,j,k,n)*dlx + xBPy(ii,j,k,n)*dly
 				// 			 + xBPxy(ii,j,k,n)*dlxy
 				// 			 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5
 				// 			 + (xBPxxy(ii,j,k,n)*dlxxy + xBPxyy(ii,j,k,n)*dlxyy)*0.5
 				// 			 + xBPxxyy(ii,j,k,n)*dlxxyy*0.25;
-							 					 
+
 			});
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 - xBPx(i,j,k,n)*dlx + xBPy(i,j,k,n)*dly
 						 - xBPxy(i,j,k,n)*dlxy
 						 + xBPxx(i,j,k,n)*(0.5*dlx2 - deltaxy)
-						 + xBPyy(i,j,k,n)*(0.5*dly2 - deltaxy)						 
+						 + xBPyy(i,j,k,n)*(0.5*dly2 - deltaxy)
 						 + xBPxxy(i,j,k,n)*(0.5*dlx2 - deltaxy)*dly
 						 - xBPxyy(i,j,k,n)*(0.5*dly2 - deltaxy)*dlx
-						 + xBPxxyy(i,j,k,n)*(0.25*dlxxyy + deltaxxyy 
+						 + xBPxxyy(i,j,k,n)*(0.25*dlxxyy + deltaxxyy
 							 					 - 0.5*(dlx2 + dly2)*deltaxy);
 
-				// Real tmp = xBP(i,j,k,n) 
+				// Real tmp = xBP(i,j,k,n)
 				// 		 - xBPx(i,j,k,n)*dlx + xBPy(i,j,k,n)*dly
 				// 		 - xBPxy(i,j,k,n)*dlxy
-				// 		 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5					 
+				// 		 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 				// 		 + (xBPxxy(i,j,k,n)*dlxxy - xBPxyy(i,j,k,n)*dlxyy)*0.5
 				// 		 + xBPxxyy(i,j,k,n)*dlxxyy*0.25;
-					 
+
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -1057,10 +1081,10 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 			const Real dly3 = dly*dly2;
 			//
 			const Real dlx  = -hTime*DVM::xi_u[n];
-			const Real dlx2 = dlx*dlx;	
+			const Real dlx2 = dlx*dlx;
 			const Real dlx3 = dlx*dlx2;
 			//
-			const Real dlxy   = dlx*dly; 
+			const Real dlxy   = dlx*dly;
 			const Real dlxxy  = dlx2*dly;
 			const Real dlxyy  = dlx*dly2;
 			const Real dlxxyy = dlx2*dly2;
@@ -1069,20 +1093,20 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 			{
 				int const jj = j + dj;
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
 							 + xBPx(i,jj,k,n)*dlx + xBPy(i,jj,k,n)*dly
 							 + xBPxy(i,jj,k,n)*dlxy
 							 + xBPxx(i,jj,k,n)*(0.5*dlx2 - deltaxy)
-							 + xBPyy(i,jj,k,n)*(0.5*dly2 - deltaxy)						 
+							 + xBPyy(i,jj,k,n)*(0.5*dly2 - deltaxy)
 							 + xBPxxy(i,jj,k,n)*(0.5*dlx2 - deltaxy)*dly
 							 + xBPxyy(i,jj,k,n)*(0.5*dly2 - deltaxy)*dlx
-							 + xBPxxyy(i,jj,k,n)*(0.25*dlxxyy + deltaxxyy 
+							 + xBPxxyy(i,jj,k,n)*(0.25*dlxxyy + deltaxxyy
 							 					 - 0.5*(dlx2 + dly2)*deltaxy);
 
-				// xBh(i,j,k,n) = xBP(i,jj,k,n) 
+				// xBh(i,j,k,n) = xBP(i,jj,k,n)
 				// 			 + xBPx(i,jj,k,n)*dlx + xBPy(i,jj,k,n)*dly
 				// 			 + xBPxy(i,jj,k,n)*dlxy
-				// 			 + (xBPxx(i,jj,k,n)*dlx2 + xBPyy(i,jj,k,n)*dly2)*0.5					 
+				// 			 + (xBPxx(i,jj,k,n)*dlx2 + xBPyy(i,jj,k,n)*dly2)*0.5
 				// 			 + (xBPxxy(i,jj,k,n)*dlxxy + xBPxyy(i,jj,k,n)*dlxyy)*0.5
 				// 			 + xBPxxyy(i,jj,k,n)*dlxxyy*0.25;
 
@@ -1091,23 +1115,23 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				
-				Real tmp = xBP(i,j,k,n) 
+
+				Real tmp = xBP(i,j,k,n)
 						 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly
 						 - xBPxy(i,j,k,n)*dlxy
 						 + xBPxx(i,j,k,n)*(0.5*dlx2 - deltaxy)
-						 + xBPyy(i,j,k,n)*(0.5*dly2 - deltaxy)						 
+						 + xBPyy(i,j,k,n)*(0.5*dly2 - deltaxy)
 						 - xBPxxy(i,j,k,n)*(0.5*dlx2 - deltaxy)*dly
 						 + xBPxyy(i,j,k,n)*(0.5*dly2 - deltaxy)*dlx
-						 + xBPxxyy(i,j,k,n)*(0.25*dlxxyy + deltaxxyy 
+						 + xBPxxyy(i,j,k,n)*(0.25*dlxxyy + deltaxxyy
 							 					 - 0.5*(dlx2 + dly2)*deltaxy);
 
-				// Real tmp = xBP(i,j,k,n) 
-				// 		 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy						 
-				// 		 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5					 
+				// Real tmp = xBP(i,j,k,n)
+				// 		 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy
+				// 		 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 				// 		 + (xBPxyy(i,j,k,n)*dlxyy - xBPxxy(i,j,k,n)*dlxxy)*0.5
 				// 		 + xBPxxyy(i,j,k,n)*dlxxyy*0.25;
-						 
+
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -1117,16 +1141,16 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th_cross (MultiFab &xBarhFabnF,
 		else {
 			amrex::Abort("UW-4th-cross : How did we get here?");
 		}
-		
+
 	}
 #endif
 
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 									     Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									   	 const Real* dx, const Real hTime, 
+									   	 const Real* dx, const Real hTime,
 									 	 amrex::Direction FaceID)
 {
 #if(AMREX_SPACEDIM == 2)
@@ -1166,13 +1190,13 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 			//
 			const Real dlx  = 0.5*delta*multiplier - hTime*DVM::xi_u[n];
 			const Real dlx2 = dlx*dlx;
-			const Real dlx3 = dlx*dlx2;				
+			const Real dlx3 = dlx*dlx2;
 			//
 			const Real dly  = -hTime*DVM::xi_v[n];
 			const Real dly2 = dly*dly;
-			const Real dly3 = dly*dly2;	
+			const Real dly3 = dly*dly2;
 
-			const Real dlxy   = dlx*dly; 
+			const Real dlxy   = dlx*dly;
 			const Real dlxxy  = dlx2*dly;
 			const Real dlxyy  = dlx*dly2;
 			const Real dlxxyy = dlx2*dly2;
@@ -1181,27 +1205,27 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 			{
 				int const ii = i + di;
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx + xBPy(ii,j,k,n)*dly + xBPxy(ii,j,k,n)*dlxy
-							 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5							 
-							 + (xBPxxx(ii,j,k,n)*dlx3 + xBPyyy(ii,j,k,n)*dly3)/6.0						 
+							 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5
+							 + (xBPxxx(ii,j,k,n)*dlx3 + xBPyyy(ii,j,k,n)*dly3)/6.0
 							 + (xBPxxy(ii,j,k,n)*dlxxy + xBPxyy(ii,j,k,n)*dlxyy)*0.5
 							 ;
 			});
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 - xBPx(i,j,k,n)*dlx + xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy
-						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5						 
+						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 + (xBPyyy(i,j,k,n)*dly3  - xBPxxx(i,j,k,n)*dlx3)/6.0
-						 + (xBPxxy(i,j,k,n)*dlxxy - xBPxyy(i,j,k,n)*dlxyy)*0.5						 
+						 + (xBPxxy(i,j,k,n)*dlxxy - xBPxyy(i,j,k,n)*dlxyy)*0.5
 						 ;
 
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -1221,10 +1245,10 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 			const Real dly3 = dly*dly2;
 			//
 			const Real dlx  = -hTime*DVM::xi_u[n];
-			const Real dlx2 = dlx*dlx;	
+			const Real dlx2 = dlx*dlx;
 			const Real dlx3 = dlx*dlx2;
 			//
-			const Real dlxy   = dlx*dly; 
+			const Real dlxy   = dlx*dly;
 			const Real dlxxy  = dlx2*dly;
 			const Real dlxyy  = dlx*dly2;
 			const Real dlxxyy = dlx2*dly2;
@@ -1233,11 +1257,11 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 			{
 				int const jj = j + dj;
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
 							 + xBPx(i,jj,k,n)*dlx + xBPy(i,jj,k,n)*dly + xBPxy(i,jj,k,n)*dlxy
 							 + (xBPxx(i,jj,k,n)*dlx2 + xBPyy(i,jj,k,n)*dly2)*0.5
 							 + (xBPxxx(i,jj,k,n)*dlx3 + xBPyyy(i,jj,k,n)*dly3)/6.0
-							 + (xBPxxy(i,jj,k,n)*dlxxy + xBPxyy(i,jj,k,n)*dlxyy)*0.5							 
+							 + (xBPxxy(i,jj,k,n)*dlxxy + xBPxyy(i,jj,k,n)*dlxyy)*0.5
 							;
 
 			});
@@ -1245,14 +1269,14 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-					
-				Real tmp = xBP(i,j,k,n) 
+
+				Real tmp = xBP(i,j,k,n)
 						 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy
 						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 + (xBPxxx(i,j,k,n)*dlx3 - xBPyyy(i,j,k,n)*dly3)/6.0
-						 + (xBPxyy(i,j,k,n)*dlxyy - xBPxxy(i,j,k,n)*dlxxy)*0.5						 
+						 + (xBPxyy(i,j,k,n)*dlxyy - xBPxxy(i,j,k,n)*dlxxy)*0.5
 						;
-						 
+
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -1262,15 +1286,15 @@ void DUGKSCore<DVM>::Update_Barh_UW_4th (MultiFab &xBarhFabnF,
 		else {
 			amrex::Abort("UW-4th-Full : How did we get here?");
 		}
-		
+
 	}
 #endif
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 									 	 Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
-									 	 const Real* dx, const Real hTime, 
+									 	 const Real* dx, const Real hTime,
 									 	 amrex::Direction FaceID)
 {
 #if(AMREX_SPACEDIM == 2)
@@ -1308,22 +1332,22 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 			const Real dlx  = 0.5*delta*multiplier - hTime*DVM::xi_u[n];
 			const Real dlx2 = dlx*dlx;
 			const Real dlx3 = dlx2*dlx;
-			const Real dlx4 = dlx3*dlx;	
+			const Real dlx4 = dlx3*dlx;
 			//
 			const Real dly  = -hTime*DVM::xi_v[n];
 			const Real dly2 = dly*dly;
 			const Real dly3 = dly2*dly;
-			const Real dly4 = dly3*dly;	
+			const Real dly4 = dly3*dly;
 
-			const Real dlxy = dlx*dly; 
-			
+			const Real dlxy = dlx*dly;
+
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				int const ii = i + di;
 
-				xBh(i,j,k,n) = xBP(ii,j,k,n) 
+				xBh(i,j,k,n) = xBP(ii,j,k,n)
 							 + xBPx(ii,j,k,n)*dlx + xBPy(ii,j,k,n)*dly + xBPxy(ii,j,k,n)*dlxy
-							 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5							 
+							 + (xBPxx(ii,j,k,n)*dlx2 + xBPyy(ii,j,k,n)*dly2)*0.5
 							 + (xBPxxx(ii,j,k,n)*dlx3 + xBPyyy(ii,j,k,n)*dly3)/6.0
 							 + (xBPxxxx(ii,j,k,n)*dlx4 + xBPyyyy(ii,j,k,n)*dly4)/24.0;
 
@@ -1331,16 +1355,16 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 			if(token == 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 - xBPx(i,j,k,n)*dlx + xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy
-						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5						 
+						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 + (xBPyyy(i,j,k,n)*dly3  - xBPxxx(i,j,k,n)*dlx3)/6.0
 						 + (xBPxxxx(i,j,k,n)*dlx4 + xBPyyyy(i,j,k,n)*dly4)/24.0;
-						 
+
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2;
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
@@ -1361,7 +1385,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 			const Real dlx  = -hTime*DVM::xi_u[n];
 			const Real dlx2 = dlx*dlx;
 			const Real dlx3 = dlx*dlx2;
-			const Real dlx4 = dlx*dlx3;	
+			const Real dlx4 = dlx*dlx3;
 			//
 			const Real dlxy = dlx*dly;
 
@@ -1369,7 +1393,7 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 			{
 				int const jj = j + dj;
 
-				xBh(i,j,k,n) = xBP(i,jj,k,n) 
+				xBh(i,j,k,n) = xBP(i,jj,k,n)
 							 + xBPx(i,jj,k,n)*dlx + xBPy(i,jj,k,n)*dly + xBPxy(i,jj,k,n)*dlxy
 							 + (xBPxx(i,jj,k,n)*dlx2 + xBPyy(i,jj,k,n)*dly2)*0.5
 							 + (xBPxxx(i,jj,k,n)*dlx3 + xBPyyy(i,jj,k,n)*dly3)/6.0
@@ -1381,21 +1405,21 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 
-				Real tmp = xBP(i,j,k,n) 
+				Real tmp = xBP(i,j,k,n)
 						 + xBPx(i,j,k,n)*dlx - xBPy(i,j,k,n)*dly - xBPxy(i,j,k,n)*dlxy
 						 + (xBPxx(i,j,k,n)*dlx2 + xBPyy(i,j,k,n)*dly2)*0.5
 						 + (xBPxxx(i,j,k,n)*dlx3 - xBPyyy(i,j,k,n)*dly3)/6.0
 						 + (xBPxxxx(i,j,k,n)*dlx4 + xBPyyyy(i,j,k,n)*dly4)/24.0;
 
 // #if(AMREX_SPACEDIM == 3)
-// 				Real tmp = xBP(i,j,k,n) 
-// 						 + xBPx(i,j,k,n)*dlx 
+// 				Real tmp = xBP(i,j,k,n)
+// 						 + xBPx(i,j,k,n)*dlx
 // 						 - xBPy(i,j,k,n)*dly
 // 						 + xBPz(i,j,k,n)*dlz
 // 						 - xBPxy(i,j,k,n)*dlxy
 // 						 - xBPyz(i,j,k,n)*dlyz
 // 						 + xBPzx(i,j,k,n)*dlzx
-// 						 + (xBPxx(i,j,k,n)*dlx2 
+// 						 + (xBPxx(i,j,k,n)*dlx2
 // 						   +xBPyy(i,j,k,n)*dly2
 // 						   +xBPzz(i,j,k,n)*dlz2)*0.5
 // 						 + (xBPxxx(i,j,k,n)*dlx3
@@ -1403,8 +1427,8 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 // 						   +xBPzzz(i,j,k,n)*dlz3)/6.0
 // 						 + (xBPxxxx(i,j,k,n)*dlx4
 // 						   +xBPyyyy(i,j,k,n)*dly4
-// 						   +xBPzzzz(i,j,k,n)*dlz4)/24.0;		 
-// #endif							 
+// 						   +xBPzzzz(i,j,k,n)*dlz4)/24.0;
+// #endif
 				xBh(i,j,k,n) += tmp;
 				xBh(i,j,k,n) /= 2.0;
 			});
@@ -1445,14 +1469,14 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 // 			{
 // 				int const kk = k + dk;
 
-// 				xBh(i,j,k,n) = xBP(     i,j,kk,n) 
-// 							 + xBPx(    i,j,kk,n)*dlx 
-// 							 + xBPy(    i,j,kk,n)*dly 
+// 				xBh(i,j,k,n) = xBP(     i,j,kk,n)
+// 							 + xBPx(    i,j,kk,n)*dlx
+// 							 + xBPy(    i,j,kk,n)*dly
 // 							 + xBPz(    i,j,kk,n)*dlz
 // 							 + xBPxy(   i,j,kk,n)*dlxy
 // 							 + xBPyz(   i,j,kk,n)*dlyz
 // 							 + xBPzx(   i,j,kk,n)*dlzx
-// 							 + (xBPxx(  i,j,kk,n)*dlx2 
+// 							 + (xBPxx(  i,j,kk,n)*dlx2
 // 							   +xBPyy(  i,j,kk,n)*dly2
 // 							   +xBPzz(  i,j,kk,n)*dlz2)*0.5
 // 							 + (xBPxxx( i,j,kk,n)*dlx3
@@ -1466,14 +1490,14 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 // 			if(token == 0) {
 // 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 // 			{
-// 				Real tmp = xBP(i,j,k,n) 
-// 						 + xBPx(i,j,k,n)*dlx 
+// 				Real tmp = xBP(i,j,k,n)
+// 						 + xBPx(i,j,k,n)*dlx
 // 						 + xBPy(i,j,k,n)*dly
 // 						 - xBPz(i,j,k,n)*dlz
 // 						 + xBPxy(i,j,k,n)*dlxy
 // 						 - xBPyz(i,j,k,n)*dlyz
 // 						 - xBPzx(i,j,k,n)*dlzx
-// 						 + (xBPxx(i,j,k,n)*dlx2 
+// 						 + (xBPxx(i,j,k,n)*dlx2
 // 						   +xBPyy(i,j,k,n)*dly2
 // 						   +xBPzz(i,j,k,n)*dlz2)*0.5
 // 						 + (xBPxxx(i,j,k,n)*dlx3
@@ -1488,18 +1512,18 @@ void DUGKSCore<DVM>::Update_Barh_UW_5th (MultiFab &xBarhFabnF,
 // 			});
 // 			}
 // 		}
-// 		}			
+// 		}
 // #endif
 		else {
 			amrex::Abort("UW-5th : How did we get here?");
 		}
-		
+
 	}
 #endif
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Barh_UW_Limiter (MultiFab &xBarhFabnF, 
+void DUGKSCore<DVM>::Update_Barh_UW_Limiter (MultiFab &xBarhFabnF,
 											Array<MultiFab, Ark::DVDFNUM> const &xDVDF,
 						 					amrex::Direction FaceID)
 {
@@ -1537,16 +1561,16 @@ void DUGKSCore<DVM>::Update_Barh_UW_Limiter (MultiFab &xBarhFabnF,
 					const double vL0 =  xBP(i,  j,k,n) - xBP(i-1,j,k,n);
 					const double vR0 =  xBP(i+1,j,k,n) - xBP(i,  j,k,n);
 					const double limiter0 = std::min(Limiter::VanAlbada2(vL0,vR0), limiter);
-					
+
 					const double xtmp = (xBP(ii,j,k,n) + xBP(i,j,k,n))*0.5;
 
-					xBh(i,j,k,n) = xtmp + limiter0*(xBh(i,j,k,n) - xtmp);								 
+					xBh(i,j,k,n) = xtmp + limiter0*(xBh(i,j,k,n) - xtmp);
 				}
 				else {
 					xBh(i,j,k,n) = xBP(ii,j,k,n) + limiter*(xBh(i,j,k,n) - xBP(ii,j,k,n));
-				}					 
+				}
 
-			});	
+			});
 		}
 		}
 		else if(FaceID == amrex::Direction::y) {
@@ -1613,18 +1637,18 @@ void DUGKSCore<DVM>::Update_Barh_UW_Limiter (MultiFab &xBarhFabnF,
 				}
 			});
 		}
-		}			
+		}
 #endif
 		else {
 			amrex::Abort("Limiter : How did we get here?");
 		}
-		
+
 	}
 }
 
 template <typename DVM>
 void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarPlusFab,
-									 const Real* dx, const Real hTime, 
+									 const Real* dx, const Real hTime,
 									 amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -1649,13 +1673,13 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarP
         {
 			Real xBP_x = (xBP(i,j,k,n) - xBP(i-1,j,k,n))/dlx;
 
-			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n) 
+			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n)
 					     +xBP(i-1,j+1,k,n) - xBP(i-1,j-1,k,n)
 					     )*0.25/dly;
 
 #if(AMREX_SPACEDIM == 2)
 
-			xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i-1,j,k,n)) 
+			xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i-1,j,k,n))
         			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y);
 
 #elif(AMREX_SPACEDIM == 3)
@@ -1683,7 +1707,7 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarP
 
 #if(AMREX_SPACEDIM == 2)
 
-        	xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j-1,k,n)) 
+        	xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j-1,k,n))
         			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y);
 
 #elif(AMREX_SPACEDIM == 3)
@@ -1692,9 +1716,9 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarP
         				 +xBP(i,j-1,k+1,n) - xBP(i,j-1,k-1,n)
         				 )*0.25/dlz;
 
-        	xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j-1,k,n)) 
+        	xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j-1,k,n))
         			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y + DVM::xi_w[n]*xBP_z);
-#endif        			    
+#endif
         });
 		}
 #if(AMREX_SPACEDIM == 3)
@@ -1703,17 +1727,17 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarP
 		amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n) 
+			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n)
 					     +xBP(i+1,j,k-1,n) - xBP(i-1,j,k-1,n)
 					     )*0.25/dlx;
 
-			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n) 
+			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n)
 					     +xBP(i,j+1,k-1,n) - xBP(i,j-1,k-1,n)
 					     )*0.25/dly;
 
 			Real xBP_z = (xBP(i,j,k,n) - xBP(i,j,k-1,n))/dlz;
 
-			xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j,k-1,n)) 
+			xBh(i,j,k,n) = 0.5*(xBP(i,j,k,n) + xBP(i,j,k-1,n))
         			     - hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y + DVM::xi_w[n]*xBP_z);
 		});
 		}
@@ -1726,7 +1750,7 @@ void DUGKSCore<DVM>::Update_Barh_CD (MultiFab &xBarhFabnF, const MultiFab &xBarP
 
 template <typename DVM>
 void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab &xBarPlusFab,
-									 	   const Real* dx, const Real hTime, 
+									 	   const Real* dx, const Real hTime,
 									 	   amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -1751,7 +1775,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
         {
 			int const token = Ark::sign(DVM::xi_u[n]);
 
-			if(token > 0) {				
+			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
 												xBP(i  ,j,k,n), xBP(i+1,j,k,n));
 			}
@@ -1766,7 +1790,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
 
 			Real xBP_x = (xBP(i,j,k,n) - xBP(i-1,j,k,n))/dlx;
 
-			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n) 
+			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n)
 					     +xBP(i-1,j+1,k,n) - xBP(i-1,j-1,k,n)
 					     )*0.25/dly;
 
@@ -1791,10 +1815,10 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	int const token = Ark::sign(DVM::xi_v[n]);
-			
+
 			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
-												 xBP(i,j  ,k,n), xBP(i,j+1,k,n));				
+												 xBP(i,j  ,k,n), xBP(i,j+1,k,n));
 			}
 			else if (token < 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j+2,k,n), xBP(i,j+1,k,n), xBP(i,j,k,n),
@@ -1822,7 +1846,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
         				 )*0.25/dlz;
 
         	xBh(i,j,k,n) -= hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y + DVM::xi_w[n]*xBP_z);
-#endif        			    
+#endif
         });
 		}
 #if(AMREX_SPACEDIM == 3)
@@ -1832,10 +1856,10 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
 			int const token = Ark::sign(DVM::xi_w[n]);
-			
+
 			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
-												xBP(i,j,k  ,n), xBP(i,j,k+1,n));							 
+												xBP(i,j,k  ,n), xBP(i,j,k+1,n));
 			}
 			else if (token < 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k+2,n), xBP(i,j,k+1,n), xBP(i,j,k,n),
@@ -1846,11 +1870,11 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
 								  				 xBP(i,j,k  ,n), xBP(i,j,k+1,n), xBP(i,j,k+2,n));
 			}
 
-			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n) 
+			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n)
 					     +xBP(i+1,j,k-1,n) - xBP(i-1,j,k-1,n)
 					     )*0.25/dlx;
 
-			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n) 
+			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n)
 					     +xBP(i,j+1,k-1,n) - xBP(i,j-1,k-1,n)
 					     )*0.25/dly;
 
@@ -1868,7 +1892,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiFab 
 
 template <typename DVM>
 void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab &xBarPlusFab,
-									 	   const Real* dx, const Real hTime, 
+									 	   const Real* dx, const Real hTime,
 									 	   amrex::Direction FaceID)
 {
 	#ifdef _OPENMP
@@ -1894,7 +1918,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
         {
 			int const token = Ark::sign(DVM::xi_u[n]);
 
-			if(token > 0) {				
+			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
 												xBP(i  ,j,k,n), xBP(i+1,j,k,n));
 			}
@@ -1909,7 +1933,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
 
 			Real xBP_x = (xBP(i,j,k,n) - xBP(i-1,j,k,n))/dlx;
 
-			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n) 
+			Real xBP_y = (xBP(i,  j+1,k,n) - xBP(i,  j-1,k,n)
 					     +xBP(i-1,j+1,k,n) - xBP(i-1,j-1,k,n)
 					     )*0.25/dly;
 
@@ -1934,10 +1958,10 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
         	int const token = Ark::sign(DVM::xi_v[n]);
-			
+
 			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
-												 xBP(i,j  ,k,n), xBP(i,j+1,k,n));				
+												 xBP(i,j  ,k,n), xBP(i,j+1,k,n));
 			}
 			else if (token < 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j+2,k,n), xBP(i,j+1,k,n), xBP(i,j,k,n),
@@ -1965,7 +1989,7 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
         				 )*0.25/dlz;
 
         	xBh(i,j,k,n) -= hTime*(DVM::xi_u[n]*xBP_x + DVM::xi_v[n]*xBP_y + DVM::xi_w[n]*xBP_z);
-#endif        			    
+#endif
         });
 		}
 #if(AMREX_SPACEDIM == 3)
@@ -1975,10 +1999,10 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
 			int const token = Ark::sign(DVM::xi_w[n]);
-			
+
 			if(token > 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
-												xBP(i,j,k  ,n), xBP(i,j,k+1,n));							 
+												xBP(i,j,k  ,n), xBP(i,j,k+1,n));
 			}
 			else if (token < 0) {
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k+2,n), xBP(i,j,k+1,n), xBP(i,j,k,n),
@@ -1989,11 +2013,11 @@ void DUGKSCore<DVM>::Update_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiFab 
 								  				 xBP(i,j,k  ,n), xBP(i,j,k+1,n), xBP(i,j,k+2,n));
 			}
 
-			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n) 
+			Real xBP_x = (xBP(i+1,j,k,  n) - xBP(i-1,j,k,  n)
 					     +xBP(i+1,j,k-1,n) - xBP(i-1,j,k-1,n)
 					     )*0.25/dlx;
 
-			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n) 
+			Real xBP_y = (xBP(i,j+1,k,  n) - xBP(i,j-1,k,  n)
 					     +xBP(i,j+1,k-1,n) - xBP(i,j-1,k-1,n)
 					     )*0.25/dly;
 
@@ -2027,12 +2051,12 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiF
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_u[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
-												xBP(i  ,j,k,n), xBP(i+1,j,k,n));							 
+												xBP(i  ,j,k,n), xBP(i+1,j,k,n));
 			});
 			}
 			else if (token < 0) {
@@ -2045,23 +2069,23 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
 								  xBP(i  ,j,k,n), xBP(i+1,j,k,n), xBP(i+2,j,k,n));
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_v[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
-												xBP(i,j  ,k,n), xBP(i,j+1,k,n));							 
+												xBP(i,j  ,k,n), xBP(i,j+1,k,n));
 			});
 			}
 			else if (token < 0) {
@@ -2074,11 +2098,11 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
 								  xBP(i,j  ,k,n), xBP(i,j+1,k,n), xBP(i,j+2,k,n));
 			});
-			}		
+			}
 		}
 		}
 #if(AMREX_SPACEDIM == 3)
@@ -2086,12 +2110,12 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiF
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_w[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
-												xBP(i,j,k  ,n), xBP(i,j,k+1,n));							 
+												xBP(i,j,k  ,n), xBP(i,j,k+1,n));
 			});
 			}
 			else if (token < 0) {
@@ -2104,11 +2128,11 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_3rd (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
 								  xBP(i,j,k  ,n), xBP(i,j,k+1,n), xBP(i,j,k+2,n));
 			});
-			}		
+			}
 		}
 		}
 #endif
@@ -2136,12 +2160,12 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_u[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
-												xBP(i  ,j,k,n), xBP(i+1,j,k,n));							 
+												xBP(i  ,j,k,n), xBP(i+1,j,k,n));
 			});
 			}
 			else if (token < 0) {
@@ -2154,23 +2178,23 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i-3,j,k,n), xBP(i-2,j,k,n), xBP(i-1,j,k,n),
 								  xBP(i  ,j,k,n), xBP(i+1,j,k,n), xBP(i+2,j,k,n));
 			});
-			}		
+			}
 		}
 		}
 		else if(FaceID == amrex::Direction::y){
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_v[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
-												xBP(i,j  ,k,n), xBP(i,j+1,k,n));							 
+												xBP(i,j  ,k,n), xBP(i,j+1,k,n));
 			});
 			}
 			else if (token < 0) {
@@ -2183,11 +2207,11 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i,j-3,k,n), xBP(i,j-2,k,n), xBP(i,j-1,k,n),
 								  xBP(i,j  ,k,n), xBP(i,j+1,k,n), xBP(i,j+2,k,n));
 			});
-			}		
+			}
 		}
 		}
 #if(AMREX_SPACEDIM == 3)
@@ -2195,12 +2219,12 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 		LoopVS(DVM::Q)
 		{
 			int const token = Ark::sign(DVM::xi_w[n]);
-			
+
 			if(token > 0) {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				xBh(i,j,k,n) = GradFunc::WENO_Z(xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
-												xBP(i,j,k  ,n), xBP(i,j,k+1,n));							 
+												xBP(i,j,k  ,n), xBP(i,j,k+1,n));
 			});
 			}
 			else if (token < 0) {
@@ -2213,11 +2237,11 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 			else {
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
-				xBh(i,j,k,n) = 
+				xBh(i,j,k,n) =
 				GradFunc::WENO_C (xBP(i,j,k-3,n), xBP(i,j,k-2,n), xBP(i,j,k-1,n),
 								  xBP(i,j,k  ,n), xBP(i,j,k+1,n), xBP(i,j,k+2,n));
 			});
-			}		
+			}
 		}
 		}
 #endif
@@ -2225,7 +2249,7 @@ void DUGKSCore<DVM>::Update_FD_Barh_WENO_5th (MultiFab &xBarhFabnF, const MultiF
 			amrex::Abort("FD_WENO_5 : How did we get here?");
 		}
 	}
-}	
+}
 
 template<typename DVM>
 template<bool ENABLESOURCE>
@@ -2251,7 +2275,7 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
         	const Real bh = hTime/(2.0*xtauh + hTime);
         	// const Real ch = bh*xtauh;
 
-        	xFlux(i,j,k,n) = xFlux(i,j,k,n) 
+        	xFlux(i,j,k,n) = xFlux(i,j,k,n)
         				   + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n)*ENABLESOURCE);
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
@@ -2259,7 +2283,7 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab, 
+void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 							 	  const Vector<MultiFab const*> &xFluxFabnF,
 							 	  const Real *dx, const Real hTime, const Real dTime)
 {
@@ -2308,7 +2332,7 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 			+ (xFlux_yF(i,j,k,n) - xFlux_yF(i,    j + 1,k,    n))*dSy*DVM::xi_v[n]
 #if(AMREX_SPACEDIM == 3)
 			+ (xFlux_zF(i,j,k,n) - xFlux_zF(i,    j    ,k + 1,n))*dSz*DVM::xi_w[n]
-#endif			
+#endif
 			;
 
 			const Real b = (hTime - dTime)/(hTime + dTime);
@@ -2320,7 +2344,7 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 }
 
 // template <typename DVM>
-// void DUGKSCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, 
+// void DUGKSCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 // 							 	  const Vector<MultiFab const*> &xFluxFabnF,
 // 							 	  const Real *dx, const Real dTime)
 // {
@@ -2379,7 +2403,7 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 // 			+ (xFlux_yF(i,j,k,n) - xFlux_yF(i,    j + 1,k,    n))*dSy*DVM::xi_v[n]
 // #if(AMREX_SPACEDIM == 3)
 // 			+ (xFlux_zF(i,j,k,n) - xFlux_zF(i,    j    ,k + 1,n))*dSz*DVM::xi_w[n]
-// #endif			
+// #endif
 // 			;
 
 // 			const Real xneq = (xtau(i,j,k)-hdTime)/xtau(i,j,k);
@@ -2397,7 +2421,7 @@ void DUGKSCore<DVM>::Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab,
 }
 
 template<typename DVM>
-void DVMCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real dTime, 
+void DVMCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real dTime,
 								const Real minL)
 {
 	#ifdef _OPENMP
@@ -2438,7 +2462,7 @@ void DVMCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real
 			const Real dlz2 = dlz*dlz;
 			const Real dlyz = dly*dlz;
 			const Real dlzx = dlz*dlx;
-#endif			
+#endif
 			amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 			{
 				int const ii = i - static_cast<int>(DVM::xi_u[n]);
@@ -2447,10 +2471,10 @@ void DVMCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real
 				int const kk = k - static_cast<int>(DVM::xi_w[n]);
 
 				xWave(i,j,k,n) = xBP(ii,jj,kk,n)
-							   + xBPx(ii,jj,kk,n)*dlx 
+							   + xBPx(ii,jj,kk,n)*dlx
 							   + xBPy(ii,jj,kk,n)*dly
 							   + xBPz(ii,jj,kk,n)*dlz
-							   + (xBPxx(ii,jj,kk,n)*dlx2 
+							   + (xBPxx(ii,jj,kk,n)*dlx2
 							     +xBPyy(ii,jj,kk,n)*dly2
 							     +xBPzz(ii,jj,kk,n)*dlz2)*0.5
 							   + xBPxy(ii,jj,kk,n)*dlxy
@@ -2458,13 +2482,13 @@ void DVMCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, const Real
 							   + xBPzx(ii,jj,kk,n)*dlzx;
 #elif(AMREX_SPACEDIM == 2)
 				xWave(i,j,k,n) = xBP(ii,jj,k,n)
-							   + xBPx(ii,jj,k,n)*dlx 
+							   + xBPx(ii,jj,k,n)*dlx
 							   + xBPy(ii,jj,k,n)*dly
-							   + (xBPxx(ii,jj,k,n)*dlx2 
+							   + (xBPxx(ii,jj,k,n)*dlx2
 							   	 +xBPyy(ii,jj,k,n)*dly2)*0.5
-							   + xBPxy(ii,jj,k,n)*dlxy;				   
-#endif				
-			});	
+							   + xBPxy(ii,jj,k,n)*dlxy;
+#endif
+			});
 		}
 	}
 }
