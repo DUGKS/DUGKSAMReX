@@ -17,6 +17,9 @@ public:
 	template<bool ENABLESOURCE>
 	static void Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
+	static void Transform (MultiFab &TargetFab, const MultiFab &SourceFab,
+						   const double (&M)[DVM::Q][DVM::Q]);
+
 	static void Moment_Wave (MultiFab &xTilde, const MultiFab &xEq);
 
 	// - construct \bar{f}^{+}

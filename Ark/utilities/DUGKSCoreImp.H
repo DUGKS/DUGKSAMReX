@@ -186,27 +186,27 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
     }
 }
 template<typename DVM>
-void DUGKSCore<DVM>::Transform (MultiFab &xTilde, const MultiFab &xEq,
+void DUGKSCore<DVM>::Transform (MultiFab &TargetFab, const MultiFab &SourceFab,
 								const double (&M)[DVM::Q][DVM::Q])
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
 	#endif
-	for(amrex::MFIter mfi(xEq, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	for(amrex::MFIter mfi(SourceFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-        Array4<Real const> const &xEq    = xEq.const_array(mfi);
-        Array4<Real>       const &xWave = xTilde.array(mfi);
+        Array4<Real const> const &xSor  = SourceFab.const_array(mfi);
+        Array4<Real>       const &xTar  = TargetFab.array(mfi);
 
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
 			double sum = 0;
-			for(int m = 0; m < DVM::Q; m++) {
-				sum += xEq(i,j,k,m) * DVM::M[n][m];
+			for(int m = 0;m < DVM::Q;m++) {
+				sum += xSor(i,j,k,m) * M[n][m];
 			}
-			xWave(i,j,k,n) = sum;
+			xTar(i,j,k,n) = sum;
         });
     }
 }
