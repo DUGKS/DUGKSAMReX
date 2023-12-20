@@ -715,6 +715,8 @@ private:
     template<bool ENABLESOURCE=true>
     void Construct_DVDF_NonEq (int const lev, double const dTime);
 
+    void Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor);
+
     void Collision_DVM_BarPlus(int const lev);
 
     void Collision_DVDF_BarPlus (int const lev, double const hTime);

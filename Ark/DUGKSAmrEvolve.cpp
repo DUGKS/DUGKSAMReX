@@ -173,6 +173,25 @@ void DUGKSAmr::Update_DVM_Wave (int const lev)
 // 									   		 Geom(lev).CellSize(), Dt());
 // #endif
 // }
+void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
+{
+	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Into_Moment()", Transform_DVDF_Moment);
+
+	auto &ld = Data(lev);
+
+#ifdef ARK_USE_PHASE
+	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor]);
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor]);
+#endif
+
+#ifdef ARK_USE_ENERGY
+	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor]);
+#endif
+
+}
 
 template<bool ENABLESO>
 void DUGKSAmr::Construct_DVDF_Prime (int const lev, double const dTime)
