@@ -25,12 +25,12 @@ namespace Ark
 #if(AMREX_SPACEDIM == 2)
 	enum EnumDVDF {TAU,WAVE,EQ,SO,BP,BPx,BPy,BPxx,BPyy,BPxy,BPxxx,BPxxy,BPxyy,BPyyy,BPxxxx,BPyyyy,BPxxyy,DVDFNUM};
 	// enum EnumDVDF {TAU,WAVE,EQ,SO,BP,BPx,BPy,BPxx,BPyy,BPxy,DVDFNUM};
-	
-	using DmVnPhase    = D2V9;
 
-	using DmVnMomentum = D2V9;
+	using DmVnPhase    = D2M9;
 
-	using DmVnEnergy   = D2V9;
+	using DmVnMomentum = D2M9;
+
+	using DmVnEnergy   = D2M9;
 
 #elif (AMREX_SPACEDIM == 3)
 	enum EnumDVDF {TAU,WAVE,EQ,SO,BP,BPx,BPy,BPz,BPxx,BPyy,BPzz,BPxy,BPyz,BPzx,DVDFNUM};
@@ -73,18 +73,18 @@ namespace Ark
 		return u*u + v*v + w*w;
 	}
 
-	inline 
+	inline
 	double Hypot(double const u, double const v, double const w)
 	{
 		return std::sqrt(u*u + v*v + w*w);
 	}
-	
+
 	template <typename T>
 	bool approximatelyEqual(T A, T B)
 	{
 		return std::fabs(A-B) < std::numeric_limits<T>::epsilon();
 	}
-	
+
 	template <typename T>
 	bool tinyEqual(const T A, const T B, const T diff = T(tiny))
 	{
@@ -178,7 +178,7 @@ namespace GradFunc
 						   Array4<Real const> const &src, Array4<Real> const &dst);
 
 	//
-	
+
 	void gradient_operator_central (const Box &bx, Real const* dl, Array4<Real const> const &src,
 						  			Array4<Real> const &dst);
 	void gradient_operator_isotropy (const Box &bx, Real const* dl, Array4<Real const> const &src,
@@ -193,48 +193,48 @@ namespace GradFunc
 	void gradient_operator_5th (const Box &bx, Real const* dl, Array4<Real const> const &src,
 								Array4<Real> const &dst);
 
-	void laplacian_operator_isotropy (const Box &bx, Real const *dl, Array4<Real const> const &src, 
+	void laplacian_operator_isotropy (const Box &bx, Real const *dl, Array4<Real const> const &src,
 					  	   			  Array4<Real> const &dst);
 
-	void laplacian_operator_5th (const Box &bx, Real const *dl, Array4<Real const> const &src, 
+	void laplacian_operator_5th (const Box &bx, Real const *dl, Array4<Real const> const &src,
 					  	   		 Array4<Real> const &dst);
 
 	void laplacian_normal_operator_isotropy (const Box &bx, Real const* dl,
-											 Array4<Real const> const &src,	 
+											 Array4<Real const> const &src,
 								 			 Array4<Real const> const &gradsrc,
 								 			 Array4<Real> const &dst);
 
 	void laplacian_normal_operator_5th (const Box &bx, Real const* dl,
-										Array4<Real const> const &src,	 
+										Array4<Real const> const &src,
 								 		Array4<Real const> const &gradsrc,
 								 		Array4<Real> const &dst);
 
 	void laplacian_normal_chemip_isotropy (const Box &bx, Real const* dl,
-											 Array4<Real const> const &src,	 
+											 Array4<Real const> const &src,
 								 			 Array4<Real const> const &gradsrc,
 								 			 Array4<Real> const &dst);
 
-	double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var, 
+	double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var,
 					  	   				int const i,int const j,int const k);
 
-	// double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var, 
+	// double laplacian_operator_isotropy (Real const *dl, Array4<Real const> const &var,
 	// 				  	   				int const i,int const j,int const k);
 
 	double double_interpolation (const double upstream1, const double upstream0,
                             	 const double downstream0, const double downstream1,
-								 int const token);	
+								 int const token);
 
 	double triple_interpolation (const double upstream2, const double upstream1,
                                  const double upstream0, const double downstream0,
                                  const double downstream1, const double downstream2,
                                  const int token);
 
-	double WENO_Z (const double upstream2, const double upstream1, const double upstream0, 
+	double WENO_Z (const double upstream2, const double upstream1, const double upstream0,
 				   const double downstream0, const double downstream1);
-	
+
 	double WENO_C (const double upstream2, const double upstream1,
                    const double upstream0, const double downstream0,
-                   const double downstream1, const double downstream2);							 
+                   const double downstream1, const double downstream2);
 }
 
 namespace EoS {

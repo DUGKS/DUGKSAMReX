@@ -180,17 +180,35 @@ void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::Enum
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor]);
+	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor], Ark::DmVnPhase::M);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor]);
+	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor], Ark::DmVnMomentum::M);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor]);
+	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor], Ark::DmVnEnergy::M);
+#endif
+}
+
+void DUGKSAmr::Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
+{
+	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Into_Moment()", Transform_DVDF_Moment);
+
+	auto &ld = Data(lev);
+
+#ifdef ARK_USE_PHASE
+	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor], Ark::DmVnPhase::IM);
 #endif
 
+#ifdef ARK_USE_MOMENTUM
+	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor], Ark::DmVnMomentum::IM);
+#endif
+
+#ifdef ARK_USE_ENERGY
+	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor], Ark::DmVnEnergy::IM);
+#endif
 }
 
 template<bool ENABLESO>
