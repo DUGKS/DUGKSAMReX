@@ -131,6 +131,9 @@ public:
     //DVM
     void Advance_DVM();
 
+    // MRT
+    void Advance_Moment_SS();
+
     void Evolve();
 
     //
@@ -716,6 +719,8 @@ private:
     void Construct_DVDF_NonEq (int const lev, double const dTime);
 
     void Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor);
+
+    void Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor);
 
     void Collision_DVM_BarPlus(int const lev);
 

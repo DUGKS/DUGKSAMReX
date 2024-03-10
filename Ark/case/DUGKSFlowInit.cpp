@@ -588,7 +588,7 @@ void DUGKSAmr::DropletImpact(int const lev)
             const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
             const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
-            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+            const double distance = std::hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
@@ -668,7 +668,7 @@ void DUGKSAmr::TaylorBubble(int const lev)
             const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
             const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
-            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+            const double distance = std::hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
@@ -750,7 +750,7 @@ void DUGKSAmr::RisingBubble(int const lev)
             const double y  = dx[Ark::Y]*(j+0.5) + rb.lo(Ark::Y);
 #if(AMREX_SPACEDIM == 3)
             const double z  = dx[Ark::Z]*(k+0.5) + rb.lo(Ark::Z);
-            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+            const double distance = std::hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif
@@ -799,7 +799,7 @@ void DUGKSAmr::FallingDrop(int const lev)
             const double y  = dx[Ark::Y]*(j+0.5) + prob_lo[Ark::Y];
 #if(AMREX_SPACEDIM == 3)
             const double z  = dx[Ark::Z]*(k+0.5) + prob_lo[Ark::Z];
-            const double distance = Ark::Hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
+            const double distance = std::hypot(x-centerX, y-centerY, z-centerZ) - RadiusPF();
 #elif(AMREX_SPACEDIM == 2)
             const double distance = std::hypot(x-centerX, y-centerY) - RadiusPF();
 #endif

@@ -26,7 +26,7 @@
 //     temperature_xF.define (ba_xF, dm, 1             , 0, MFInfo(), fact);
 //     force_xF.define       (ba_xF, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
 //     gphase_xF.define      (ba_xF, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
-//     gdensity_xF.define    (ba_xF, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);    
+//     gdensity_xF.define    (ba_xF, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
 
 //     phase_yF.define       (ba_yF, dm, 1             , 0, MFInfo(), fact);
 //     density_yF.define     (ba_yF, dm, 1             , 0, MFInfo(), fact);
@@ -44,9 +44,7 @@ void DUGKSAmr::LevelData::ConstructDVDFMultiFabAtFace (Array<MultiFab, Ark::FACE
                                                   amrex::FabFactory<FArrayBox> const& fact,
                                                   int const Q, int const ng)
 {
-    xDVDFnF[Ark::TAUF].define(ba_nF, dm, 1, 0, MFInfo(), fact);
-
-    for(int i = Ark::FLUX;i < Ark::FACEDVDFNUM;++i)
+    for(int i = Ark::TAUF;i < Ark::FACEDVDFNUM;++i)
     {
       xDVDFnF[i].define(ba_nF, dm, Q, 0, MFInfo(), fact);
     }
@@ -59,12 +57,13 @@ void DUGKSAmr::LevelData::ConstructDVDFMultiFabAtCell (Array<MultiFab, Ark::DVDF
                                                   int const Q, int const ng)
 {
     //cell data
-    xDVDF[Ark::TAU].define( ba, dm, 1,  0, MFInfo(), fact);
+    xDVDF[Ark::TAU].define( ba, dm, Q,  0, MFInfo(), fact);
     xDVDF[Ark::WAVE].define(ba, dm, Q, ng, MFInfo(), fact);
     xDVDF[Ark::EQ].define(  ba, dm, Q,  0, MFInfo(), fact);
     xDVDF[Ark::SO].define(  ba, dm, Q,  0, MFInfo(), fact);
     xDVDF[Ark::BP].define(  ba, dm, Q, ng, MFInfo(), fact);
 
+    // cell gradients
     for(int i = Ark::BP + 1;i < Ark::DVDFNUM; ++i)
     {
         xDVDF[i].define(ba, dm, Q, 1, MFInfo(), fact);

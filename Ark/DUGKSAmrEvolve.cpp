@@ -175,7 +175,7 @@ void DUGKSAmr::Update_DVM_Wave (int const lev)
 // }
 void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Into_Moment()", Transform_DVDF_Moment);
+	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Moment()", Transform_DVDF_Moment);
 
 	auto &ld = Data(lev);
 
@@ -194,7 +194,7 @@ void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::Enum
 
 void DUGKSAmr::Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Into_Moment()", Transform_DVDF_Moment);
+	BL_PROFILE_VAR("DUGKSAmr::Transform_Moment_DVDF()", Transform_DVDF_Moment);
 
 	auto &ld = Data(lev);
 
@@ -887,5 +887,85 @@ void DUGKSAmr::Advance_DVM()
 		//source terms
 		auto &ld = Data(lev);
 		Update_MacroSourceVars (ld.msv, 0.5*Dt());
+	}
+}
+
+void DUGKSAmr::Advance_Moment_SS()
+{
+
+for (int lev = 0; lev <= finest_level; ++lev) {
+
+		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+
+		Nullify_Source (lev);
+	}
+
+//  regridding
+	AverageDownMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Construct_DVDF_NonEq<false> (lev, 0);
+	}
+
+	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+    {
+        if (m_verbose > 100) {
+        	amrex::Print() << "Regridding...\n";
+      	}
+
+        regrid(0, cur_time);
+    }
+
+	FillPatchMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Tau (lev);
+		Update_DVDF_Eq (lev);
+		Construct_DVDF_Wave<false> (lev, Dt());
+	}
+
+	for (int lev = finest_level; lev > 0; --lev) {
+
+		int const crse_lev = lev-1;
+
+		Collision_DVDF_BarPlus (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus (lev, hDt(lev));
+	}
+
+		Collision_DVDF_BarPlus (0, hDt(0));
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+
+		(this->*Update_DVDF_Grad_BarPlus) (lev);
+
+		Update_DVDF_MesoFlux<false> (lev, hDt(lev));
+	}
+
+	// CheckForPhysicalBoundary(0);
+
+	AverageDownDVDFFlux();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave (lev, hDt(lev));
+	}
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+		// FreeEnergySource(lev);
+	}
+
+	// FillPatchMacroVars();
+
+	//Primitive distribution, stored in xWave
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Eq (lev);
+		Construct_DVDF_Prime<false> (lev, Dt());
+	}
+
+	// AverageDownMacroVars();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave_SS (lev, 0.5*Dt());
 	}
 }

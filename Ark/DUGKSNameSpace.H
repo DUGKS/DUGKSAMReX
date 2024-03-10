@@ -73,12 +73,6 @@ namespace Ark
 		return u*u + v*v + w*w;
 	}
 
-	inline
-	double Hypot(double const u, double const v, double const w)
-	{
-		return std::sqrt(u*u + v*v + w*w);
-	}
-
 	template <typename T>
 	bool approximatelyEqual(T A, T B)
 	{

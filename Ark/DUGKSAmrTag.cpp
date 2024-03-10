@@ -16,7 +16,7 @@ void DUGKSAmr::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
 #endif
 
     auto &ld = Data(lev);
-    const Real *prob_lo = Geom(lev).ProbLo(); 
+    const Real *prob_lo = Geom(lev).ProbLo();
     const double *dl = Geom(lev).CellSize();
 
     const MultiFab &PhaseFab = ld.msv[Ark::PHI];
@@ -41,12 +41,12 @@ void DUGKSAmr::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     Vector<const MultiFab*> MultiVectorFieldPtr;
     Vector<double> TagErrorPtr;
 
-    if(lev < grad_phi_error.size()) { 
-        MultiVectorFieldPtr.push_back(&GradPhaseFab); 
+    if(lev < grad_phi_error.size()) {
+        MultiVectorFieldPtr.push_back(&GradPhaseFab);
         TagErrorPtr.push_back(grad_phi_error[lev]);
     }
-    if(lev < vel_error.size()) { 
-        MultiVectorFieldPtr.push_back(&VelocityFab); 
+    if(lev < vel_error.size()) {
+        MultiVectorFieldPtr.push_back(&VelocityFab);
         TagErrorPtr.push_back(vel_error[lev]);
     }
 
@@ -90,9 +90,9 @@ void DUGKSAmr::TagScalarField (TagBoxArray& Tab, const MultiFab &ScalarFab, cons
         const Box &bx = mfi.tilebox();
 
         const auto &tagArray = Tab.array(mfi);
-        Array4<Real const> const &scalar = ScalarFab.const_array(mfi);   
+        Array4<Real const> const &scalar = ScalarFab.const_array(mfi);
 
-        amrex::ParallelFor(bx, 
+        amrex::ParallelFor(bx,
         [scalar, estimator, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             if(scalar(i,j,k) > estimator) {
@@ -114,19 +114,19 @@ void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, cons
         const Box &bx = mfi.tilebox();
 
         const auto &tagArray = Tab.array(mfi);
-        Array4<Real const> const &vec = VectorFab.const_array(mfi);   
+        Array4<Real const> const &vec = VectorFab.const_array(mfi);
 
-        amrex::ParallelFor(bx, 
+        amrex::ParallelFor(bx,
         [vec, estimator, tagval, tagArray] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             if(tagval != tagArray(i,j,k)) {
 #if(AMREX_SPACEDIM == 3)
-                Real const mod_vector = Ark::Hypot (vec(i,j,k,Ark::X),
-                                                    vec(i,j,k,Ark::Y), 
+                Real const mod_vector = std::hypot (vec(i,j,k,Ark::X),
+                                                    vec(i,j,k,Ark::Y),
                                                     vec(i,j,k,Ark::Z));
-                                                          
+
 #else
-                Real const mod_vector = std::hypot(vec(i,j,k,Ark::X),vec(i,j,k,Ark::Y)); 
+                Real const mod_vector = std::hypot(vec(i,j,k,Ark::X),vec(i,j,k,Ark::Y));
 #endif
                 if (mod_vector > estimator) {
                     tagArray(i,j,k) = tagval;
@@ -135,7 +135,7 @@ void DUGKSAmr::TagVectorField (TagBoxArray& Tab, const MultiFab &VectorFab, cons
         });
     }
 }
-void DUGKSAmr::TagMultiVectorField (TagBoxArray& Tab, Vector<MultiFab const*> &VectorFabPtr, 
+void DUGKSAmr::TagMultiVectorField (TagBoxArray& Tab, Vector<MultiFab const*> &VectorFabPtr,
                                     const Vector<double> &tagError)
 {
     if (VectorFabPtr.size() == 0) return;
@@ -160,7 +160,7 @@ void DUGKSAmr::TagDesignatedRegion(TagBoxArray& Tab, const Real *real_lo, const 
     const Real dly = dx[Ark::Y];
     const Real real_lo_x = real_lo[Ark::X];
     const Real real_lo_y = real_lo[Ark::Y];
-    
+
 #if (AMREX_SPACEDIM == 3)
     const Real dlz = dx[Ark::Z];
     const Real real_lo_z = real_lo[Ark::Z];

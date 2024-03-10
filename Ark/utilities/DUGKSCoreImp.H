@@ -204,7 +204,7 @@ void DUGKSCore<DVM>::Transform (MultiFab &TargetFab, const MultiFab &SourceFab,
         {
 			double sum = 0;
 			for(int m = 0;m < DVM::Q;m++) {
-				sum += xSor(i,j,k,m) * M[n][m];
+				sum += M[n][m] * xSor(i,j,k,m);
 			}
 			xTar(i,j,k,n) = sum;
         });

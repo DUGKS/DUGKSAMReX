@@ -181,7 +181,7 @@ void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const
         }
     }
 }
-    
+
 #elif (AMREX_SPACEDIM == 3)
 void DUGKSAmr::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& vel)
 {
@@ -428,7 +428,7 @@ void DUGKSAmr::ElongationVelocityField (MultiFab &VelFab, const Real *dx, const 
 
             const double xT = x/ChLength()*Ark::PI;
             const double yT = y/ChLength()*Ark::PI;
-            
+
             vel(i,j,k,Ark::X) =  U0()*Ark::PI*sin(xT)*cos(yT)*multiplier;
             vel(i,j,k,Ark::Y) = -U0()*Ark::PI*cos(xT)*sin(yT)*multiplier;
 
@@ -436,7 +436,7 @@ void DUGKSAmr::ElongationVelocityField (MultiFab &VelFab, const Real *dx, const 
                 if(x == real_lo_x or x == real_hi_x)
                 {
                     vel(i,j,k,Ark::X) = 0;
-                    vel(i,j,k,Ark::Y) = 0; 
+                    vel(i,j,k,Ark::Y) = 0;
                 }
             }
             //
@@ -444,7 +444,7 @@ void DUGKSAmr::ElongationVelocityField (MultiFab &VelFab, const Real *dx, const 
                 if(y == real_lo_y or y == real_hi_y)
                 {
                     vel(i,j,k,Ark::X) = 0;
-                    vel(i,j,k,Ark::Y) = 0; 
+                    vel(i,j,k,Ark::Y) = 0;
                 }
             }
         });
@@ -507,7 +507,7 @@ void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, con
             const double xT = (x/ChLength()-0.5)*Ark::PI;
             const double yT = (y/ChLength()-0.5)*Ark::PI;
             const double zT = (z/ChLength()-0.5)*Ark::PI;
-            
+
             vel(i,j,k,Ark::X) = Ark::PI*U0()*cos(xT)*(sin(yT)-sin(zT))*cos(Ark::PI*tT);
             vel(i,j,k,Ark::Y) = Ark::PI*U0()*cos(yT)*(sin(zT)-sin(xT))*cos(Ark::PI*tT);
             vel(i,j,k,Ark::Z) = Ark::PI*U0()*cos(zT)*(sin(xT)-sin(yT))*cos(Ark::PI*tT);
@@ -515,8 +515,8 @@ void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, con
             if(token == Ark::X) {
                 if(x == real_lo_x or x == real_hi_x) {
                     vel(i,j,k,Ark::X) = 0;
-                    vel(i,j,k,Ark::Y) = 0; 
-                    vel(i,j,k,Ark::Z) = 0; 
+                    vel(i,j,k,Ark::Y) = 0;
+                    vel(i,j,k,Ark::Z) = 0;
                 }
             }
             //
@@ -524,8 +524,8 @@ void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, con
                 if(y == real_lo_y or y == real_hi_y)
                 {
                     vel(i,j,k,Ark::X) = 0;
-                    vel(i,j,k,Ark::Y) = 0; 
-                    vel(i,j,k,Ark::Z) = 0; 
+                    vel(i,j,k,Ark::Y) = 0;
+                    vel(i,j,k,Ark::Z) = 0;
                 }
             }
 
@@ -533,8 +533,8 @@ void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, con
                 if(z == real_lo_z or z == real_hi_z)
                 {
                     vel(i,j,k,Ark::X) = 0;
-                    vel(i,j,k,Ark::Y) = 0; 
-                    vel(i,j,k,Ark::Z) = 0; 
+                    vel(i,j,k,Ark::Y) = 0;
+                    vel(i,j,k,Ark::Z) = 0;
                 }
             }
         });
@@ -543,7 +543,7 @@ void DUGKSAmr::ElongationVelocityField3D  (MultiFab &VelFab, const Real *dx, con
 }
 
 //smoothed
-void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx, 
+void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
                                          const Real time, int const token)
 {
     const Real dlx = dx[0];
@@ -575,18 +575,18 @@ void DUGKSAmr::DeformationVelocityField (MultiFab &VelFab, const Real *dx,
         {
             const double x = (i + di)*dlx/ChLength();
             const double y = (j + dj)*dly/ChLength();
-            
-            vel(i,j,k,Ark::X) = 
+
+            vel(i,j,k,Ark::X) =
             -U0()*sin(4.0*Ark::PI*x)*sin(4.0*Ark::PI*y)*cos(Ark::PI*time*U0()/ChLength());
 
-            vel(i,j,k,Ark::Y) = 
+            vel(i,j,k,Ark::Y) =
             -U0()*cos(4.0*Ark::PI*x)*cos(4.0*Ark::PI*y)*cos(Ark::PI*time*U0()/ChLength());
         });
     }
 }
 
 // Trailing tail
-void DUGKSAmr::ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx, 
+void DUGKSAmr::ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx,
                                             const Real time, int const token)
 {
     using Ark::PI;
@@ -620,11 +620,11 @@ void DUGKSAmr::ReversedVortexVelocityField (MultiFab &VelFab, const Real *dx,
         {
             const double x = (i + di)*dlx/ChLength();
             const double y = (j + dj)*dly/ChLength();
-            
-            vel(i,j,k,Ark::X) = 
+
+            vel(i,j,k,Ark::X) =
             U0()*sin(PI*x)*sin(PI*x)*sin(2.0*PI*y)*cos(PI*time*U0()/ChLength()/4.0);
 
-            vel(i,j,k,Ark::Y) = 
+            vel(i,j,k,Ark::Y) =
             -U0()*sin(PI*y)*sin(PI*y)*sin(2.0*PI*x)*cos(PI*time*U0()/ChLength()/4.0);
         });
     }
@@ -646,10 +646,10 @@ void DUGKSAmr::FillLevelUnsteadyTaylorGreenVortex(int const lev, MultiFab &VelFa
             const double x = dl[Ark::X]*(i+0.5)/ChLength();
             const double y = dl[Ark::Y]*(j+0.5)/ChLength();
 
-            vel(i,j,k,Ark::X) = 
+            vel(i,j,k,Ark::X) =
             -U0()*cos(2.0*PI*x)*sin(2.0*PI*y)*exp(-8.0*PI*PI*Nu0()*cur_time)/(2.0*PI);
 
-            vel(i,j,k,Ark::Y) = 
+            vel(i,j,k,Ark::Y) =
             U0()*sin(2.0*PI*x)*cos(2.0*PI*y)*exp(-8.0*PI*PI*Nu0()*cur_time)/(2.0*PI);
 
             pres(i,j,k) = -0.25*U0()*U0()*(cos(4.0*PI*x) + cos(4.0*PI*y))
@@ -657,7 +657,7 @@ void DUGKSAmr::FillLevelUnsteadyTaylorGreenVortex(int const lev, MultiFab &VelFa
         });
     }
 }
-void DUGKSAmr::FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab, MultiFab &PresFab, 
+void DUGKSAmr::FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab, MultiFab &PresFab,
                                                 MultiFab &ForceFab, int const token)
 {
     using Ark::PI;
@@ -699,7 +699,7 @@ void DUGKSAmr::FillLevelForceTaylorGreenVortex (int const lev, MultiFab &VelFab,
             force(i,j,k,Ark::X) = multiplier*sin(2.*PI*x)*sin(2.*PI*y);
             force(i,j,k,Ark::Y) = multiplier*cos(2.*PI*x)*cos(2.*PI*y);
 
-            pres(i,j,k) = 0.25*U0()*U0()*(cos(4.0*PI*x)-cos(4.0*PI*y));            
+            pres(i,j,k) = 0.25*U0()*U0()*(cos(4.0*PI*x)-cos(4.0*PI*y));
         });
     }
 }
@@ -718,14 +718,14 @@ void DUGKSAmr::FillLevelScalarFieldSphere (MultiFab &scalarFab, const double hea
             const double y = dl[Ark::Y]*(j+0.5);
 #if(AMREX_SPACEDIM == 3)
             const double z = dl[Ark::Z]*(k+0.5);
-            const double distance = 
-            Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
+            const double distance =
+            std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
 #else
-            const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();           
+            const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();
 #endif
             scalar(i,j,k) = HyperbolicTangentProfile(distance, heavy, light, token);
         });
-    } 
+    }
 
 //     for(amrex::MFIter mfi(scalarFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 //     {
@@ -739,10 +739,10 @@ void DUGKSAmr::FillLevelScalarFieldSphere (MultiFab &scalarFab, const double hea
 //             const double y = dl[Ark::Y]*(j+0.5);
 // #if(AMREX_SPACEDIM == 3)
 //             const double z = dl[Ark::Z]*(k+0.5);
-//             const double distance = 
-//             Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
+//             const double distance =
+//             std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
 // #else
-//             if( x < CenterPF(Ark::X)-RadiusPF() || 
+//             if( x < CenterPF(Ark::X)-RadiusPF() ||
 //                 x > CenterPF(Ark::X)+RadiusPF() ||
 //                 y < CenterPF(Ark::Y)-RadiusPF() ||
 //                 y > CenterPF(Ark::Y)+RadiusPF()
@@ -751,11 +751,11 @@ void DUGKSAmr::FillLevelScalarFieldSphere (MultiFab &scalarFab, const double hea
 //             }
 //             else {
 //                 scalar(i,j,k) = heavy;
-//             }           
+//             }
 // #endif
 //             // scalar(i,j,k) = HyperbolicTangentProfile(distance, heavy, light, token);
 //         });
-//     }     
+//     }
 }
 // void DUGKSAmr::FillLevelPhaseSphere(MultiFab &phase, const Real *dl, LV token)
 // {
@@ -771,10 +771,10 @@ void DUGKSAmr::FillLevelScalarFieldSphere (MultiFab &scalarFab, const double hea
 //             const double y = dl[Ark::Y]*(j+0.5);
 // #if(AMREX_SPACEDIM == 3)
 //             const double z = dl[Ark::Z]*(k+0.5);
-//             const double distance = 
-//             Ark::Hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
+//             const double distance =
+//             std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)) - RadiusPF();
 // #else
-//             const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();           
+//             const double distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y)) - RadiusPF();
 // #endif
 //             phi(i,j,k) = HyperbolicTangentProfile(distance, PhiL(), PhiV(), token);
 //         });
@@ -797,7 +797,7 @@ void DUGKSAmr::FillLevelPhaseZalesakDisk(MultiFab &phase, const Real *dl)
             Real slot_xR = CenterPF(Ark::X) + 0.1*RadiusPF();
 #if(AMREX_SPACEDIM == 3)
             const double z = dl[Ark::Z]*(k+0.5);
-            Real distance = 
+            Real distance =
             std::sqrt(Ark::Square(x-CenterPF(Ark::X), y-CenterPF(Ark::Y), z-CenterPF(Ark::Z)));
 #else
             Real distance = std::hypot(x-CenterPF(Ark::X), y-CenterPF(Ark::Y));
@@ -828,6 +828,6 @@ void DUGKSAmr::StaircasePhase(MultiFab &phase)
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             phi(i,j,k) = phi(i,j,k) > 0.5*(PhiL() + PhiV()) ? PhiL() : PhiV();
-        }); 
-    }   
+        });
+    }
 }
