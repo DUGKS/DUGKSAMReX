@@ -13,17 +13,10 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
     amrex::Abort("D2MnPP model involves no PHASE distribution.");
 }
 
-template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
-{
-    amrex::Abort("Wrong equilibrium function is used.");
-}
 //Rho_0 == 0
 template <typename DVM>
-template <long unsigned NUM>
-void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv,
-                                         const amrex::Vector<double>& magic)
+template <bool ENABLESOURCE>
+void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, NUM> &msv)
 {
     #ifdef _OPENMP
     #pragma omp parallel
@@ -57,25 +50,26 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
             const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
 
             for(int nn = 0;nn < DVM::Q;++nn) {
-                fEq(i,j,k,nn) = rho*Quadrature::NInt(DVM::Q, MEq, DVM::IM[nn]);
+                fEq(i,j,k,nn) = rho*MEq[nn];
             }
-
-            for(int nn = 0;nn < DVM::Q;++nn) {
-                fSo(i,j,k,nn) = Quadrature::NInt(DVM::Q, MSo, DVM::IM[nn]);
+            if constexpr (ENABLESOURCE) {
+                for(int nn = 0;nn < DVM::Q;++nn) {
+                    fSo(i,j,k,nn) = MSo[nn];
+                }
             }
         });
-    }   
+    }
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv,
                                                 const MultiFab &xDVDF)
 {
 
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv,
                                                    const MultiFab &xDVDF)
 {
     msv[Ark::RHO].setVal(0.0);
@@ -100,7 +94,7 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
             rho(i,j,k)    += fdvdf(i,j,k,n);
             vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
             vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
             vel(i,j,k,Ark::Z) += fdvdf(i,j,k,n)*DVM::xi_w[n];
 #endif
         });
@@ -150,7 +144,7 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
         amrex::ParallelFor(bx, AMREX_SPACEDIM,[=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
         {
             vel(i,j,k,n) += interval*force(i,j,k,n)/rho(i,j,k);
-        }); 
+        });
     }
 #endif
 }
@@ -174,13 +168,13 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, const double hTime)
 
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
     DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_zF, ld.fDVDFzF[Ark::FLUX]);
 #endif
 
     Update_MacroBaseVars(ld.msv_xF);
     Update_MacroBaseVars(ld.msv_yF);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
     Update_MacroBaseVars(ld.msv_zF);
 #endif
 

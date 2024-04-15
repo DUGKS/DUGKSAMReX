@@ -17,7 +17,7 @@ void DUGKSCore<DVM>::Update_Eq_Phase (MultiFab &xEq, MultiFab &xSo, const Array<
 //Rho_0 == 0
 template <typename DVM>
 template <bool ENABLESO>
-void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Array<MultiFab, Ark::MSVNUM> &msv)
+void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
 {
 	xSo.setVal(0);
 
@@ -61,42 +61,42 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
 #endif
 			const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
 
-// // * * * * * * * * * * * * * * * primitive model * * * * * * * * * * * * * * * * * * * * 
-// 			fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);	
-		
+// // * * * * * * * * * * * * * * * primitive model * * * * * * * * * * * * * * * * * * * *
+// 			fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);
+
 // 		if constexpr (ENABLESO) {
 // 			fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
 // 			(
-// 				(DVM::xi_u[n] - u)*fx 
+// 				(DVM::xi_u[n] - u)*fx
 // 			  + (DVM::xi_v[n] - v)*fy
-// #if(AMREX_SPACEDIM == 3) 
+// #if(AMREX_SPACEDIM == 3)
 // 			  + (DVM::xi_w[n] - w)*fz
 // #endif
 // 			  + (
-// 				  DVM::xi_u[n]*fx 
+// 				  DVM::xi_u[n]*fx
 // 			    + DVM::xi_v[n]*fy
-// #if(AMREX_SPACEDIM == 3) 
+// #if(AMREX_SPACEDIM == 3)
 // 			    + DVM::xi_w[n]*fz
 // #endif
 // 			  	)*u1
 // 			);
 // 		}
 
-// * * * * * * * * * * * * * * * well-balanced model * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * well-balanced model * * * * * * * * * * * * * * * * * * * *
 		fEq(i,j,k,n) = DVM::omega[n]*rho*Gamma + static_cast<int>(n == 0)*rho;
 
 		if constexpr (ENABLESO) {
 			fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
 			(
-				(DVM::xi_u[n] - u)*fx 
+				(DVM::xi_u[n] - u)*fx
 			  + (DVM::xi_v[n] - v)*fy
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
 			  + (DVM::xi_w[n] - w)*fz
 #endif
 			  + (
-				  DVM::xi_u[n]*(fx + rhox*DVM::RT) 
+				  DVM::xi_u[n]*(fx + rhox*DVM::RT)
 			    + DVM::xi_v[n]*(fy + rhoy*DVM::RT)
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
 			    + DVM::xi_w[n]*(fz + rhoz*DVM::RT)
 #endif
 			  	)*u1
@@ -106,19 +106,19 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
                 Ark::Square(DVM::xi_u[n],DVM::xi_v[n],DVM::xi_w[n])/DVM::RT-(AMREX_SPACEDIM)-2
 #elif(AMREX_SPACEDIM == 2)
                 Ark::Square(DVM::xi_u[n],DVM::xi_v[n])/DVM::RT-(AMREX_SPACEDIM)-2
-#endif 
+#endif
 			);
 		}
 
 // * * * * * * * * * * * * * * * Lee2006PRE Deprecated* * * * * * * * * * * * * * * * * * * *
-// 		fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);	
+// 		fEq(i,j,k,n) = DVM::omega[n]*rho*(1.0 + Gamma);
 
 // 		if constexpr (ENABLESO) {
 // 			const int ni  = static_cast<int>(DVM::xi_u[n]);
 // 			const int nj  = static_cast<int>(DVM::xi_v[n]);
-// 			const int nii = ni + ni; 
+// 			const int nii = ni + ni;
 // 			const int njj = nj + nj;
-// #if(AMREX_SPACEDIM == 3) 			
+// #if(AMREX_SPACEDIM == 3)
 // 			const int nk  = static_cast<int>(DVM::xi_w[n]);
 // 			const int nkk = nk + nk;
 // #else
@@ -126,10 +126,10 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
 // 			const int nkk = 0;
 // #endif
 
-// 			const double biasedDirectionalDensity 
+// 			const double biasedDirectionalDensity
 // 			= (-Den(i+nii,j+njj,k+nkk) + 4*Den(i+ni,j+nj,k+nk) - 3*rho)*0.5;
 
-// 			const double biasedDirectionalChemiP  
+// 			const double biasedDirectionalChemiP
 // 			= (-ChemiP(i+nii,j+njj,k+nkk) + 4*ChemiP(i+ni,j+nj,k+nk) - 3*ChemiP(i,j,k))*0.5;
 
 // 			const double centralDirectionalDensity = (Den(i+ni,j+nj,k+nk) - Den(i-ni,j-nj,k-nk))*0.5;
@@ -148,41 +148,41 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo,const Arra
 // 			const double grad_chemip_y = (ChemiP(i,j+1,k) - ChemiP(i,j-1,k))*0.5;
 
 // 			const double fxNow = (DVM::RT*grad_rho_x - rho*grad_chemip_x);
-// 			const double fyNow = (DVM::RT*grad_rho_y - rho*grad_chemip_y);  								 
+// 			const double fyNow = (DVM::RT*grad_rho_y - rho*grad_chemip_y);
 
 // 			fSo(i,j,k,n) = fEq(i,j,k,n)*
 // 			(
 // 				// DVM::RT*directionalDensity - rho*directionalChemiP -
 // 				(
-// 				  (DVM::xi_u[n])*fx 
+// 				  (DVM::xi_u[n])*fx
 // 			    + (DVM::xi_v[n])*fy
-// #if(AMREX_SPACEDIM == 3) 
+// #if(AMREX_SPACEDIM == 3)
 // 			    + (DVM::xi_w[n])*fz
 // #endif
 // 			  	) -
-				
+
 // 			   (
-// 				  (u)*fx 
+// 				  (u)*fx
 // 			    + (v)*fy
-// #if(AMREX_SPACEDIM == 3) 
+// #if(AMREX_SPACEDIM == 3)
 // 			    + (w)*fz
 // #endif
 // 			  	)
 // 			)/(DVM::RT*rho);
 // 		}
 		});
-	}	
+	}
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv,
 										   		const MultiFab &xDVDF)
 {
 
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv, 
+void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv,
 										   		   const MultiFab &xDVDF)
 {
 	msv[Ark::RHO].setVal(0.0);
@@ -207,7 +207,7 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
 			rho(i,j,k) 	  += fdvdf(i,j,k,n);
 			vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
 			vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
 			vel(i,j,k,Ark::Z) += fdvdf(i,j,k,n)*DVM::xi_w[n];
 #endif
 		});
@@ -257,7 +257,7 @@ void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const 
 		amrex::ParallelFor(bx, AMREX_SPACEDIM,[=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
 		{
 			vel(i,j,k,n) += interval*force(i,j,k,n)/rho(i,j,k);
-		});	
+		});
 	}
 #endif
 }
@@ -281,13 +281,13 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, const double hTime)
 
 	DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
 	DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
 	DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_zF, ld.fDVDFzF[Ark::FLUX]);
 #endif
 
 	Update_MacroBaseVars(ld.msv_xF);
 	Update_MacroBaseVars(ld.msv_yF);
-#if(AMREX_SPACEDIM == 3) 
+#if(AMREX_SPACEDIM == 3)
 	Update_MacroBaseVars(ld.msv_zF);
 #endif
 

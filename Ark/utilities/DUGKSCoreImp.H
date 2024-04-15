@@ -99,7 +99,7 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         		xWave(i,j,k,n) += b*(xEq(i,j,k,n) + xtau*xSo(i,j,k,n) - xWave(i,j,k,n));
         	}
         	else {
-        		xWave(i,j,k,n) += b*(xEq(i,j,k,n)- xWave(i,j,k,n));
+        		xWave(i,j,k,n) += b*(xEq(i,j,k,n) - xWave(i,j,k,n));
         	}
         });
     }
@@ -164,13 +164,12 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         Array4<Real const> const &xEq   = xDVDF[Ark::EQ].const_array(mfi);
         Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
 
-        Array4<Real>       const &xBP   = xDVDF[Ark::BP].array(mfi);
         Array4<Real>       const &xWave = xDVDF[Ark::WAVE].array(mfi);
 
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtau = xTau(i,j,k);
+        	const Real xtau = xTau(i,j,k,n);
         	const Real xneq = (xtau + hdTime)/xtau;
 
         	// xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - ENABLESOURCE*hdTime*xSo(i,j,k,n);
@@ -186,27 +185,28 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
     }
 }
 template<typename DVM>
-void DUGKSCore<DVM>::Transform (MultiFab &TargetFab, const MultiFab &SourceFab,
-								const double (&M)[DVM::Q][DVM::Q])
+void DUGKSCore<DVM>::Transform (MultiFab &mFab, const double (&M)[DVM::Q][DVM::Q])
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
 	#endif
-	for(amrex::MFIter mfi(SourceFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	for(amrex::MFIter mfi(mFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-        Array4<Real const> const &xSor  = SourceFab.const_array(mfi);
-        Array4<Real>       const &xTar  = TargetFab.array(mfi);
+        Array4<Real> const &mArray  = mFab.array(mfi);
 
-        amrex::ParallelFor(bx, DVM::Q,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-			double sum = 0;
-			for(int m = 0;m < DVM::Q;m++) {
-				sum += M[n][m] * xSor(i,j,k,m);
+			double transformed_vector[DVM::Q] = {0};
+			for(int n = 0;n < DVM::Q;n++) {
+				for(int m = 0;m < DVM::Q;m++)
+				vector_trans[n] += M[n][m] * mArray(i,j,k,m);
 			}
-			xTar(i,j,k,n) = sum;
+
+			for(int n =0;n < DVM::Q;n++) {
+				mArray(i,j,k,n) = vector_trans[n];
+			}
         });
     }
 }

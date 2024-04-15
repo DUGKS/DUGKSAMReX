@@ -194,7 +194,7 @@ void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::Enum
 
 void DUGKSAmr::Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Transform_Moment_DVDF()", Transform_DVDF_Moment);
+	BL_PROFILE_VAR("DUGKSAmr::Transform_Moment_DVDF()", Transform_Moment_DVDF);
 
 	auto &ld = Data(lev);
 
@@ -424,7 +424,7 @@ BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_MesoFlux()", Update_DVDF_MesoFlux);
 BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux);
 }
 
-void DUGKSAmr::Update_DVDF_Wave_SS (int const lev, double const ssTime)
+void DUGKSAmr::Update_DVDF_Wave_SS (int const lev, Ark::EnumDVDF SS, double const ssTime)
 {
 	auto &ld = Data(lev);
 
@@ -438,11 +438,11 @@ void DUGKSAmr::Update_DVDF_Wave_SS (int const lev, double const ssTime)
 	Update_DVDF_EqSo (lev);
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Update_Wave_SS(ld.fDVDF[Ark::WAVE],ld.fDVDF[Ark::SO], ssTime);
+	DUGKSCore<Ark::DmVnMomentum>::Update_Wave_SS(ld.fDVDF[Ark::SS],ld.fDVDF[Ark::SO], ssTime);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Update_Wave_SS(ld.gDVDF[Ark::WAVE],ld.gDVDF[Ark::SO], ssTime);
+	DUGKSCore<Ark::DmVnEnergy>::Update_Wave_SS(ld.gDVDF[Ark::SS],ld.gDVDF[Ark::SO], ssTime);
 #endif
 }
 
@@ -624,7 +624,7 @@ void DUGKSAmr::Advance_SS()
 {
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+		Update_DVDF_Wave_SS (lev, Ark::WAVE, 0.5*Dt());
 
 		Nullify_Source (lev);
 	}
@@ -695,7 +695,7 @@ void DUGKSAmr::Advance_SS()
 	// AverageDownMacroVars();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+		Update_DVDF_Wave_SS (lev, Ark::WAVE, 0.5*Dt());
 	}
 }
 
@@ -893,19 +893,15 @@ void DUGKSAmr::Advance_DVM()
 void DUGKSAmr::Advance_Moment_SS()
 {
 
-for (int lev = 0; lev <= finest_level; ++lev) {
-
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		// incorporate source effects via Strang-splitting scheme
+		Update_DVDF_Wave_SS(lev, Ark::BP, 0.5*Dt());
 
 		Nullify_Source (lev);
 	}
 
 //  regridding
 	AverageDownMacroVars();
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Construct_DVDF_NonEq<false> (lev, 0);
-	}
 
 	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
     {
@@ -916,6 +912,7 @@ for (int lev = 0; lev <= finest_level; ++lev) {
         regrid(0, cur_time);
     }
 
+	// update value of macroscopic variables in ghost cells
 	FillPatchMacroVars();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
@@ -961,6 +958,8 @@ for (int lev = 0; lev <= finest_level; ++lev) {
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Eq (lev);
 		Construct_DVDF_Prime<false> (lev, Dt());
+		// transform DVDF f into m and store it in xDVDF[Ark::BP]
+		Transform_DVDF_Moment(lev, Ark::BP, Ark::WAVE);
 	}
 
 	// AverageDownMacroVars();
