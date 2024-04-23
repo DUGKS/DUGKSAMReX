@@ -88,14 +88,13 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
 
         Array4<Real const> const &fdvdf = xDVDF.const_array(mfi);
 
-        amrex::For(bx, DVM::Q,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        amrex::For(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            rho(i,j,k)    += fdvdf(i,j,k,n);
-            vel(i,j,k,Ark::X) += fdvdf(i,j,k,n)*DVM::xi_u[n];
-            vel(i,j,k,Ark::Y) += fdvdf(i,j,k,n)*DVM::xi_v[n];
+            rho(i,j,k) = fdvdf(i,j,k,0);
+            vel(i,j,k,Ark::X) = fdvdf(i,j,k,3);
+            vel(i,j,k,Ark::Y) = fdvdf(i,j,k,5);
 #if(AMREX_SPACEDIM == 3)
-            vel(i,j,k,Ark::Z) += fdvdf(i,j,k,n)*DVM::xi_w[n];
+        #error "wrong velocity model"
 #endif
         });
     }
@@ -158,7 +157,7 @@ void DUGKSAmr::Update_MacroVars(int const lev)
     FillPatchDensity(lev, cur_time, ld.msv[Ark::RHO]);
 
     // FreeEnergySource(lev);
-    PseudoPotential(lev);
+    // PseudoPotential(lev);
 
     Update_MacroBaseVars(ld.msv);
 }

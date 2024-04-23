@@ -185,27 +185,28 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
     }
 }
 template<typename DVM>
-void DUGKSCore<DVM>::Transform (MultiFab &mFab, const double (&M)[DVM::Q][DVM::Q])
+void DUGKSCore<DVM>::Transform (MultiFab &vecFab, const double (&M)[DVM::Q][DVM::Q])
 {
 	#ifdef _OPENMP
 	#pragma omp parallel
 	#endif
-	for(amrex::MFIter mfi(mFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	for(amrex::MFIter mfi(vecFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
 	{
 		const amrex::Box& bx = mfi.tilebox();
 
-        Array4<Real> const &mArray  = mFab.array(mfi);
+        Array4<Real> const &vecArray  = vecFab.array(mfi);
 
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
 			double transformed_vector[DVM::Q] = {0};
 			for(int n = 0;n < DVM::Q;n++) {
-				for(int m = 0;m < DVM::Q;m++)
-				vector_trans[n] += M[n][m] * mArray(i,j,k,m);
+				for(int m = 0;m < DVM::Q;m++) {
+					transformed_vector[n] += M[n][m] * vecArray(i,j,k,m);
+				}
 			}
 
-			for(int n =0;n < DVM::Q;n++) {
-				mArray(i,j,k,n) = vector_trans[n];
+			for(int n = 0;n < DVM::Q;n++) {
+				vecArray(i,j,k,n) = transformed_vector[n];
 			}
         });
     }

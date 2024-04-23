@@ -173,41 +173,41 @@ void DUGKSAmr::Update_DVM_Wave (int const lev)
 // 									   		 Geom(lev).CellSize(), Dt());
 // #endif
 // }
-void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
+void DUGKSAmr::Transform_DVDF_Moment(int const lev, Ark::EnumDVDF ST)
 {
 	BL_PROFILE_VAR("DUGKSAmr::Transform_DVDF_Moment()", Transform_DVDF_Moment);
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor], Ark::DmVnPhase::M);
+	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[ST], Ark::DmVnPhase::M);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor], Ark::DmVnMomentum::M);
+	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[ST], Ark::DmVnMomentum::M);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor], Ark::DmVnEnergy::M);
+	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[ST], Ark::DmVnEnergy::M);
 #endif
 }
 
-void DUGKSAmr::Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor)
+void DUGKSAmr::Transform_Moment_DVDF(int const lev, Ark::EnumDVDF ST)
 {
 	BL_PROFILE_VAR("DUGKSAmr::Transform_Moment_DVDF()", Transform_Moment_DVDF);
 
 	auto &ld = Data(lev);
 
 #ifdef ARK_USE_PHASE
-	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[Tar], ld.hDVDF[Sor], Ark::DmVnPhase::IM);
+	DUGKSCore<Ark::DmVnPhase>::Transform (ld.hDVDF[ST], Ark::DmVnPhase::IM);
 #endif
 
 #ifdef ARK_USE_MOMENTUM
-	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[Tar], ld.fDVDF[Sor], Ark::DmVnMomentum::IM);
+	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDF[ST], Ark::DmVnMomentum::IM);
 #endif
 
 #ifdef ARK_USE_ENERGY
-	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[Tar], ld.gDVDF[Sor], Ark::DmVnEnergy::IM);
+	DUGKSCore<Ark::DmVnEnergy>::Transform (ld.gDVDF[ST], Ark::DmVnEnergy::IM);
 #endif
 }
 
@@ -679,6 +679,7 @@ void DUGKSAmr::Advance_SS()
 	}
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
+
 		Update_MacroVars (lev);
 		Update_DVDF_Tau (lev);
 		// FreeEnergySource(lev);
@@ -895,7 +896,7 @@ void DUGKSAmr::Advance_Moment_SS()
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		// incorporate source effects via Strang-splitting scheme
-		Update_DVDF_Wave_SS(lev, Ark::BP, 0.5*Dt());
+		Update_DVDF_Wave_SS(lev, Ark::WAVE, 0.5*Dt());
 
 		Nullify_Source (lev);
 	}
@@ -947,6 +948,7 @@ void DUGKSAmr::Advance_Moment_SS()
 	}
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
+		Transform_DVDF_Moment(lev, Ark::WAVE);
 		Update_MacroVars (lev);
 		Update_DVDF_Tau (lev);
 		// FreeEnergySource(lev);
