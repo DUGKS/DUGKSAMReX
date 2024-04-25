@@ -46,7 +46,7 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
             const double uu = u*u  + v*v;
             const double uF = u*fx + v*fy;
 
-            const double MEq[DVM::Q] = {1,3*uu-2,magic[0]-3*uu,u,-u,v,-v,u*u-v*v,u*v};
+            const double MEq[DVM::Q] = {1,3*uu-2,1-3*uu,u,-u,v,-v,u*u-v*v,u*v};
             const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
 
             for(int nn = 0;nn < DVM::Q;++nn) {

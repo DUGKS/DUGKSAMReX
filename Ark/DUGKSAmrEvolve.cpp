@@ -904,6 +904,10 @@ void DUGKSAmr::Advance_Moment_SS()
 //  regridding
 	AverageDownMacroVars();
 
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Construct_DVDF_NonEq<false> (lev, 0);
+	}
+
 	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
     {
         if (m_verbose > 100) {
@@ -945,9 +949,6 @@ void DUGKSAmr::Advance_Moment_SS()
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Wave (lev, hDt(lev));
-	}
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
 		Transform_DVDF_Moment(lev, Ark::WAVE);
 		Update_MacroVars (lev);
 		Update_DVDF_Tau (lev);
@@ -960,13 +961,11 @@ void DUGKSAmr::Advance_Moment_SS()
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_Eq (lev);
 		Construct_DVDF_Prime<false> (lev, Dt());
-		// transform DVDF f into m and store it in xDVDF[Ark::BP]
-		Transform_DVDF_Moment(lev, Ark::BP, Ark::WAVE);
 	}
 
 	// AverageDownMacroVars();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+		Update_DVDF_Wave_SS (lev, Ark::WAVE, 0.5*Dt());
 	}
 }

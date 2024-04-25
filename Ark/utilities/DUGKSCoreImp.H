@@ -89,7 +89,7 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtau = xTau(i,j,k);
+        	const Real xtau = xTau(i,j,k,n);
         	const Real b = hdTime/(xtau + hdTime);
 
         	// xWave(i,j,k,n) += b*(xEq(i,j,k,n) + xtau*xSo(i,j,k,n)*ENABLESOURCE - xWave(i,j,k,n));
