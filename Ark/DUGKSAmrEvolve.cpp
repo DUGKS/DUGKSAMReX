@@ -512,17 +512,19 @@ BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux);
 template <bool ENABLESOURCE>
 void DUGKSAmr::Update_DVDF_MesoFlux_Moment (int const lev, double const hTime)
 {
-BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_MesoFlux_Moment()", Update_DVDF_MesoFlux);
+BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_MesoFlux_Moment()", Update_DVDF_MesoFlux_Moment);
 
 	(this->*Update_DVDF_Barh) (lev);
 	// Update_DVDF_Barh_UW_Limiter(lev);
-	Update_MacroVars_hDt (lev, 0.5*hTime);
+	Transform_DVDF_Moment_hDt(lev, Ark::FLUX);
+	Update_MacroVars_hDt(lev, 0.5*hTime);
 	Update_DVDFnF_Tau (lev);
 	if constexpr (ENABLESOURCE) { Update_DVDF_EqSo_hDt (lev); }
 	else { Update_DVDF_Eq_hDt (lev); }
 	Collision_DVDF_Flux<ENABLESOURCE> (lev, hTime);
+	Transform_Moment_DVDF_hDt(lev, Ark::FLUX);
 
-BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux);
+BL_PROFILE_VAR_STOP(Update_DVDF_MesoFlux_Moment);
 }
 
 void DUGKSAmr::Update_DVDF_Wave_SS (int const lev, Ark::EnumDVDF SS, double const ssTime)
@@ -1041,7 +1043,7 @@ void DUGKSAmr::Advance_Moment_SS()
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
 
-		Update_DVDF_MesoFlux<false> (lev, hDt(lev));
+		Update_DVDF_MesoFlux_Moment<false> (lev, hDt(lev));
 	}
 
 	// CheckForPhysicalBoundary(0);

@@ -45,7 +45,7 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
 
             const double uu = u*u  + v*v;
             const double uF = u*fx + v*fy;
-
+            // it seems that the second order force terms is omitted
             const double MEq[DVM::Q] = {1,3*uu-2,1-3*uu,u,-u,v,-v,u*u-v*v,u*v};
             const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
 
@@ -70,7 +70,7 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &
 
 template <typename DVM>
 void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM> &msv,
-                                                   const MultiFab &xDVDF)
+                                                     const MultiFab &xDVDF)
 {
     msv[Ark::RHO].setVal(0.0);
     msv[Ark::VEL].setVal(0.0);
@@ -99,6 +99,7 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
         });
     }
 }
+
 void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
 {
 #ifdef ARK_USE_MOMENTUM

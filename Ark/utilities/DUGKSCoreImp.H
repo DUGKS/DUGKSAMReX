@@ -19,7 +19,7 @@ void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Rea
 
         amrex::ParallelFor(bx, DVM::Q, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtau = xTau(i,j,k);
+        	const Real xtau = xTau(i,j,k,n);
         	const Real b = (hTime + dTime)/(2.0*xtau + dTime);
         	// const Real c = b*xTau(i,j,k);
 
@@ -60,7 +60,7 @@ void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Rea
 
         amrex::ParallelFor(bx, DVM::Q, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtau = xTau(i,j,k);
+        	const Real xtau = xTau(i,j,k,n);
         	const Real xneq = (xtau - hhTime)/xtau;
 
         	xBP(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) + hhTime*xSo(i,j,k,n);
@@ -129,7 +129,7 @@ void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtau = xTau(i,j,k);
+        	const Real xtau = xTau(i,j,k,n);
         	const Real xneq = xtau/(xtau + hdTime);
 
         	// xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n) + ENABLESOURCE*hdTime*xSo(i,j,k,n));
@@ -2272,12 +2272,14 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-        	const Real xtauh = xTauh(i,j,k);
+        	const Real xtauh = xTauh(i,j,k,n);
         	const Real bh = hTime/(2.0*xtauh + hTime);
-        	// const Real ch = bh*xtauh;
-
-        	xFlux(i,j,k,n) = xFlux(i,j,k,n)
-        				   + bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n)*ENABLESOURCE);
+			// c++ 17
+			if constexpr (ENABLESOURCE) {
+				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
+			} else {
+				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n));
+			}
         	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
 	}
