@@ -67,8 +67,13 @@ void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Rea
         });
     }
 }
-
-// - Construct Prime from Wave
+/***************************https://latexeditor.lagrida.com/*****************************\
+\tilde{f} = f + \frac{\Delta{t}}{2\tau}(f-f^{E}) - \frac{\Delta{t}}{2}f^{S}
+\\
+\tilde{f} = (1+\frac{\Delta{t}}{2\tau})f-\frac{\Delta{t}}{2\tau}f^{E} - \frac{\Delta{t}}{2}f^{S}
+\\
+f = \frac{2\tau}{2\tau+{\Delta}t}\tilde{f}+\frac{\Delta{t}}{2\tau+{\Delta}t}(f^{E}+{\tau}f^{S})
+\*********************************Construct Prime from Wave*****************************/
 template<typename DVM>
 template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
@@ -84,7 +89,7 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         Array4<Real const> const &xEq   = xDVDF[Ark::EQ].const_array(mfi);
         Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
 
-        Array4<Real>       const &xWave   = xDVDF[Ark::BP].array(mfi);
+        Array4<Real>       const &xWave = xDVDF[Ark::BP].array(mfi);
 
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -105,10 +110,13 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
     }
 }
 
-// - Construct NonEq from Wave or Prime
-/*******************************************************************************\
+/***************************https://latexeditor.lagrida.com/*****************************\
+\tilde{f} = f + \frac{\Delta{t}}{2\tau}(f-f^{E}) - \frac{\Delta{t}}{2}f^{S}
+\\
+\tilde{f} = (1+\frac{\Delta{t}}{2\tau})f^{N}+f^{E} - \frac{\Delta{t}}{2}f^{S}
+\\
 f^{N} = \frac{2\tau}{2\tau+{\Delta}t}(\tilde{f}-f^{E}+\frac{{\Delta}t}{2}f^{S})
-\*******************************************************************************/
+\*****************************Construct NonEq from Wave or Prime*************************/
 template<typename DVM>
 template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
