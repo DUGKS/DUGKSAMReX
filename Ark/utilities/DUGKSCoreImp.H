@@ -1,5 +1,8 @@
 #ifndef ARK_DUGKS_CORE_IMPLEMENTATION_H
 #define ARK_DUGKS_CORE_IMPLEMENTATION_H
+/***************************https://latexeditor.lagrida.com/*****************************\
+\bar{f}^{+} = \tilde{f}+\frac{\delta t+\Delta t}{2\tau+\Delta t}(f^E-\tilde{f}+\tau f^{S})
+\*********************************Construct BarPlus from Wave*****************************/
 
 template<typename DVM>
 void DUGKSCore<DVM>::Collision_BarPlus(Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime)
@@ -153,10 +156,9 @@ void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
     }
 }
 
-// - Construct Wave from NonEq
-/*******************************************************************************\
-\tilde{f} = f^{E} + \frac{2\tau+{\Delta}t}{2\tau}f^{N} - \frac{{\Delta}t}{2}f^{S}
-\*******************************************************************************/
+/***************************https://latexeditor.lagrida.com/*****************************\
+\tilde{f} = f^{E} + (1+\frac{{\Delta}t}{2\tau})f^{N} - \frac{{\Delta}t}{2}f^{S}
+\*********************************Construct Wave from NonEq*****************************/
 template<typename DVM>
 template<bool ENABLESOURCE>
 void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime)
@@ -2294,6 +2296,29 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
 }
 
 template <typename DVM>
+void DUGKSCore<DVM>::Construct_WavePlus (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
+										 const Real hTime, const Real dTime)
+{
+	#ifdef _OPENMP
+	#pragma omp parallel
+	#endif
+	for(amrex::MFIter mfi(xWaveFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
+
+		Array4<Real const> const &xBP       = xBarPlusFab.const_array(mfi);
+		Array4<Real 	 > const &xWave     = xWaveFab.array(mfi);
+
+		amrex::ParallelFor(bx, DVM::Q,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+			const Real b = (hTime - dTime)/(hTime + dTime);
+			xWave(i,j,k,n) = xBP(i,j,k,n) + b*(xWave(i,j,k,n) - xBP(i,j,k,n));
+        });
+	}
+}
+
+template <typename DVM>
 void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 							 	  const Vector<MultiFab const*> &xFluxFabnF,
 							 	  const Real *dx, const Real hTime, const Real dTime)
@@ -2354,6 +2379,62 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 	}
 }
 
+template <typename DVM>
+void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab,
+							 	  const Vector<MultiFab const*> &xFluxFabnF,
+							 	  const Real *dx, const Real hTime, const Real dTime)
+{
+	const Real dlx = dx[Ark::X];
+	const Real dly = dx[Ark::Y];
+
+#if(AMREX_SPACEDIM == 3)
+	const Real dlz = dx[Ark::Z];
+	const Real dSz = dlx*dly;
+#else
+	const Real dlz = 1.0;
+#endif
+
+	const Real dSx = dly*dlz;
+	const Real dSy = dlz*dlx;
+
+	const Real volume = dlx*dly*dlz;
+
+	const MultiFab& xFluxFabxF = *xFluxFabnF[Ark::X];
+	const MultiFab& xFluxFabyF = *xFluxFabnF[Ark::Y];
+
+#if(AMREX_SPACEDIM == 3)
+	const MultiFab& xFluxFabzF = *xFluxFabnF[Ark::Z];
+#endif
+
+	#ifdef _OPENMP
+	#pragma omp parallel
+	#endif
+	for(amrex::MFIter mfi(xWaveFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
+	{
+		const amrex::Box& bx = mfi.tilebox();
+
+		Array4<Real const> const &xFlux_xF = xFluxFabxF.const_array(mfi);
+		Array4<Real const> const &xFlux_yF = xFluxFabyF.const_array(mfi);
+#if(AMREX_SPACEDIM == 3)
+		Array4<Real const> const &xFlux_zF = xFluxFabzF.const_array(mfi);
+#endif
+		Array4<Real 	 > const &xWave     = xWaveFab.array(mfi);
+
+		amrex::ParallelFor(bx, DVM::Q,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+        	Real const xFluxSum
+        	= (xFlux_xF(i,j,k,n) - xFlux_xF(i + 1,j,    k,    n))*dSx*DVM::xi_u[n]
+			+ (xFlux_yF(i,j,k,n) - xFlux_yF(i,    j + 1,k,    n))*dSy*DVM::xi_v[n]
+#if(AMREX_SPACEDIM == 3)
+			+ (xFlux_zF(i,j,k,n) - xFlux_zF(i,    j    ,k + 1,n))*dSz*DVM::xi_w[n]
+#endif
+			;
+
+			xWave(i,j,k,n) += xFluxSum*dTime/volume;
+        });
+	}
+}
 // template <typename DVM>
 // void DUGKSCore<DVM>::Update_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF,
 // 							 	  const Vector<MultiFab const*> &xFluxFabnF,

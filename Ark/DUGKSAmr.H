@@ -718,13 +718,21 @@ private:
     template<bool ENABLESOURCE=true>
     void Construct_DVDF_NonEq (int const lev, double const dTime);
 
-    void Transform_DVDF_Moment(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor);
+    void Construct_DVDF_WavePlus (int const lev, double const hTime);
 
-    void Transform_Moment_DVDF(int const lev, Ark::EnumDVDF Tar, Ark::EnumDVDF Sor);
+    void Transform_DVDF_Moment(int const lev, Ark::EnumDVDF index);
+
+    void Transform_Moment_DVDF(int const lev, Ark::EnumDVDF index);
+
+    void Transform_DVDF_Moment_hDt(int const lev, Ark::EnumFaceDVDF index);
+
+    void Transform_Moment_DVDF_hDt(int const lev, Ark::EnumFaceDVDF index);
 
     void Collision_DVM_BarPlus(int const lev);
 
     void Collision_DVDF_BarPlus (int const lev, double const hTime);
+
+    void Collision_DVDF_BarPlus_Moment (int const lev, double const hTime);
 
     void Collision_DVDF_BarPlus_NonEq(int const lev, double const hTime);
 
@@ -778,7 +786,12 @@ private:
     template <bool ENABLESOURCE=true>
     void Update_DVDF_MesoFlux (int const lev, double const hTime);
 
+    template <bool ENABLESOURCE=true>
+    void Update_DVDF_MesoFlux_Moment (int const lev, double const hTime);
+
     void Update_DVDF_Wave(int const lev, double const hTime);
+
+    void Update_DVDF_Wave_Lite(int const lev, double const hTime);
 
     void Update_DVDF_Wave_NonEq(int const lev);
 

@@ -127,6 +127,31 @@ void DUGKSAmr::Update_DVDF_Wave (int const lev, const double hTime)
 #endif
 }
 
+void DUGKSAmr::Update_DVDF_Wave_Lite (int const lev, const double hTime)
+{
+	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Wave_Lite()", Update_DVDF_Wave_Lite);
+
+	auto &ld = Data(lev);
+
+#ifdef ARK_USE_PHASE
+	DUGKSCore<Ark::DmVnPhase>::Update_Wave (ld.hDVDF[Ark::WAVE],
+											ld.get_hDVDFnF_flux_const(),
+									  	    Geom(lev).CellSize(), hTime, Dt());
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+	DUGKSCore<Ark::DmVnMomentum>::Update_Wave (ld.fDVDF[Ark::WAVE],
+											   ld.get_fDVDFnF_flux_const(),
+									  	       Geom(lev).CellSize(), hTime, Dt());
+#endif
+
+#ifdef ARK_USE_ENERGY
+	DUGKSCore<Ark::DmVnEnergy>::Update_Wave (ld.gDVDF[Ark::WAVE],
+											 ld.get_gDVDFnF_flux_const(),
+									   		 Geom(lev).CellSize(), hTime, Dt());
+#endif
+}
+
 void DUGKSAmr::Update_DVM_Wave (int const lev)
 {
 	auto &ld = Data(lev);
@@ -209,6 +234,7 @@ void DUGKSAmr::Transform_DVDF_Moment_hDt(int const lev, Ark::EnumFaceDVDF ST)
 #ifdef ARK_USE_MOMENTUM
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFxF[ST], Ark::DmVnMomentum::M);
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFyF[ST], Ark::DmVnMomentum::M);
+#ifdef AMREX_SPACEDIM == 3
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFzF[ST], Ark::DmVnMomentum::M);
 #endif
 #endif
@@ -239,6 +265,7 @@ void DUGKSAmr::Transform_Moment_DVDF_hDt(int const lev, Ark::EnumFaceDVDF ST)
 #ifdef ARK_USE_MOMENTUM
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFxF[ST], Ark::DmVnMomentum::IM);
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFyF[ST], Ark::DmVnMomentum::IM);
+#ifdef AMREX_SPACEDIM == 3
 	DUGKSCore<Ark::DmVnMomentum>::Transform (ld.fDVDFzF[ST], Ark::DmVnMomentum::IM);
 #endif
 #endif
@@ -315,6 +342,28 @@ void DUGKSAmr::Construct_DVDF_NonEq (int const lev, double const dTime)
 #endif
 }
 
+void DUGKSAmr::Construct_DVDF_WavePlus (int const lev, double const hTime)
+{
+	BL_PROFILE_VAR("DUGKSAmr::Construct_DVDF_WavePlus()", Construct_DVDF_WavePlus);
+
+	auto &ld = Data(lev);
+
+#ifdef ARK_USE_PHASE
+	DUGKSCore<Ark::DmVnPhase>::Construct_WavePlus(ld.hDVDF[Ark::Wave], ld.hDVDF[Ark::BP],
+												  hTime, Dt());
+#endif
+
+#ifdef ARK_USE_MOMENTUM
+	DUGKSCore<Ark::DmVnMomentum>::Construct_WavePlus(ld.fDVDF[Ark::Wave], ld.fDVDF[Ark::BP],
+													 hTime, Dt());
+#endif
+
+#ifdef ARK_USE_ENERGY
+	DUGKSCore<Ark::DmVnEnergy>::Construct_WavePlus(ld.gDVDF[Ark::WAVE], ld.gDVDF[Ark::BP],
+												   hTime, Dt());
+#endif
+}
+
 template<bool ENABLESO>
 void DUGKSAmr::Construct_DVDF_Wave (int const lev, const Real dTime)
 {
@@ -359,9 +408,9 @@ void DUGKSAmr::Collision_DVDF_BarPlus (int const lev, const double hTime)
 #endif
 }
 
-void DUGKSAmr::Collision_Moment_DVDF_BarPlus (int const lev, const double hTime)
+void DUGKSAmr::Collision_DVDF_BarPlus_Moment (int const lev, const double hTime)
 {
-	BL_PROFILE_VAR("DUGKSAmr::Collision_DVDF_BarPlus()", Collision_DVDF_BarPlus);
+	BL_PROFILE_VAR("DUGKSAmr::Collision_DVDF_BarPlus_Moment()", Collision_DVDF_BarPlus_Moment);
 
 	auto &ld = Data(lev);
 
@@ -1033,11 +1082,11 @@ void DUGKSAmr::Advance_Moment_SS()
 
 		int const crse_lev = lev-1;
 
-		Collision_Moment_DVDF_BarPlus (crse_lev, hDt(lev));
-		Collision_Moment_DVDF_BarPlus (lev, hDt(lev));
+		Collision_DVDF_BarPlus_Moment (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus_Moment (lev, hDt(lev));
 	}
 
-		Collision_Moment_DVDF_BarPlus (0, hDt(0));
+		Collision_DVDF_BarPlus_Moment (0, hDt(0));
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 
@@ -1051,7 +1100,10 @@ void DUGKSAmr::Advance_Moment_SS()
 	AverageDownDVDFFlux();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave (lev, hDt(lev));
+		Transform_DVDF_Moment(lev, Ark::BP);
+		Construct_DVDF_WavePlus(lev,hDt(lev));
+		Transform_Moment_DVDF (lev, Ark::WAVE);
+		Update_DVDF_Wave_Lite (lev, hDt(lev));
 		Transform_DVDF_Moment(lev, Ark::WAVE);
 		Update_MacroVars (lev);
 		Update_DVDF_Tau (lev);
