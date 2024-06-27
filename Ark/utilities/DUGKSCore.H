@@ -17,12 +17,10 @@ public:
 	template<bool ENABLESOURCE>
 	static void Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hdTime);
 
-	template <typename DVM>
     static void Construct_WavePlus (MultiFab &xWaveFab, const MultiFab &xBarPlusFab,
 									const Real hTime, const Real dTime);
 
-	static void Transform (MultiFab &TargetFab, const MultiFab &SourceFab,
-						   const double (&M)[DVM::Q][DVM::Q]);
+	static void Transform (MultiFab &TargetFab, const double (&M)[DVM::Q][DVM::Q]);
 
 	// - construct \bar{f}^{+}
 	static void Collision_BarPlus (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real const hTime, Real const dTime);
