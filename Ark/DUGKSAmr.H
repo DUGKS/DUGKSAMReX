@@ -791,7 +791,7 @@ private:
 
     void Update_DVDF_Wave(int const lev, double const hTime);
 
-    void Update_DVDF_Wave_Lite(int const lev, double const hTime);
+    void Update_DVDF_Wave_Lite(int const lev);
 
     void Update_DVDF_Wave_NonEq(int const lev);
 

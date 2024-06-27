@@ -45,7 +45,7 @@ case.case_index		=  1          # case index
 case.case_name      =  "UnsteadyTaylorGreenVortex"  # case name
 case.DmVn_name	    =   "DmVn"
 case.flux_scheme    =   CD
-case.advance_scheme	=	CN			# advance model
+case.advance_scheme	=	MRTSS			# advance model
 case.scheme_index   = 	-32
 case.solver_name	=	"DUGKSAMReX"
 

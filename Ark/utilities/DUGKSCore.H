@@ -100,7 +100,7 @@ public:
 							 const Real *dx, const Real hTime, const Real dTime);
 
 	static void Update_Wave (MultiFab &xWaveFab, const Vector<MultiFab const *> &xFluxFabnF,
-							 const Real *dx, const Real hTime, const Real dTime);
+							 const Real *dx, const Real dTime);
 
 	static void Update_Wave_SS (MultiFab &xWaveFab, const MultiFab &xSoFab,
 							 	const Real hTime);

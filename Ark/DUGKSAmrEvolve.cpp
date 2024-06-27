@@ -127,7 +127,7 @@ void DUGKSAmr::Update_DVDF_Wave (int const lev, const double hTime)
 #endif
 }
 
-void DUGKSAmr::Update_DVDF_Wave_Lite (int const lev, const double hTime)
+void DUGKSAmr::Update_DVDF_Wave_Lite (int const lev)
 {
 	BL_PROFILE_VAR("DUGKSAmr::Update_DVDF_Wave_Lite()", Update_DVDF_Wave_Lite);
 
@@ -136,19 +136,19 @@ void DUGKSAmr::Update_DVDF_Wave_Lite (int const lev, const double hTime)
 #ifdef ARK_USE_PHASE
 	DUGKSCore<Ark::DmVnPhase>::Update_Wave (ld.hDVDF[Ark::WAVE],
 											ld.get_hDVDFnF_flux_const(),
-									  	    Geom(lev).CellSize(), hTime, Dt());
+									  	    Geom(lev).CellSize(), Dt());
 #endif
 
 #ifdef ARK_USE_MOMENTUM
 	DUGKSCore<Ark::DmVnMomentum>::Update_Wave (ld.fDVDF[Ark::WAVE],
 											   ld.get_fDVDFnF_flux_const(),
-									  	       Geom(lev).CellSize(), hTime, Dt());
+									  	       Geom(lev).CellSize(), Dt());
 #endif
 
 #ifdef ARK_USE_ENERGY
 	DUGKSCore<Ark::DmVnEnergy>::Update_Wave (ld.gDVDF[Ark::WAVE],
 											 ld.get_gDVDFnF_flux_const(),
-									   		 Geom(lev).CellSize(), hTime, Dt());
+									   		 Geom(lev).CellSize(), Dt());
 #endif
 }
 
@@ -1103,7 +1103,7 @@ void DUGKSAmr::Advance_Moment_SS()
 		Transform_DVDF_Moment(lev, Ark::BP);
 		Construct_DVDF_WavePlus(lev,hDt(lev));
 		Transform_Moment_DVDF (lev, Ark::WAVE);
-		Update_DVDF_Wave_Lite (lev, hDt(lev));
+		Update_DVDF_Wave_Lite (lev);
 		Transform_DVDF_Moment(lev, Ark::WAVE);
 		Update_MacroVars (lev);
 		Update_DVDF_Tau (lev);

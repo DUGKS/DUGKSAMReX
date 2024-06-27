@@ -2380,9 +2380,8 @@ void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const MultiFab &xBarPlusFa
 }
 
 template <typename DVM>
-void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab,
-							 	  const Vector<MultiFab const*> &xFluxFabnF,
-							 	  const Real *dx, const Real hTime, const Real dTime)
+void DUGKSCore<DVM>::Update_Wave (MultiFab &xWaveFab, const Vector<MultiFab const*> &xFluxFabnF,
+							 	  const Real *dx, const Real dTime)
 {
 	const Real dlx = dx[Ark::X];
 	const Real dly = dx[Ark::Y];

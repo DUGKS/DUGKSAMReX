@@ -350,6 +350,9 @@ void DUGKSAmr::SetAdvanceScheme()
     {
         Advance = &DUGKSAmr::Advance_FD;
     }
+    else if(AdvanceScheme() == "MRTSS") {
+        Advance = &DUGKSAmr::Advance_Moment_SS;
+    }
     else if(AdvanceScheme() == "DVM")
     {
         Advance = &DUGKSAmr::Advance_DVM;
