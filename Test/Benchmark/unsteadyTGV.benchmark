@@ -6,15 +6,14 @@ geometry.prob_hi        =  1 1 1     # Hi corner coordinates
 
 geometry.is_periodic    =   1 1 1   # Periodicity x y z (0/1)
 
-geometry.ch_num         = 128
+geometry.ch_num         = 32
 geometry.ch_length      = 1.0
-geometry.min_length     = 0.0078125
-
+geometry.min_length     = 0.03125
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              = 128  128  0     # Grid cells at coarsest AMRlevel
+amr.n_cell              = 32  32  0     # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy
 amr.v                   =	1
 amr.regrid_int          =  -1
@@ -43,7 +42,7 @@ DUGKSAmr.tag_region_hi   =   0 0 0
 #.......................................#
 case.case_index		=  1          # case index
 case.case_name      =  "UnsteadyTaylorGreenVortex"  # case name
-case.DmVn_name	    =   "DmVn"
+case.DmVn_name	    =   "DmMn"
 case.flux_scheme    =   CD
 case.advance_scheme	=	MRTSS			# advance model
 case.scheme_index   = 	-32
@@ -53,7 +52,7 @@ case.solver_name	=	"DUGKSAMReX"
 #         TIME STEP COMPUTATION         #
 #.......................................#
 time.constant_trace        =   true       # Use fix trace time step?
-time.CFL	            =   0.0768        # Use this constant CFL
+time.CFL	            =   0.0192        # Use this constant CFL
 time.advance_time_step 	=   0.0006        # time step size
 # time.trace_time_step    =   0.0008       # default vaule equals half advance_time_step
 

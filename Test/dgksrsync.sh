@@ -1,6 +1,6 @@
 #!bin/bash
 set -e
-DUGKSDIR=/mnt/d/HOME/Code/DUGKSAMReX
+DUGKSDIR=/mnt/d/home/Code/DUGKSAMReX
 rsync -avz --exclude '.git/*' ~/DUGKSAMReX/Test/dgksrsync.sh ${DUGKSDIR}/Test/
 rsync -avz --exclude '.*' ${DUGKSDIR} ~/
 find ~/DUGKSAMReX -type d -exec chmod 755 {} +
