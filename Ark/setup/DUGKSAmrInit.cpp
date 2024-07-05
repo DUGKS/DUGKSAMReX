@@ -357,6 +357,9 @@ void DUGKSAmr::SetAdvanceScheme()
     {
         Advance = &DUGKSAmr::Advance_DVM;
     }
+    else if(AdvanceScheme() == "DEBUG") {
+        Advance = &DUGKSAmr::Advance_Debug;
+    }
     else
     {
         std::ostringstream ss;

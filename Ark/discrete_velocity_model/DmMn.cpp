@@ -46,11 +46,12 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
             const double uu = u*u  + v*v;
             const double uF = u*fx + v*fy;
             // it seems that the second order force terms is omitted
-            const double MEq[DVM::Q] = {1,3*uu-2,1-3*uu,u,-u,v,-v,u*u-v*v,u*v};
+            const double MEq[DVM::Q] = {rho,3*uu-2*rho,rho-3*uu,u,-u,v,-v,u*u-v*v,u*v};
             const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
 
             for(int nn = 0;nn < DVM::Q;++nn) {
-                fEq(i,j,k,nn) = rho*MEq[nn];
+                // fEq(i,j,k,nn) = rho*MEq[nn];
+                fEq(i,j,k,nn) = MEq[nn];
             }
             if constexpr (ENABLESOURCE) {
                 for(int nn = 0;nn < DVM::Q;++nn) {
@@ -103,9 +104,11 @@ void DUGKSCore<DVM>::Integral_MacroBaseVars_Momentum(Array<MultiFab, Ark::MSVNUM
 void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
 {
 #ifdef ARK_USE_MOMENTUM
-    const MultiFab &RhoFab   = msv[Ark::RHO];
+    const double rho0 = 1.0;
+    const MultiFab &RhoFab = msv[Ark::RHO];
 
-    MultiFab &VelFab   = msv[Ark::VEL];
+    MultiFab &VelFab  = msv[Ark::VEL];
+    MultiFab &PresFab = msv[Ark::P];
 
     for(amrex::MFIter mfi(RhoFab, amrex::TilingIfNotGPU());mfi.isValid();++mfi)
     {
@@ -113,17 +116,19 @@ void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
 
         Array4<Real const> const &rho = RhoFab.array(mfi);
 
-        Array4<Real> const &vel   = VelFab.array(mfi);
+        Array4<Real> const &vel  = VelFab.array(mfi);
+        Array4<Real> const &pres = PresFab.array(mfi);
 
         amrex::ParallelFor(bx, AMREX_SPACEDIM,
         [=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
         {
-            vel(i,j,k,n) /= rho(i,j,k);
+            // vel(i,j,k,n) /= rho(i,j,k);
+            vel(i,j,k,n) /= rho0; // rho0 = 1.0;
+            pres(i,j,k) = (rho(i,j,k) - rho0)*Ark::DmVnMomentum::RT;
         });
     }
 #endif
 }
-
 void DUGKSAmr::Update_MacroSourceVars (Array<MultiFab, Ark::MSVNUM> &msv, const Real interval)
 {
 #ifdef ARK_USE_MOMENTUM
