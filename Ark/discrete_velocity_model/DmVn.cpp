@@ -145,7 +145,7 @@ void DUGKSAmr::Update_MacroBaseVars (Array<MultiFab, Ark::MSVNUM> &msv)
         [=] AMREX_GPU_DEVICE (int i,int j,int k, int n) noexcept
         {
             // vel(i,j,k,n) /= rho(i,j,k);
-            vel(i,j,k,n) /= 1.0; // rho0 = 1.0;
+            vel(i,j,k,n) /= rho0; // rho0 = 1.0;
             pres(i,j,k) = (rho(i,j,k) - rho0)*Ark::DmVnMomentum::RT;
         });
     }

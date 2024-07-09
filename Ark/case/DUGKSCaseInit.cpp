@@ -292,6 +292,10 @@ void DUGKSAmr::post_case_init(int const lev)
                 }
             });
         }
+
+        if(AdvanceScheme() == "MRT") {
+		    Transform_DVDF_Moment(lev, Ark::WAVE);
+        }
     }
 #endif
 }

@@ -126,7 +126,7 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
         const auto &msvFaceY = ld.msv_yF;
         const Real real_lo_y = Geom(lev).ProbDomain().lo(Ark::Y);
         const Real real_hi_y = Geom(lev).ProbDomain().hi(Ark::Y);
-        if(real_hi_y != 100 or real_lo_y != -100) 
+        if(real_hi_y != 100 or real_lo_y != -100)
             amrex::Abort("if(real_hi_y != 100 or real_lo_y != -100) amrex::Abort();");
         for(amrex::MFIter mfi(msvFaceY[Ark::VEL], true);mfi.isValid();++mfi)
         {
@@ -178,11 +178,11 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
 
     //         amrex::ParallelFor(bx, [=] (int i,int j,int k)
     //         {
-    //             if(j == lo_min) 
+    //             if(j == lo_min)
     //             {
     //                 amrex::Print().SetPrecision(18)
     //                 <<"i "<<i<<"  "
-    //                 <<"j "<<j<<"  " 
+    //                 <<"j "<<j<<"  "
     //                 <<"lo_min "<<lo_min<<"  "
     //                 <<"vel_y : "<< vel(i,j,k,Ark::Y) <<std::endl;
     //             }
@@ -190,7 +190,7 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
     //             {
     //                 amrex::Print().SetPrecision(18)
     //                 <<"i "<<i<<"  "
-    //                 <<"j "<<j<<"  " 
+    //                 <<"j "<<j<<"  "
     //                 <<"hi_max "<<hi_max<<"  "
     //                 <<"vel_y : "<< vel(i,j,k,Ark::Y) <<std::endl;
     //             }
@@ -245,7 +245,7 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
                     }
                     // for(int n = 0;n < 9;++n){
                     // if(
-                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0)) 
+                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0))
                     //     > 1E-16
                     //   )
                     // {
@@ -255,7 +255,7 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
                     //     <<"n "<<n<<"  "
                     //     <<"flux : "<<fFlux_yF(i,j,k,n)<<"  "
                     //     <<"true : "<<Ark::DmVnMomentum::omega[n]*3.0<<std::endl;
-                    // }}                 
+                    // }}
                 }
 
                 if(y == real_hi_y)
@@ -279,7 +279,7 @@ void DUGKSAmr::CheckForPhysicalBoundary (int const lev)
                     }
                     // for(int n = 0;n < 9;++n){
                     // if(
-                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0)) 
+                    //     (fabs(fFlux_yF(i,j,k,n) - Ark::DmVnMomentum::omega[n]*1*3.0))
                     //     > 1E-16
                     //   )
                     // {
@@ -318,53 +318,55 @@ void DUGKSAmr::CheckDUGKSAmr()
 
     if( DmVnModel != DmVnName())
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "wrong discrete velocity model!!!" 
+        ss  << "wrong discrete velocity model!!!"
+            << " DmVnModel: " << DmVnModel
+            << " DmVnName: "<< DmVnName()
             << '\n';
         amrex::Abort(ss.str());
     }
 
-    if (Geom(0).Domain().length(Ark::X) != ChNum() 
-        and 
+    if (Geom(0).Domain().length(Ark::X) != ChNum()
+        and
         Geom(0).Domain().length(Ark::Y) != ChNum()
 #if(AMREX_SPACEDIM == 3)
-        and 
+        and
         Geom(0).Domain().length(Ark::Z) != ChNum()
 #endif
         )
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "incosistence between ch_num:" << ChNum() 
-            << " and ncell_x:" << Geom(0).Domain().length(Ark::X) 
+        ss  << "incosistence between ch_num:" << ChNum()
+            << " and ncell_x:" << Geom(0).Domain().length(Ark::X)
             << '\n';
         amrex::Abort(ss.str());
-    }    
+    }
     if (static_cast<int>(ChLength()/MinL()) != ChNum())
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "incosistence among ch_length:" << ChLength() 
-            << " ch_num:" << ChNum()  
+        ss  << "incosistence among ch_length:" << ChLength()
+            << " ch_num:" << ChNum()
             <<" and min_length:" << MinL()
             << '\n';
         amrex::Abort(ss.str());
     }
-    if(steady_state && end_step > 0) 
+    if(steady_state && end_step > 0)
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "end_step is expected to be negative if steady_state is used!" 
+        ss  << "end_step is expected to be negative if steady_state is used!"
             << '\n';
         amrex::Abort(ss.str());
     }
 
     if(!steady_state && end_step <= 0)
     {
-        std::ostringstream ss;   
+        std::ostringstream ss;
         ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-        ss  << "either steady_state or end_step should be used!" 
+        ss  << "either steady_state or end_step should be used!"
             << '\n';
         amrex::Abort(ss.str());
     }
@@ -372,11 +374,11 @@ void DUGKSAmr::CheckDUGKSAmr()
     {
         if (!Ark::tinyEqual(CFL()*MinL()/std::pow(2,max_level), Dt(), 1E-10))
         {
-           std::ostringstream ss;   
+           std::ostringstream ss;
            ARK_PRINT_ERROR_MESSAGE(ss,__FILE__,__LINE__,__func__);
-           ss  << "incosistence between time step and CFL number!!!" 
+           ss  << "incosistence between time step and CFL number!!!"
                << '\n';
-           amrex::Abort(ss.str()); 
+           amrex::Abort(ss.str());
         }
     }
 
@@ -421,11 +423,11 @@ void DUGKSAmr::SetUnit(int const lev)
 }
 void DUGKSAmr::TestRegrid(int const lev)
 {
-    // amrex::Box testbox(IntVect(0,0),IntVect(127,127)); 
+    // amrex::Box testbox(IntVect(0,0),IntVect(127,127));
     // amrex::BoxArray newba(testbox);
     // amrex::DistributionMapping newdm(newba);
     // RemakeLevel(lev,cur_time,newba,newdm);
-   phi_error[lev] = 32; 
+   phi_error[lev] = 32;
    regrid(lev, cur_time);
 }
 void DUGKSAmr::TestFillCoarsePatch(int const lev)
@@ -437,7 +439,7 @@ void DUGKSAmr::Test()
 {
     int const lev = 1;
     auto &ld = Data(lev);
-    
+
     TestRegrid(0);
     // TestFillCoarsePatch(1);
     // SetUnit(lev);
@@ -489,7 +491,7 @@ void DUGKSAmr::Verify(int const lev)
         Array4<Real> const &fWave = ld.fDVDF[Ark::WAVE].array(mfi);
 
         int const Num = 1;//Ark::DVM_MOMENTUM;
-        // 
+        //
 
         std::shared_ptr<int> nn = std::make_shared<int>(0);
 
@@ -519,7 +521,7 @@ void DUGKSAmr::Verify(int const lev)
                                     <<" nn : "<<++(*nn)<<std::endl;
                 }
             }
-            
+
             // if(i < ilo) {
             // if(rho(i,j,k) != rho(ihi+(i-ilo+1),j,k))
             // {
@@ -580,15 +582,15 @@ void DUGKSAmr::Verify(int const lev)
 // {
 //     std::unique_ptr<MultiFab> diff_xFab;
 // #ifdef AMREX_USE_EB
-//     (*diff_xFab).reset(new MultiFab(grids[lev], dmap[lev], AMREX_SPACEDIM, 0, 
+//     (*diff_xFab).reset(new MultiFab(grids[lev], dmap[lev], AMREX_SPACEDIM, 0,
 //                         MFInfo(), EBFactory(lev)));
 // #else
-//     (*diff_xFab).reset(new MultiFab(grids[lev], dmap[lev], AMREX_SPACEDIM, 0, 
+//     (*diff_xFab).reset(new MultiFab(grids[lev], dmap[lev], AMREX_SPACEDIM, 0,
 //                         MFInfo(), Factory(lev)));
 // #endif
-//     MultiFab::LinComb(*diff_vel[lev], 
-//                       1.0, xFabA, 0, 
-//                       -1.0, xFabB, 0, 
+//     MultiFab::LinComb(*diff_vel[lev],
+//                       1.0, xFabA, 0,
+//                       -1.0, xFabB, 0,
 //                       0, AMREX_SPACEDIM, 0);
 
 //     amrex::Print()<<(*diff_vel[lev]).norm2(0) << std::endl;

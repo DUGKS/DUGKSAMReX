@@ -854,7 +854,7 @@ void DUGKSAmr::Advance_SS()
 
 void DUGKSAmr::Advance_NEQ()
 {
-BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_Regird()", Advance_CN_Regrid);
+BL_PROFILE_VAR("DUGKSAmr::Advance_NEQ_Regird()", Advance_NEQ_Regrid);
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
 		Update_DVDF_EqSo (lev);
@@ -1043,39 +1043,97 @@ void DUGKSAmr::Advance_DVM()
 	}
 }
 
+// void DUGKSAmr::Advance_Moment_SS()
+// {
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		// incorporate source effects via Strang-splitting scheme
+// 		Update_DVDF_Wave_SS(lev, 0.5*Dt());
+
+// 		Nullify_Source (lev);
+// 	}
+
+// //  regridding
+// 	AverageDownMacroVars();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Construct_DVDF_NonEq<false> (lev, 0);
+// 	}
+
+// 	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+//     {
+//         if (m_verbose > 100) {
+//         	amrex::Print() << "Regridding...\n";
+//       	}
+
+//         regrid(0, cur_time);
+//     }
+
+// 	// update value of macroscopic variables in ghost cells
+// 	FillPatchMacroVars();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Tau (lev);
+// 		Update_DVDF_Eq (lev);
+// 		Construct_DVDF_Wave<false> (lev, Dt());
+// 	}
+
+// 	for (int lev = finest_level; lev > 0; --lev) {
+
+// 		int const crse_lev = lev-1;
+
+// 		Collision_DVDF_BarPlus_Moment (crse_lev, hDt(lev));
+// 		Collision_DVDF_BarPlus_Moment (lev, hDt(lev));
+// 	}
+
+// 		Collision_DVDF_BarPlus_Moment (0, hDt(0));
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+
+// 		(this->*Update_DVDF_Grad_BarPlus) (lev);
+
+// 		Update_DVDF_MesoFlux_Moment<false> (lev, hDt(lev));
+// 	}
+
+// 	// CheckForPhysicalBoundary(0);
+
+// 	AverageDownDVDFFlux();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Transform_DVDF_Moment(lev, Ark::BP);
+// 		Construct_DVDF_WavePlus(lev,hDt(lev));
+// 		Transform_Moment_DVDF (lev, Ark::WAVE);
+// 		Update_DVDF_Wave_Lite (lev);
+// 		Transform_DVDF_Moment(lev, Ark::WAVE);
+// 		Update_MacroVars (lev);
+// 		Update_DVDF_Tau (lev);
+// 		// FreeEnergySource(lev);
+// 	}
+
+// 	// FillPatchMacroVars();
+
+// 	//Primitive distribution, stored in xWave
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Eq (lev);
+// 		Construct_DVDF_Prime<false> (lev, Dt());
+// 	}
+
+// 	// AverageDownMacroVars();
+
+// 	for (int lev = 0; lev <= finest_level; ++lev) {
+// 		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+// 	}
+// }
+
 void DUGKSAmr::Advance_Moment_SS()
 {
-
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		// incorporate source effects via Strang-splitting scheme
-		Update_DVDF_Wave_SS(lev, 0.5*Dt());
-
-		Nullify_Source (lev);
-	}
-
 //  regridding
 	AverageDownMacroVars();
 
-	for (int lev = 0; lev <= finest_level; ++lev) {
-		Construct_DVDF_NonEq<false> (lev, 0);
-	}
-
-	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
-    {
-        if (m_verbose > 100) {
-        	amrex::Print() << "Regridding...\n";
-      	}
-
-        regrid(0, cur_time);
-    }
-
-	// update value of macroscopic variables in ghost cells
 	FillPatchMacroVars();
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Tau (lev);
-		Update_DVDF_Eq (lev);
-		Construct_DVDF_Wave<false> (lev, Dt());
+		Update_DVDF_EqSo (lev);
 	}
 
 	for (int lev = finest_level; lev > 0; --lev) {
@@ -1092,7 +1150,8 @@ void DUGKSAmr::Advance_Moment_SS()
 
 		(this->*Update_DVDF_Grad_BarPlus) (lev);
 
-		Update_DVDF_MesoFlux_Moment<false> (lev, hDt(lev));
+		Update_DVDF_MesoFlux<false> (lev, hDt(lev));
+		// Update_DVDF_MesoFlux_Moment<false> (lev, hDt(lev));
 	}
 
 	// CheckForPhysicalBoundary(0);
@@ -1105,22 +1164,94 @@ void DUGKSAmr::Advance_Moment_SS()
 		Transform_Moment_DVDF (lev, Ark::WAVE);
 		Update_DVDF_Wave_Lite (lev);
 		Transform_DVDF_Moment(lev, Ark::WAVE);
-		Update_MacroVars (lev);
-		Update_DVDF_Tau (lev);
-		// FreeEnergySource(lev);
 	}
 
+	AverageDownDVDFWave();
+
+	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+    {
+        if (m_verbose > 100) {
+        	amrex::Print() << "Regridding...\n";
+      	}
+
+        regrid(0, cur_time);
+    }
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+	}
 	// FillPatchMacroVars();
 
 	//Primitive distribution, stored in xWave
+	// for (int lev = 0; lev <= finest_level; ++lev) {
+	// 	Update_DVDF_Eq (lev);
+	// 	Construct_DVDF_Prime<false> (lev, Dt());
+	// }
+
+	// // AverageDownMacroVars();
+
+	// for (int lev = 0; lev <= finest_level; ++lev) {
+	// 	Update_DVDF_Wave_SS (lev, 0.5*Dt());
+	// }
+}
+
+void DUGKSAmr::Advance_Debug()
+{
+BL_PROFILE_VAR("DUGKSAmr::Advance_Debug_FillMacroVars()", Advance_Debug_FillMacroVars);
+
+	AverageDownMacroVars();
+
+	FillPatchMacroVars();
+
+BL_PROFILE_VAR_STOP(Advance_CN_FillMacroVars);
+
+BL_PROFILE_VAR("DUGKSAmr::Advance_CN_DVDF()", Advance_CN_DVDF);
+
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Eq (lev);
-		Construct_DVDF_Prime<false> (lev, Dt());
+		Update_DVDF_EqSo (lev);
 	}
 
-	// AverageDownMacroVars();
+	for (int lev = finest_level; lev > 0; --lev) {
+
+		int const crse_lev = lev-1;
+
+		Collision_DVDF_BarPlus (crse_lev, hDt(lev));
+		Collision_DVDF_BarPlus (lev, hDt(lev));
+	}
+		Collision_DVDF_BarPlus (0, hDt(0));
+
 
 	for (int lev = 0; lev <= finest_level; ++lev) {
-		Update_DVDF_Wave_SS (lev, 0.5*Dt());
+
+		(this->*Update_DVDF_Grad_BarPlus) (lev);
+		Update_DVDF_MesoFlux<> (lev, hDt(lev));
 	}
+
+	// CheckForPhysicalBoundary(0);
+
+	AverageDownDVDFFlux();
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_DVDF_Wave (lev, hDt(lev));
+	}
+
+	AverageDownDVDFWave();
+
+	if (m_regrid_int > 0 and nstep%m_regrid_int == 0)
+    {
+        if (m_verbose > 100) {
+        	amrex::Print() << "Regridding...\n";
+      	}
+
+        regrid(0, cur_time);
+    }
+
+	for (int lev = 0; lev <= finest_level; ++lev) {
+		Update_MacroVars (lev);
+		Update_DVDF_Tau (lev);
+	}
+
+BL_PROFILE_VAR_STOP(Advance_CN_DVDF);
+
 }

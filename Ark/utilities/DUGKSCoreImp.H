@@ -2286,11 +2286,12 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
         	const Real bh = hTime/(2.0*xtauh + hTime);
 			// c++ 17
 			if constexpr (ENABLESOURCE) {
-				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
+				// xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
+        		xFlux(i,j,k,n) = 0;
 			} else {
-				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n));
+				// xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n));
+        		xFlux(i,j,k,n) = 0;
 			}
-        	// xFlux(i,j,k,n) = xBh(i,j,k,n);
         });
 	}
 }

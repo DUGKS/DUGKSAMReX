@@ -125,7 +125,8 @@ public:
 
 	static void Integral_MacroBaseVars_Momentum (Array<MultiFab, Ark::MSVNUM> &msv,
 										   	     const MultiFab &xDVDF);
-
+	static void Integral_MacroBaseVars_Momentum_Face (Array<MultiFab, Ark::MSVNUM> &msv,
+										   	     const MultiFab &xDVDF);
 	static void Integral_MacroBaseVars_Energy (Array<MultiFab, Ark::MSVNUM> &msv,
 										   	   const MultiFab &xDVDF);
 };

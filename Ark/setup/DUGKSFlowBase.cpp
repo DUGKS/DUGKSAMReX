@@ -37,13 +37,13 @@ void Ark::FlowParm::InitFlowParmBase()
 	ppBase.get("T0",_T0);
 	ppBase.get("R0",_R0);
 	ppBase.get("Mu0",_Mu0);
-	ppBase.get("Nu0",_Nu0);	
+	ppBase.get("Nu0",_Nu0);
 	ppBase.get("TauMomentum",_TauMomentum);
 	ppBase.query("Alpha",_Alpha);
 	}
 
 	{
-	//Ma, Re, and Kn 
+	//Ma, Re, and Kn
 	_Mach = _U0/sqrt(3*_R0*_T0);
 	_Reynolds = _Rho0*_U0*ch_length/_Mu0;
 	_Knudsen = 16.0*_Mu0/(5.0*_Rho0*_R0*_T0)*sqrt(_R0*_T0/(2.0*Ark::pi));
@@ -74,7 +74,7 @@ void Ark::FlowParm::InitFlowParmPhaseField()
 	//Phase Field Calculations
 	beta  = 12.0*sigma/widthI,
 	kappa = 3.0*sigma*widthI/2;
-	nuL = muL/rhoL;	
+	nuL = muL/rhoL;
 	nuV = muV/rhoV;
 	aPhi = (rhoL - rhoV)/(phiL - phiV);
 	bPhi = rhoV - aPhi*phiV;
@@ -85,7 +85,7 @@ void Ark::FlowParm::InitFlowParmPhaseField()
 	centerPF[Ark::Z] *= ch_length;
 #endif
 
-	radiusPF    *= ch_length;
+	radiusPF *= ch_length;
 
 	_Cahn   = widthI/ch_length;
 	_Peclet = _U0*ch_length/mobility_phi;
