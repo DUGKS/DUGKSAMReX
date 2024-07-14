@@ -13,4 +13,5 @@
 case=unsteadyTGV
 DIM=2
 N=4
+# mpiexec -n $N ./DUGKS.${DIM}d.gnu.MPI.ex ./Benchmark/${case}.benchmark
 nohup mpiexec -n $N ./DUGKS.${DIM}d.gnu.MPI.ex ./Benchmark/${case}.benchmark &
