@@ -50,8 +50,10 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
             const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
 
             for(int nn = 0;nn < DVM::Q;++nn) {
-                // fEq(i,j,k,nn) = rho*MEq[nn];
                 fEq(i,j,k,nn) = MEq[nn];
+                // for(int mm = 0;mm < DVM::Q;++mm) {
+                    // fEq(i,j,k,nn) = DVM::IM[nn][mm] * MEq[nn];
+                // }
             }
             if constexpr (ENABLESOURCE) {
                 for(int nn = 0;nn < DVM::Q;++nn) {
@@ -61,7 +63,148 @@ void DUGKSCore<DVM>::Update_Eq_Momentum (MultiFab &xEq, MultiFab &xSo, const Arr
         });
     }
 }
+// Rho_0 == 0
+template <typename DVM>
+template <bool ENABLESOURCE>
+void DUGKSCore<DVM>::Update_Eq_Momentum_Face (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
+{
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(xEq, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        const amrex::Box& tbx = mfi.tilebox();
+    //
+        Array4<Real const> const &Den     = msv[Ark::RHO].const_array(mfi);
+        Array4<Real const> const &Vel     = msv[Ark::VEL].const_array(mfi);
+        Array4<Real const> const &GradDen = msv[Ark::GradRHO].const_array(mfi);
+        Array4<Real const> const &Force   = msv[Ark::FORCE].const_array(mfi);
 
+        Array4<Real> const &fEq = xEq.array(mfi);
+        Array4<Real> const &fSo = xSo.array(mfi);
+
+        ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i,int j,int k) noexcept
+        {
+            const double rho  = Den(i,j,k);
+            // const double p    = Pres(i,j,k);
+            const double u    = Vel(i,j,k,Ark::X);
+            const double v    = Vel(i,j,k,Ark::Y);
+
+            const double fx   = Force(i,j,k,Ark::X);
+            const double fy   = Force(i,j,k,Ark::Y);
+
+            const double uu = u*u  + v*v;
+            const double uF = u*fx + v*fy;
+            // it seems that the second order force terms is omitted
+            const double MEq[DVM::Q] = {rho,3*uu-2*rho,rho-3*uu,u,-u,v,-v,u*u-v*v,u*v};
+            const double MSo[DVM::Q] = {0,6.0*uF,-6.0*uF,fx,-fx,fy,-fy,2.0*(fx*u-fy*v),fx*v+fy*u};
+
+            for(int n = 0;n < DVM::Q;++n) {
+                fEq(i,j,k,n) = MEq[n];
+                // fEq(i,j,k,n) = 0;
+                // for(int m = 0;m < DVM::Q;++m) {
+                    // fEq(i,j,k,n) += DVM::IM[n][m] * MEq[m];
+                // }
+            }
+
+            // double transformed_vector[DVM::Q] = {0};
+			// for(int n = 0;n < DVM::Q;n++) {
+			// 	transformed_vector[n] = 0;
+			// 	for(int m = 0;m < DVM::Q;m++) {
+			// 		transformed_vector[n] += DVM::IM[n][m] * MEq[m];
+			// 	}
+			// }
+			// for(int n = 0;n < DVM::Q;n++) {
+			// 	fEq(i,j,k,n) = transformed_vector[n];
+			// }
+
+            // double transformed_vector[DVM::Q] = {0};
+            // for(int nn = 0;nn < DVM::Q;++nn) {
+            //     for(int mm = 0;mm < DVM::Q;++mm) {
+            //         transformed_vector[nn] += DVM::M[nn][mm] * fEq(i,j,k,mm);
+            //     }
+            // }
+            // for(int n = 0;n < DVM::Q;++n) {
+            //     fEq(i,j,k,n) = transformed_vector[n];
+            // }
+            if constexpr (ENABLESOURCE) {
+                for(int nn = 0;nn < DVM::Q;++nn) {
+                    fSo(i,j,k,nn) = MSo[nn];
+                }
+            }
+        });
+    }
+}
+/*
+template <typename DVM>
+template <bool ENABLESO>
+void DUGKSCore<DVM>::Update_Eq_Momentum_Face (MultiFab &xEq, MultiFab &xSo, const Array<MultiFab, Ark::MSVNUM> &msv)
+{
+    #ifdef _OPENMP
+    #pragma omp parallel
+    #endif
+    for(amrex::MFIter mfi(xEq, amrex::TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        const amrex::Box& tbx = mfi.tilebox();
+    //
+        Array4<Real const> const &Den     = msv[Ark::RHO].const_array(mfi);
+        Array4<Real const> const &Vel     = msv[Ark::VEL].const_array(mfi);
+        Array4<Real const> const &GradDen = msv[Ark::GradRHO].const_array(mfi);
+        Array4<Real const> const &Force   = msv[Ark::FORCE].const_array(mfi);
+
+        Array4<Real> const &fEq = xEq.array(mfi);
+        Array4<Real> const &fSo = xSo.array(mfi);
+
+        ParallelFor(tbx, DVM::Q, [=] AMREX_GPU_DEVICE (int i,int j,int k,int n) noexcept
+        {
+            const double rho  = Den(i,j,k);
+            // const double p    = Pres(i,j,k);
+            const double u    = Vel(i,j,k,Ark::X);
+            const double v    = Vel(i,j,k,Ark::Y);
+            const double rhox = GradDen(i,j,k,Ark::X);
+            const double rhoy = GradDen(i,j,k,Ark::Y);
+            const double fx   = Force(i,j,k,Ark::X);
+            const double fy   = Force(i,j,k,Ark::Y);
+#if(AMREX_SPACEDIM == 3)
+            const double w    = Vel(i,j,k,Ark::Z);
+            const double rhoz = GradDen(i,j,k,Ark::Z);
+            const double fz   = Force(i,j,k,Ark::Z);
+            // const double uGradrho = u*rhox + v*rhoy + w*rhoz;
+            const double uu   = Ark::Square(u,v,w);
+            const double u1   = (DVM::xi_u[n]*u + DVM::xi_v[n]*v + DVM::xi_w[n]*w)/DVM::RT;
+#else
+            const double uu = Ark::Square(u,v);
+            const double u1 = (DVM::xi_u[n]*u + DVM::xi_v[n]*v)/DVM::RT;
+            // const double uGradrho = u*rhox + v*rhoy;
+#endif
+            const double Gamma = u1 + 0.5*u1*u1 - uu*DVM::Lambda;
+
+            // fEq(i,j,k,n) = DVM::omega[n]*rho*(1+Gamma);
+
+            // Taylor-Green Vortex rho_0 = 1.0
+            fEq(i,j,k,n) = DVM::omega[n]*(rho + Gamma);
+
+
+            // fEq(i,j,k,n) = DVM::omega[n]*rho*Gamma + static_cast<int>(n == 0)*rho;
+
+            fSo(i,j,k,n) = DVM::omega[n]/DVM::RT*
+            (
+                (DVM::xi_u[n] - u)*fx
+              + (DVM::xi_v[n] - v)*fy
+#if(AMREX_SPACEDIM == 3)
+              + (DVM::xi_w[n] - w)*fz
+#endif
+              + ( DVM::xi_u[n]*fx
+                + DVM::xi_v[n]*fy
+#if(AMREX_SPACEDIM == 3)
+                + DVM::xi_w[n]*fz
+#endif
+                )*u1
+            );
+        });
+    }
+}
+*/
 template <typename DVM>
 void DUGKSCore<DVM>::Integral_MacroBaseVars_Phase(Array<MultiFab, Ark::MSVNUM> &msv,
                                                 const MultiFab &xDVDF)
@@ -202,10 +345,10 @@ void DUGKSAmr::Update_MacroVars_hDt(int const lev, const double hTime)
 {
     auto &ld = Data(lev);
 
-    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum_Face (ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
-    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum_Face (ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
+    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_xF, ld.fDVDFxF[Ark::FLUX]);
+    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_yF, ld.fDVDFyF[Ark::FLUX]);
 #if(AMREX_SPACEDIM == 3)
-    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum_Face (ld.msv_zF, ld.fDVDFzF[Ark::FLUX]);
+    DUGKSCore<Ark::DmVnMomentum>::Integral_MacroBaseVars_Momentum (ld.msv_zF, ld.fDVDFzF[Ark::FLUX]);
 #endif
 
     Update_MacroBaseVars(ld.msv_xF);

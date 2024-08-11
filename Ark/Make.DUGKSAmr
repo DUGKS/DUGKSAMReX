@@ -71,11 +71,6 @@ print:
 
 DUGKSFILE_LOCATIONS = tmp_build_dir
 
-cleanDUGKS:
-	@echo "Cleaning DUGKS Files..."
-	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec rm -f {} \;
-	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec rm -f {} \;
-
 cleanOF:
 	@echo "Cleaning old plot files..."
 	rm -rf ~/.trash/*;
@@ -88,10 +83,14 @@ cleanOF:
 	find ${TESTDIR} -name "Backtrace*" -type f -prune -exec rm -f {} \;
 #
 #   find ${OUTFILE_LOCATIONS} -name "tecplot-derived" -type d -exec mv -f {} \;
+cleanG:cleanOF
+	@echo "Cleaning DUGKS Files..."
+	find ${DUGKSFILE_LOCATIONS} -name "DUGKS*" -type f -prune -exec rm -f {} \;
+	find ${DUGKSFILE_LOCATIONS} -name "main*" -type f -prune -exec rm -f {} \;
 realclean::cleanOF
 #
 #
-# 
+#
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #    add the following to Make.local    #
 #.......................................#

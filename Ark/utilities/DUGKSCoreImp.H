@@ -92,7 +92,7 @@ void DUGKSCore<DVM>::Construct_Prime (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         Array4<Real const> const &xEq   = xDVDF[Ark::EQ].const_array(mfi);
         Array4<Real const> const &xSo   = xDVDF[Ark::SO].const_array(mfi);
 
-        Array4<Real>       const &xWave = xDVDF[Ark::BP].array(mfi);
+        Array4<Real>       const &xWave = xDVDF[Ark::WAVE].array(mfi);
 
         amrex::ParallelFor(bx, DVM::Q,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -142,6 +142,7 @@ void DUGKSCore<DVM>::Construct_NonEq (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real
         {
         	const Real xtau = xTau(i,j,k,n);
         	const Real xneq = xtau/(xtau + hdTime);
+			const Real xprime = 1 - xneq;
 
         	// xWave(i,j,k,n) = xneq*(xWave(i,j,k,n) - xEq(i,j,k,n) + ENABLESOURCE*hdTime*xSo(i,j,k,n));
 
@@ -181,6 +182,7 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         {
         	const Real xtau = xTau(i,j,k,n);
         	const Real xneq = (xtau + hdTime)/xtau;
+			const Real xeq  = hdTime/xtau;
 
         	// xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - ENABLESOURCE*hdTime*xSo(i,j,k,n);
 
@@ -189,7 +191,11 @@ void DUGKSCore<DVM>::Construct_Wave (Array<MultiFab, Ark::DVDFNUM> &xDVDF, Real 
         		xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n) - hdTime*xSo(i,j,k,n);
         	}
         	else {
+        		// xWave(i,j,k,n) = -xeq*xEq(i,j,k,n) + xneq*xWave(i,j,k,n);
         		xWave(i,j,k,n) = xEq(i,j,k,n) + xneq*xWave(i,j,k,n);
+				// std::cout <<"i = "<<i <<" j = "<<j<<" k = "<<k<<" n = "<<n
+						//   <<" fWave = "<<xWave(i,j,k,n) <<std::endl;
+				// getchar();
         	}
         });
     }
@@ -210,6 +216,7 @@ void DUGKSCore<DVM>::Transform (MultiFab &vecFab, const double (&M)[DVM::Q][DVM:
         {
 			double transformed_vector[DVM::Q] = {0};
 			for(int n = 0;n < DVM::Q;n++) {
+				transformed_vector[n] = 0;
 				for(int m = 0;m < DVM::Q;m++) {
 					transformed_vector[n] += M[n][m] * vecArray(i,j,k,m);
 				}
@@ -218,6 +225,13 @@ void DUGKSCore<DVM>::Transform (MultiFab &vecFab, const double (&M)[DVM::Q][DVM:
 			for(int n = 0;n < DVM::Q;n++) {
 				vecArray(i,j,k,n) = transformed_vector[n];
 			}
+			// for(int nn = 0;nn < DVM::Q;++nn) {
+            //     // fEq(i,j,k,nn) = MEq[nn];
+            //     fEq(i,j,k,nn) = 0;
+            //     for(int mm = 0;mm < DVM::Q;++mm) {
+            //         fEq(i,j,k,nn) += DVM::IM[nn][mm] * MEq[mm];
+            //     }
+            // }
         });
     }
 }
@@ -2286,11 +2300,11 @@ void DUGKSCore<DVM>::Collision_xFluxX(Array<MultiFab, Ark::FACEDVDFNUM> &xDVDFnF
         	const Real bh = hTime/(2.0*xtauh + hTime);
 			// c++ 17
 			if constexpr (ENABLESOURCE) {
-				// xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
-        		xFlux(i,j,k,n) = 0;
+				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n) + xtauh*xSoh(i,j,k,n));
+        		// xFlux(i,j,k,n) = 0;
 			} else {
-				// xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n));
-        		xFlux(i,j,k,n) = 0;
+				xFlux(i,j,k,n) += bh*(xEqh(i,j,k,n) - xFlux(i,j,k,n));
+        		// xFlux(i,j,k,n) = 0;
 			}
         });
 	}

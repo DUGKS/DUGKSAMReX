@@ -112,6 +112,9 @@ public:
 	template<bool ENABLESOURCE=true>
 	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo, const Array<MultiFab, Ark::MSVNUM> &msv);
 
+	template<bool ENABLESOURCE=true>
+	static void Update_Eq_Momentum_Face (MultiFab &fEq, MultiFab &fSo, const Array<MultiFab, Ark::MSVNUM> &msv);
+
 	//used for strang-splitting
 	template<bool EnableSource=true>
 	static void Update_Eq_Momentum (MultiFab &fEq, MultiFab &fSo, const Array<MultiFab, Ark::MSVNUM> &msv,

@@ -192,6 +192,10 @@ void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
 	// Force initialized to 0
     Update_DVDF_Eq(lev);
 
+    if(AdvanceScheme() == "MRT") {
+        Transform_Moment_DVDF(lev, Ark::EQ);
+    }
+
 #ifdef ARK_USE_PHASE
 	ld.hDVDF[Ark::WAVE].ParallelCopy(ld.hDVDF[Ark::EQ], 0, 0, Ark::DVM_PHASE,
 		IntVect{0}, IntVect{0}, amrex::Periodicity::NonPeriodic());
@@ -202,6 +206,7 @@ void DUGKSAmr::case_init_mesoscopic_equilibrium(int const lev)
 		IntVect{0}, IntVect{0}, amrex::Periodicity::NonPeriodic());
 #endif
 }
+
 void DUGKSAmr::post_case_init(int const lev)
 {
     auto& ld = Data(lev);
